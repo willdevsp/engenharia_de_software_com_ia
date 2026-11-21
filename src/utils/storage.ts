@@ -5,7 +5,9 @@ import type {
   ChapterSummary,
   CognitiveLevel,
   ModuleMasteryState,
+  QuestionAnswerEntry,
   QuizAttempt,
+  QuizQuestion,
   ReadingProgressEntry,
   SessionQuizBank,
   SubtopicDiagnostic,
@@ -14,18 +16,24 @@ import type {
 
 const STORAGE_KEY = 'engenharia_ia_study_state_v1';
 
-const DEFAULT_STATE: UserStudyState = {
-  version: 1,
-  lastUpdated: new Date().toISOString(),
-  completedChapters: [],
-  chapterCompletionLog: {},
-  readingProgress: {},
-  readingProgressLog: {},
-  bookmarkedQuestions: [],
-  quizAttempts: [],
-  audioPositions: {},
-  moduleMastery: {}
-};
+export function createEmptyStudyState(resetTimestamp?: string): UserStudyState {
+  const now = resetTimestamp || new Date().toISOString();
+  return {
+    version: 1,
+    lastUpdated: now,
+    globalResetAt: resetTimestamp,
+    completedChapters: [],
+    chapterCompletionLog: {},
+    readingProgress: {},
+    readingProgressLog: {},
+    bookmarkedQuestions: [],
+    questionAnswers: {},
+    sessionResetLog: {},
+    quizAttempts: [],
+    audioPositions: {},
+    moduleMastery: {}
+  };
+}
 
 export function parseTimestampMs(iso?: string): number {
   if (!iso) return 0;
@@ -118,7 +126,6 @@ function normalizeReadingProgressLog(
     }
   }
 
-  // Keep numeric readingProgress aligned when log entry exists
   for (const [chId, entry] of Object.entries(normalized)) {
     if (!(chId in legacyProgress) && entry.percentage >= 0) {
       legacyProgress[chId] = entry.percentage;
@@ -128,9 +135,82 @@ function normalizeReadingProgressLog(
   return normalized;
 }
 
+function normalizeQuestionAnswers(raw: unknown): Record<string, QuestionAnswerEntry> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, QuestionAnswerEntry> = {};
+
+  for (const [qId, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== 'object') continue;
+    const item = val as Partial<QuestionAnswerEntry>;
+    const selected = Number(item.selectedOptionIndex);
+    if (!Number.isInteger(selected) || selected < 0 || selected > 3) continue;
+    out[String(item.questionId || qId)] = {
+      questionId: String(item.questionId || qId),
+      sessionId: String(item.sessionId || ''),
+      moduleId: Number(item.moduleId) || 1,
+      selectedOptionIndex: selected,
+      isCorrect: Boolean(item.isCorrect),
+      subtopicTag: String(item.subtopicTag || ''),
+      cognitiveLevel:
+        item.cognitiveLevel === 'architecture' || item.cognitiveLevel === 'code-practice'
+          ? item.cognitiveLevel
+          : 'conceptual',
+      updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : ''
+    };
+  }
+  return out;
+}
+
+function normalizeSessionResetLog(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, string> = {};
+  for (const [sid, ts] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof ts === 'string' && ts.trim()) {
+      out[sid] = ts;
+    }
+  }
+  return out;
+}
+
+function sanitizeQuizAttempts(rawAttempts: unknown): QuizAttempt[] {
+  if (!Array.isArray(rawAttempts)) return [];
+  const sanitized: QuizAttempt[] = [];
+
+  for (const rawAtt of rawAttempts) {
+    if (!rawAtt || typeof rawAtt !== 'object') continue;
+    const att = rawAtt as QuizAttempt;
+    const rawAnswers = Array.isArray(att.answers) ? att.answers : [];
+    // Never treat unselected blank items (-1) as wrong answers in session practice attempts
+    const validSelectedAnswers = rawAnswers.filter(
+      (a) => a && typeof a.selectedOptionIndex === 'number' && a.selectedOptionIndex >= 0
+    );
+
+    if (att.mode !== 'module-exam') {
+      if (validSelectedAnswers.length === 0) {
+        continue;
+      }
+      const correctCount = validSelectedAnswers.filter((a) => a.isCorrect).length;
+      sanitized.push({
+        ...att,
+        totalQuestions: validSelectedAnswers.length,
+        correctCount,
+        scorePercentage: Math.round((correctCount / validSelectedAnswers.length) * 100),
+        answers: validSelectedAnswers
+      });
+    } else {
+      sanitized.push({
+        ...att,
+        answers: rawAnswers
+      });
+    }
+  }
+
+  return sanitized;
+}
+
 export function normalizeStudyState(raw: unknown): UserStudyState {
   if (!raw || typeof raw !== 'object') {
-    return { ...DEFAULT_STATE };
+    return createEmptyStudyState();
   }
   const parsed = raw as Partial<UserStudyState>;
   const readingProgress: Record<string, number> = {};
@@ -146,6 +226,7 @@ export function normalizeStudyState(raw: unknown): UserStudyState {
   return {
     version: 1,
     lastUpdated: typeof parsed.lastUpdated === 'string' ? parsed.lastUpdated : '',
+    globalResetAt: typeof parsed.globalResetAt === 'string' ? parsed.globalResetAt : undefined,
     completedChapters: Array.isArray(parsed.completedChapters) ? parsed.completedChapters : [],
     chapterCompletionLog:
       parsed.chapterCompletionLog && typeof parsed.chapterCompletionLog === 'object'
@@ -156,7 +237,9 @@ export function normalizeStudyState(raw: unknown): UserStudyState {
     bookmarkedQuestions: Array.isArray(parsed.bookmarkedQuestions)
       ? parsed.bookmarkedQuestions
       : [],
-    quizAttempts: Array.isArray(parsed.quizAttempts) ? parsed.quizAttempts : [],
+    questionAnswers: normalizeQuestionAnswers(parsed.questionAnswers),
+    sessionResetLog: normalizeSessionResetLog(parsed.sessionResetLog),
+    quizAttempts: sanitizeQuizAttempts(parsed.quizAttempts),
     audioPositions:
       parsed.audioPositions && typeof parsed.audioPositions === 'object'
         ? parsed.audioPositions
@@ -168,7 +251,7 @@ export function normalizeStudyState(raw: unknown): UserStudyState {
 export function loadStudyState(): UserStudyState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_STATE };
+    if (!raw) return createEmptyStudyState();
     const parsed = JSON.parse(raw);
     const normalized = normalizeStudyState(parsed);
     if (!normalized.lastUpdated) {
@@ -176,7 +259,7 @@ export function loadStudyState(): UserStudyState {
     }
     return normalized;
   } catch {
-    return { ...DEFAULT_STATE };
+    return createEmptyStudyState();
   }
 }
 
@@ -271,12 +354,114 @@ export function updateChapterReadingProgress(
   return next;
 }
 
-export function recordQuizAttempt(state: UserStudyState, attempt: QuizAttempt): UserStudyState {
+export function recordSessionQuestionAnswer(
+  state: UserStudyState,
+  question: QuizQuestion,
+  moduleId: number,
+  selectedOptionIndex: number,
+  persist = true
+): UserStudyState {
   const now = new Date().toISOString();
+  const entry: QuestionAnswerEntry = {
+    questionId: question.id,
+    sessionId: question.sessionId,
+    moduleId,
+    selectedOptionIndex,
+    isCorrect: selectedOptionIndex === question.correctOptionIndex,
+    subtopicTag: question.subtopicTag,
+    cognitiveLevel: question.cognitiveLevel,
+    updatedAt: now
+  };
+
   const next: UserStudyState = {
     ...state,
     lastUpdated: now,
-    quizAttempts: [attempt, ...state.quizAttempts]
+    questionAnswers: {
+      ...(state.questionAnswers || {}),
+      [question.id]: entry
+    }
+  };
+  if (persist) {
+    saveStudyState(next, true);
+  }
+  return next;
+}
+
+export function clearSessionQuestionAnswers(
+  state: UserStudyState,
+  sessionId: string,
+  persist = true
+): UserStudyState {
+  const now = new Date().toISOString();
+  const nextAnswers: Record<string, QuestionAnswerEntry> = {};
+  for (const [qId, entry] of Object.entries(state.questionAnswers || {})) {
+    if (entry.sessionId !== sessionId) {
+      nextAnswers[qId] = entry;
+    }
+  }
+
+  const nextAttempts = (state.quizAttempts || []).filter(
+    (att) => !(att.sessionId === sessionId && att.mode !== 'module-exam')
+  );
+
+  const next: UserStudyState = {
+    ...state,
+    lastUpdated: now,
+    questionAnswers: nextAnswers,
+    quizAttempts: nextAttempts,
+    sessionResetLog: {
+      ...(state.sessionResetLog || {}),
+      [sessionId]: now
+    }
+  };
+  if (persist) {
+    saveStudyState(next, true);
+  }
+  return next;
+}
+
+export function recordQuizAttempt(state: UserStudyState, attempt: QuizAttempt): UserStudyState {
+  const now = new Date().toISOString();
+  const validAnswers = (attempt.answers || []).filter((a) => a.selectedOptionIndex >= 0);
+
+  // Sync valid selections into continuous questionAnswers as well
+  const nextQuestionAnswers = { ...(state.questionAnswers || {}) };
+  if (attempt.mode !== 'module-exam') {
+    for (const ans of validAnswers) {
+      nextQuestionAnswers[ans.questionId] = {
+        questionId: ans.questionId,
+        sessionId: ans.sessionId || attempt.sessionId,
+        moduleId: attempt.moduleId || 1,
+        selectedOptionIndex: ans.selectedOptionIndex,
+        isCorrect: ans.isCorrect,
+        subtopicTag: ans.subtopicTag,
+        cognitiveLevel: ans.cognitiveLevel,
+        updatedAt: attempt.timestamp || now
+      };
+    }
+  }
+
+  const next: UserStudyState = {
+    ...state,
+    lastUpdated: now,
+    questionAnswers: nextQuestionAnswers,
+    quizAttempts:
+      attempt.mode === 'module-exam' || validAnswers.length > 0
+        ? [
+            attempt.mode === 'module-exam'
+              ? attempt
+              : {
+                  ...attempt,
+                  totalQuestions: validAnswers.length,
+                  correctCount: validAnswers.filter((a) => a.isCorrect).length,
+                  scorePercentage: Math.round(
+                    (validAnswers.filter((a) => a.isCorrect).length / validAnswers.length) * 100
+                  ),
+                  answers: validAnswers
+                },
+            ...state.quizAttempts
+          ]
+        : state.quizAttempts
   };
   saveStudyState(next, true);
   return next;
@@ -340,7 +525,6 @@ function mergeModuleMasteryMaps(
       } else if (rMs > lMs) {
         merged[key] = r;
       } else {
-        // Tie-breaker when timestamps match identically
         if (l.status === 'approved' && r.status !== 'approved') {
           merged[key] = l;
         } else if (r.status === 'approved' && l.status !== 'approved') {
@@ -359,7 +543,77 @@ function mergeModuleMasteryMaps(
   return merged;
 }
 
-export function mergeStudyStates(local: UserStudyState, remote: UserStudyState): UserStudyState {
+function pruneStateBeforeGlobalReset(state: UserStudyState, resetMs: number): UserStudyState {
+  if (resetMs <= 0) return state;
+
+  const fallbackMs = parseTimestampMs(state.lastUpdated);
+  const log = buildEffectiveCompletionLog(state);
+  const filteredLog: Record<string, ChapterCompletionEntry> = {};
+  const filteredCompleted: string[] = [];
+
+  for (const [chId, entry] of Object.entries(log)) {
+    const entryMs = parseTimestampMs(entry.updatedAt) || fallbackMs;
+    if (entryMs > resetMs) {
+      filteredLog[chId] = entry;
+      if (entry.completed) filteredCompleted.push(chId);
+    }
+  }
+
+  const filteredReading: Record<string, number> = {};
+  const filteredReadingLog: Record<string, ReadingProgressEntry> = {};
+  for (const [chId, entry] of Object.entries(state.readingProgressLog || {})) {
+    const entryMs = parseTimestampMs(entry.updatedAt) || fallbackMs;
+    if (entryMs > resetMs) {
+      filteredReadingLog[chId] = entry;
+      filteredReading[chId] = entry.percentage;
+    }
+  }
+  if (Object.keys(state.readingProgressLog || {}).length === 0 && fallbackMs > resetMs) {
+    Object.assign(filteredReading, state.readingProgress || {});
+  }
+
+  const filteredQuestions: Record<string, QuestionAnswerEntry> = {};
+  for (const [qId, entry] of Object.entries(state.questionAnswers || {})) {
+    const entryMs = parseTimestampMs(entry.updatedAt) || fallbackMs;
+    if (entryMs > resetMs) {
+      filteredQuestions[qId] = entry;
+    }
+  }
+
+  const filteredAttempts = (state.quizAttempts || []).filter(
+    (att) => parseTimestampMs(att.timestamp) > resetMs
+  );
+
+  const filteredMastery: Record<string, ModuleMasteryState> = {};
+  for (const [modKey, entry] of Object.entries(state.moduleMastery || {})) {
+    if (getMasteryTimestampMs(entry) > resetMs) {
+      filteredMastery[modKey] = entry;
+    }
+  }
+
+  return {
+    ...state,
+    completedChapters: filteredCompleted,
+    chapterCompletionLog: filteredLog,
+    readingProgress: filteredReading,
+    readingProgressLog: filteredReadingLog,
+    questionAnswers: filteredQuestions,
+    quizAttempts: filteredAttempts,
+    moduleMastery: filteredMastery,
+    bookmarkedQuestions: fallbackMs > resetMs ? state.bookmarkedQuestions : []
+  };
+}
+
+export function mergeStudyStates(rawLocal: UserStudyState, rawRemote: UserStudyState): UserStudyState {
+  const maxResetMs = Math.max(
+    parseTimestampMs(rawLocal.globalResetAt),
+    parseTimestampMs(rawRemote.globalResetAt)
+  );
+  const globalResetAt = maxResetMs > 0 ? new Date(maxResetMs).toISOString() : undefined;
+
+  const local = pruneStateBeforeGlobalReset(rawLocal, maxResetMs);
+  const remote = pruneStateBeforeGlobalReset(rawRemote, maxResetMs);
+
   const localLog = buildEffectiveCompletionLog(local);
   const remoteLog = buildEffectiveCompletionLog(remote);
   const mergedLog: Record<string, ChapterCompletionEntry> = {};
@@ -390,15 +644,59 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
     .map(([chId]) => chId)
     .sort();
 
+  // Reconcile per-session reset timestamps
+  const mergedSessionResetLog: Record<string, string> = {};
+  const allResetSessions = new Set([
+    ...Object.keys(local.sessionResetLog || {}),
+    ...Object.keys(remote.sessionResetLog || {})
+  ]);
+  for (const sid of allResetSessions) {
+    const lMs = parseTimestampMs(local.sessionResetLog?.[sid]);
+    const rMs = parseTimestampMs(remote.sessionResetLog?.[sid]);
+    if (lMs > rMs && local.sessionResetLog?.[sid]) {
+      mergedSessionResetLog[sid] = local.sessionResetLog[sid];
+    } else if (remote.sessionResetLog?.[sid]) {
+      mergedSessionResetLog[sid] = remote.sessionResetLog[sid];
+    }
+  }
+
+  // Reconcile quizAttempts ignoring attempts invalidated by sessionResetLog
   const attemptMap = new Map<string, QuizAttempt>();
   for (const att of [...(remote.quizAttempts || []), ...(local.quizAttempts || [])]) {
-    if (att && att.attemptId) {
-      attemptMap.set(att.attemptId, att);
+    if (!att || !att.attemptId) continue;
+    if (att.mode !== 'module-exam') {
+      const resetMs = parseTimestampMs(mergedSessionResetLog[att.sessionId]);
+      if (resetMs > 0 && parseTimestampMs(att.timestamp) <= resetMs) {
+        continue;
+      }
     }
+    attemptMap.set(att.attemptId, att);
   }
   const mergedAttempts = Array.from(attemptMap.values()).sort(
     (a, b) => parseTimestampMs(b.timestamp) - parseTimestampMs(a.timestamp)
   );
+
+  // Reconcile continuous questionAnswers (Last-Write-Wins, respecting session resets)
+  const mergedQuestionAnswers: Record<string, QuestionAnswerEntry> = {};
+  const lQ = local.questionAnswers || {};
+  const rQ = remote.questionAnswers || {};
+  for (const qId of new Set([...Object.keys(lQ), ...Object.keys(rQ)])) {
+    const l = lQ[qId];
+    const r = rQ[qId];
+    const chosen =
+      l && !r
+        ? l
+        : !l && r
+        ? r
+        : parseTimestampMs(l!.updatedAt) >= parseTimestampMs(r!.updatedAt)
+        ? l!
+        : r!;
+    const resetMs = parseTimestampMs(mergedSessionResetLog[chosen.sessionId]);
+    if (resetMs > 0 && parseTimestampMs(chosen.updatedAt) <= resetMs) {
+      continue;
+    }
+    mergedQuestionAnswers[qId] = chosen;
+  }
 
   const localPositions = local.audioPositions || {};
   const remotePositions = remote.audioPositions || {};
@@ -501,6 +799,7 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
   ).sort();
 
   const newestUpdatedMs = Math.max(
+    maxResetMs,
     parseTimestampMs(local.lastUpdated),
     parseTimestampMs(remote.lastUpdated)
   );
@@ -510,11 +809,14 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
   return {
     version: 1,
     lastUpdated,
+    globalResetAt,
     completedChapters,
     chapterCompletionLog: mergedLog,
     readingProgress: mergedReading,
     readingProgressLog: mergedReadingLog,
     bookmarkedQuestions,
+    questionAnswers: mergedQuestionAnswers,
+    sessionResetLog: mergedSessionResetLog,
     quizAttempts: mergedAttempts,
     audioPositions: mergedPositions,
     moduleMastery: mergedMastery
@@ -523,6 +825,7 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
 
 export function areStudyStatesEqual(a: UserStudyState, b: UserStudyState): boolean {
   const norm = (s: UserStudyState) => ({
+    globalResetAt: s.globalResetAt || '',
     completedChapters: [...(s.completedChapters || [])].sort(),
     chapterCompletionLog: Object.keys(s.chapterCompletionLog || {})
       .sort()
@@ -534,6 +837,12 @@ export function areStudyStatesEqual(a: UserStudyState, b: UserStudyState): boole
       .sort()
       .map((k) => [k, s.readingProgressLog![k]]),
     bookmarkedQuestions: [...(s.bookmarkedQuestions || [])].sort(),
+    questionAnswers: Object.keys(s.questionAnswers || {})
+      .sort()
+      .map((k) => [k, s.questionAnswers![k]]),
+    sessionResetLog: Object.keys(s.sessionResetLog || {})
+      .sort()
+      .map((k) => [k, s.sessionResetLog![k]]),
     attemptIds: (s.quizAttempts || []).map((att) => att.attemptId),
     audioPositions: Object.keys(s.audioPositions || {})
       .sort()
@@ -554,22 +863,91 @@ export function mergeImportedState(current: UserStudyState, imported: UserStudyS
   return merged;
 }
 
-export function getMissedQuestionIds(state: UserStudyState, sessionId?: string): Set<string> {
-  // Finds questions where the user's MOST RECENT answer to that question was incorrect
-  const latestByQuestion = new Map<string, boolean>();
-  const chronological = [...state.quizAttempts].reverse();
+export interface UnifiedQuestionAnswer {
+  questionId: string;
+  sessionId: string;
+  subtopicTag: string;
+  cognitiveLevel: CognitiveLevel;
+  isCorrect: boolean;
+  timestampMs: number;
+}
+
+/**
+ * Resolves the latest valid (>= 0) answer per unique questionId across both submitted attempts
+ * and continuous questionAnswers drafts. Blank selections (-1) never count as answered/errors.
+ */
+export function getLatestQuestionAnswerMap(
+  state: UserStudyState,
+  sessionFilter?: string
+): Map<string, UnifiedQuestionAnswer> {
+  const latestMap = new Map<string, UnifiedQuestionAnswer>();
+  const chronological = [...(state.quizAttempts || [])].reverse();
 
   for (const attempt of chronological) {
-    if (sessionId && attempt.sessionId !== sessionId && attempt.mode !== 'module-exam') continue;
-    for (const ans of attempt.answers) {
-      if (sessionId && ans.sessionId && ans.sessionId !== sessionId) continue;
-      latestByQuestion.set(ans.questionId, ans.isCorrect);
+    const attemptMs = parseTimestampMs(attempt.timestamp);
+    for (const ans of attempt.answers || []) {
+      if (ans.selectedOptionIndex < 0) continue;
+      const targetSession = ans.sessionId || attempt.sessionId;
+      if (sessionFilter && targetSession !== sessionFilter) continue;
+
+      const existing = latestMap.get(ans.questionId);
+      if (!existing || attemptMs >= existing.timestampMs) {
+        latestMap.set(ans.questionId, {
+          questionId: ans.questionId,
+          sessionId: targetSession,
+          subtopicTag: ans.subtopicTag,
+          cognitiveLevel: ans.cognitiveLevel,
+          isCorrect: ans.isCorrect,
+          timestampMs: attemptMs
+        });
+      }
     }
   }
 
+  for (const entry of Object.values(state.questionAnswers || {})) {
+    if (entry.selectedOptionIndex < 0) continue;
+    if (sessionFilter && entry.sessionId !== sessionFilter) continue;
+    const entryMs = parseTimestampMs(entry.updatedAt);
+    const existing = latestMap.get(entry.questionId);
+    if (!existing || entryMs >= existing.timestampMs) {
+      latestMap.set(entry.questionId, {
+        questionId: entry.questionId,
+        sessionId: entry.sessionId,
+        subtopicTag: entry.subtopicTag,
+        cognitiveLevel: entry.cognitiveLevel,
+        isCorrect: entry.isCorrect,
+        timestampMs: entryMs
+      });
+    }
+  }
+
+  return latestMap;
+}
+
+export function getSessionUniqueAnswerStats(
+  state: UserStudyState,
+  sessionId: string
+): { answeredCount: number; correctCount: number; accuracyPercentage: number | null } {
+  const map = getLatestQuestionAnswerMap(state, sessionId);
+  if (map.size === 0) {
+    return { answeredCount: 0, correctCount: 0, accuracyPercentage: null };
+  }
+  let correctCount = 0;
+  for (const item of map.values()) {
+    if (item.isCorrect) correctCount++;
+  }
+  return {
+    answeredCount: map.size,
+    correctCount,
+    accuracyPercentage: Math.round((correctCount / map.size) * 100)
+  };
+}
+
+export function getMissedQuestionIds(state: UserStudyState, sessionId?: string): Set<string> {
+  const latestByQuestion = getLatestQuestionAnswerMap(state, sessionId);
   const missed = new Set<string>();
-  for (const [qId, isCorrect] of latestByQuestion.entries()) {
-    if (!isCorrect) {
+  for (const [qId, item] of latestByQuestion.entries()) {
+    if (!item.isCorrect) {
       missed.add(qId);
     }
   }
@@ -578,6 +956,7 @@ export function getMissedQuestionIds(state: UserStudyState, sessionId?: string):
 
 export interface CatalogDiagnosticCounts {
   evaluatedSessions: number;
+  answeredQuestionsCount: number;
   attemptsCount: number;
   avgMastery: number | null;
   openGapsCount: number;
@@ -586,52 +965,43 @@ export interface CatalogDiagnosticCounts {
 }
 
 /**
- * Computes per-module exam metrics cleanly from lightweight ChapterSummary[] without loading full module bundles.
+ * Computes per-module metrics cleanly from lightweight ChapterSummary[] using unique answered questions.
  */
 export function computeCatalogModuleMetrics(
   state: UserStudyState,
   moduleChapters: ChapterSummary[]
 ): CatalogDiagnosticCounts {
   const sessionSet = new Set(moduleChapters.map((c) => c.session));
-  let evaluatedSessions = 0;
-  let attemptsCount = 0;
-  const bestScores: number[] = [];
+  const latestMap = getLatestQuestionAnswerMap(state);
 
-  for (const ch of moduleChapters) {
-    const sessionAttempts = state.quizAttempts.filter(
-      (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
-    );
-    if (sessionAttempts.length > 0) {
-      evaluatedSessions++;
-      attemptsCount += sessionAttempts.length;
-      bestScores.push(Math.max(...sessionAttempts.map((a) => a.scorePercentage)));
-    }
-  }
-
-  const latestBySubtopicQuestion = new Map<
-    string,
-    { sessionId: string; subtopicTag: string; isCorrect: boolean }
-  >();
-  const chronological = [...state.quizAttempts].reverse();
-  for (const attempt of chronological) {
-    for (const ans of attempt.answers) {
-      const targetSession = ans.sessionId || attempt.sessionId;
-      if (!sessionSet.has(targetSession)) continue;
-      latestBySubtopicQuestion.set(ans.questionId, {
-        sessionId: targetSession,
-        subtopicTag: ans.subtopicTag,
-        isCorrect: ans.isCorrect
-      });
-    }
-  }
-
+  const bySession = new Map<string, { total: number; correct: number }>();
   const subtopicGroups = new Map<string, { total: number; correct: number }>();
-  for (const item of latestBySubtopicQuestion.values()) {
+  let answeredQuestionsCount = 0;
+
+  for (const item of latestMap.values()) {
+    if (!sessionSet.has(item.sessionId)) continue;
+    answeredQuestionsCount++;
+
+    const sStats = bySession.get(item.sessionId) || { total: 0, correct: 0 };
+    sStats.total += 1;
+    if (item.isCorrect) sStats.correct += 1;
+    bySession.set(item.sessionId, sStats);
+
     const key = `${item.sessionId}::${item.subtopicTag}`;
     const g = subtopicGroups.get(key) || { total: 0, correct: 0 };
     g.total += 1;
     if (item.isCorrect) g.correct += 1;
     subtopicGroups.set(key, g);
+  }
+
+  let evaluatedSessions = 0;
+  const sessionScores: number[] = [];
+  for (const ch of moduleChapters) {
+    const sStats = bySession.get(ch.session);
+    if (sStats && sStats.total > 0) {
+      evaluatedSessions++;
+      sessionScores.push(Math.round((sStats.correct / sStats.total) * 100));
+    }
   }
 
   let openGapsCount = 0;
@@ -647,13 +1017,14 @@ export function computeCatalogModuleMetrics(
   }
 
   const avgMastery =
-    bestScores.length > 0
-      ? Math.round(bestScores.reduce((acc, s) => acc + s, 0) / bestScores.length)
+    sessionScores.length > 0
+      ? Math.round(sessionScores.reduce((acc, s) => acc + s, 0) / sessionScores.length)
       : null;
 
   return {
     evaluatedSessions,
-    attemptsCount,
+    answeredQuestionsCount,
+    attemptsCount: answeredQuestionsCount,
     avgMastery,
     openGapsCount,
     criticalGapsCount,
@@ -666,15 +1037,7 @@ export function computeSubtopicDiagnostics(
   chapters: ChapterData[],
   quizzes: Record<string, SessionQuizBank>
 ): SubtopicDiagnostic[] {
-  // Map latest answer for each question ID so repeated practice updates mastery accurately
-  const latestAnswerByQuestion = new Map<string, boolean>();
-  const chronological = [...state.quizAttempts].reverse();
-  for (const attempt of chronological) {
-    for (const ans of attempt.answers) {
-      latestAnswerByQuestion.set(ans.questionId, ans.isCorrect);
-    }
-  }
-
+  const latestMap = getLatestQuestionAnswerMap(state);
   const chapterBySession = new Map<string, ChapterData>();
   for (const ch of chapters) {
     chapterBySession.set(ch.session, ch);
@@ -698,8 +1061,8 @@ export function computeSubtopicDiagnostics(
     const ch = chapterBySession.get(sessionId);
     const sessionTitle = ch ? ch.title : bank.title;
     for (const q of bank.questions) {
-      if (!latestAnswerByQuestion.has(q.id)) continue;
-      const isCorrect = latestAnswerByQuestion.get(q.id)!;
+      const latest = latestMap.get(q.id);
+      if (!latest) continue;
       const key = `${sessionId}::${q.subtopicTag}`;
       if (!groups.has(key)) {
         groups.set(key, {
@@ -715,7 +1078,7 @@ export function computeSubtopicDiagnostics(
       }
       const g = groups.get(key)!;
       g.totalAnswered += 1;
-      if (isCorrect) g.correctAnswered += 1;
+      if (latest.isCorrect) g.correctAnswered += 1;
     }
   }
 
@@ -738,13 +1101,7 @@ export function computeCognitiveBreakdown(
   state: UserStudyState,
   quizzes: Record<string, SessionQuizBank>
 ): Record<CognitiveLevel, { answered: number; correct: number; percentage: number }> {
-  const latestAnswerByQuestion = new Map<string, boolean>();
-  const chronological = [...state.quizAttempts].reverse();
-  for (const attempt of chronological) {
-    for (const ans of attempt.answers) {
-      latestAnswerByQuestion.set(ans.questionId, ans.isCorrect);
-    }
-  }
+  const latestMap = getLatestQuestionAnswerMap(state);
 
   const result: Record<CognitiveLevel, { answered: number; correct: number; percentage: number }> = {
     conceptual: { answered: 0, correct: 0, percentage: 0 },
@@ -754,11 +1111,11 @@ export function computeCognitiveBreakdown(
 
   for (const bank of Object.values(quizzes)) {
     for (const q of bank.questions) {
-      if (!latestAnswerByQuestion.has(q.id)) continue;
-      const isCorrect = latestAnswerByQuestion.get(q.id)!;
+      const latest = latestMap.get(q.id);
+      if (!latest) continue;
       const bucket = result[q.cognitiveLevel] || result.conceptual;
       bucket.answered += 1;
-      if (isCorrect) bucket.correct += 1;
+      if (latest.isCorrect) bucket.correct += 1;
     }
   }
 

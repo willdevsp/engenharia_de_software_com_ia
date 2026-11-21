@@ -154,6 +154,17 @@ export interface AudioPositionEntry {
   updatedAt: string;
 }
 
+export interface QuestionAnswerEntry {
+  questionId: string;
+  sessionId: string;
+  moduleId: number;
+  selectedOptionIndex: number;
+  isCorrect: boolean;
+  subtopicTag: string;
+  cognitiveLevel: CognitiveLevel;
+  updatedAt: string;
+}
+
 export interface ModuleExamSlot {
   slotIndex: number;
   sessionId: string;
@@ -173,6 +184,9 @@ export interface ModuleExamCycle {
   consolidatedCorrectCount: number;
   consolidatedScore: number;
   slots: ModuleExamSlot[];
+  currentAttemptStartedAt?: string | null;
+  currentAttemptTimeLimitSeconds?: number | null;
+  draftAnswers?: Record<string, number>;
   lastUpdated: string;
 }
 
@@ -193,11 +207,14 @@ export interface ModuleMasteryState {
 export interface UserStudyState {
   version: number;
   lastUpdated: string;
+  globalResetAt?: string;
   completedChapters: string[];
   chapterCompletionLog?: Record<string, ChapterCompletionEntry>;
   readingProgress: Record<string, number>;
   readingProgressLog?: Record<string, ReadingProgressEntry>;
   bookmarkedQuestions: string[];
+  questionAnswers?: Record<string, QuestionAnswerEntry>;
+  sessionResetLog?: Record<string, string>;
   quizAttempts: QuizAttempt[];
   audioPositions?: Record<string, AudioPositionEntry>;
   moduleMastery?: Record<string, ModuleMasteryState>;

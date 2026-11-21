@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  AlertTriangle,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -11,6 +12,7 @@ import {
   Save,
   Settings,
   ShieldCheck,
+  Trash2,
   X
 } from 'lucide-react';
 import {
@@ -28,6 +30,7 @@ interface CloudSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfigSaved: () => void;
+  onResetAllProgress?: () => Promise<void>;
 }
 
 const FIRESTORE_RULES_SNIPPET = `rules_version = '2';
@@ -45,12 +48,15 @@ service cloud.firestore {
 export const CloudSettingsModal: React.FC<CloudSettingsModalProps> = ({
   isOpen,
   onClose,
-  onConfigSaved
+  onConfigSaved,
+  onResetAllProgress
 }) => {
   const [archiveBucket, setArchiveBucket] = useState<string>(DEFAULT_ARCHIVE_BUCKET);
   const [showCredentialOverrides, setShowCredentialOverrides] = useState<boolean>(false);
   const [showFirestoreHelp, setShowFirestoreHelp] = useState<boolean>(false);
   const [copiedRules, setCopiedRules] = useState<boolean>(false);
+  const [confirmResetAll, setConfirmResetAll] = useState<boolean>(false);
+  const [isResettingAll, setIsResettingAll] = useState<boolean>(false);
 
   // Override fields (never pre-populated with raw .env.local secrets)
   const [archiveAccessKey, setArchiveAccessKey] = useState<string>('');
@@ -389,6 +395,52 @@ export const CloudSettingsModal: React.FC<CloudSettingsModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Danger Zone: Two-Step Full Study Progress Reset */}
+          {onResetAllProgress && (
+            <div className="p-4 rounded-xl bg-rose-50/70 border border-rose-200 space-y-2.5">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-rose-950">
+                  <strong>Começar do Zero (Reset Total de Estudo):</strong> apaga capítulos lidos, respostas salvas, provas, maestria e lacunas neste dispositivo e no documento{' '}
+                  <code>study_state/default</code> do Firebase (seus áudios salvos em{' '}
+                  <code>session_audios</code> não são apagados).
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="modal-reset-all-progress"
+                disabled={isResettingAll}
+                onClick={async () => {
+                  if (!confirmResetAll) {
+                    setConfirmResetAll(true);
+                    window.setTimeout(() => setConfirmResetAll(false), 5000);
+                    return;
+                  }
+                  setIsResettingAll(true);
+                  try {
+                    await onResetAllProgress();
+                    setConfirmResetAll(false);
+                    onClose();
+                  } finally {
+                    setIsResettingAll(false);
+                  }
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                  confirmResetAll
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                    : 'bg-white hover:bg-rose-100 text-rose-700 border border-rose-300'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {isResettingAll
+                  ? 'Zerando Local + Nuvem...'
+                  : confirmResetAll
+                  ? 'Tem certeza? Clique para Confirmar Reset Total'
+                  : 'Resetar Todo o Progresso (Local + Nuvem)'}
+              </button>
+            </div>
+          )}
 
           {/* Footer Buttons */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200">

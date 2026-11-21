@@ -25,15 +25,19 @@ import type {
   ModuleBundlePayload,
   ModuleExamCycle,
   QuizAttempt,
+  QuizQuestion,
   SessionQuizBank,
   UserStudyState
 } from './types/course';
 import {
   areStudyStatesEqual,
+  clearSessionQuestionAnswers,
+  getSessionUniqueAnswerStats,
   loadStudyState,
   mergeImportedState,
   mergeStudyStates,
   recordQuizAttempt,
+  recordSessionQuestionAnswer,
   saveStudyState,
   toggleChapterCompleted,
   updateChapterReadingProgress,
@@ -42,12 +46,14 @@ import {
 import {
   getEffectiveModuleMastery,
   isModuleUnlocked,
+  startTimedModuleExamAttempt,
   submitModuleExamAttempt,
   syncRestudyCompletion,
+  updateTimedModuleExamDraftAnswer,
   type ModuleExamSubmissionOutcome
 } from './utils/masteryGate';
 import { isFirebaseConfigured } from './utils/cloudConfig';
-import { syncStudyStateWithCloud } from './utils/cloudSync';
+import { resetStudyStateLocalAndCloud, syncStudyStateWithCloud } from './utils/cloudSync';
 import { CourseHome } from './components/CourseHome';
 import { ChapterReader } from './components/ChapterReader';
 import { QuizEngine } from './components/QuizEngine';
@@ -390,11 +396,87 @@ export const App: React.FC = () => {
     [scheduleCloudPush]
   );
 
+  const handleAnswerSessionQuestion = useCallback(
+    (question: QuizQuestion, selectedOptionIndex: number) => {
+      const modId = activeModule?.id || 1;
+      const next = recordSessionQuestionAnswer(
+        studyStateRef.current,
+        question,
+        modId,
+        selectedOptionIndex,
+        true
+      );
+      setStudyState(next);
+      scheduleCloudPush(next);
+    },
+    [activeModule, scheduleCloudPush]
+  );
+
+  const handleClearSessionAnswers = useCallback(
+    (sessionId: string) => {
+      const next = clearSessionQuestionAnswers(studyStateRef.current, sessionId, true);
+      setStudyState(next);
+      scheduleCloudPush(next);
+    },
+    [scheduleCloudPush]
+  );
+
   const handleSaveAttempt = (attempt: QuizAttempt) => {
     const next = recordQuizAttempt(studyStateRef.current, attempt);
     setStudyState(next);
     scheduleCloudPush(next);
   };
+
+  const handleStartTimedModuleExam = useCallback(
+    (moduleId: number, cycle: ModuleExamCycle, timeLimitSeconds: number) => {
+      const next = startTimedModuleExamAttempt(
+        moduleId,
+        studyStateRef.current,
+        cycle,
+        timeLimitSeconds,
+        true
+      );
+      setStudyState(next);
+      scheduleCloudPush(next);
+    },
+    [scheduleCloudPush]
+  );
+
+  const handleUpdateModuleExamDraft = useCallback(
+    (moduleId: number, questionId: string, optionIndex: number) => {
+      const next = updateTimedModuleExamDraftAnswer(
+        moduleId,
+        studyStateRef.current,
+        questionId,
+        optionIndex,
+        true
+      );
+      if (next !== studyStateRef.current) {
+        setStudyState(next);
+        scheduleCloudPush(next);
+      }
+    },
+    [scheduleCloudPush]
+  );
+
+  const handleResetAllProgress = useCallback(async () => {
+    if (pushTimerRef.current !== null) {
+      window.clearTimeout(pushTimerRef.current);
+      pushTimerRef.current = null;
+    }
+    const res = await resetStudyStateLocalAndCloud();
+    setStudyState(res.state);
+    setSyncStatus(res.status);
+    setSyncError(res.error || null);
+    if (res.status === 'synced') {
+      setLastSyncedAt(new Date().toISOString());
+    }
+    setSelectedModuleId(1);
+    setSelectedSession(resolveDefaultSessionForModule(1, res.state));
+    setActiveView('home');
+    setActiveTab('reader');
+    setSidebarOpen(false);
+  }, []);
 
   const handleSubmitModuleExam = (
     moduleId: number,
@@ -815,13 +897,8 @@ export const App: React.FC = () => {
                 const isDone = studyState.completedChapters.includes(ch.id);
                 const needsRestudy = restudyChapterSet.has(ch.id) && !isDone;
                 const readingPct = isDone ? 100 : studyState.readingProgress[ch.id] || 0;
-                const attempts = studyState.quizAttempts.filter(
-                  (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
-                );
-                const bestScore =
-                  attempts.length > 0
-                    ? Math.max(...attempts.map((a) => a.scorePercentage))
-                    : null;
+                const uniqueStats = getSessionUniqueAnswerStats(studyState, ch.session);
+                const bestScore = uniqueStats.accuracyPercentage;
 
                 return (
                   <div
@@ -946,7 +1023,11 @@ export const App: React.FC = () => {
                     initialMode={quizMode}
                     initialSubtopicFilter={quizSubtopic}
                     initialScope={quizScope}
+                    onAnswerSessionQuestion={handleAnswerSessionQuestion}
+                    onClearSessionAnswers={handleClearSessionAnswers}
                     onSaveAttempt={handleSaveAttempt}
+                    onStartTimedModuleExam={handleStartTimedModuleExam}
+                    onUpdateModuleExamDraft={handleUpdateModuleExamDraft}
                     onSubmitModuleExam={handleSubmitModuleExam}
                     onNavigateToChapterAnchor={(sessionId, anchor) =>
                       handleSelectChapter(sessionId, anchor)
@@ -976,6 +1057,7 @@ export const App: React.FC = () => {
                     syncError={syncError}
                     onSyncNow={() => void runCloudSync()}
                     onOpenSettings={() => setSettingsOpen(true)}
+                    onResetAllProgress={handleResetAllProgress}
                   />
                 )}
               </>
@@ -988,6 +1070,7 @@ export const App: React.FC = () => {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onConfigSaved={() => void runCloudSync()}
+        onResetAllProgress={handleResetAllProgress}
       />
     </div>
   );

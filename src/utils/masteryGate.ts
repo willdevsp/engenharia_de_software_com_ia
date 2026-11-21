@@ -18,6 +18,161 @@ export const MASTERY_PASS_PERCENTAGE = 70;
 export const MAX_MODULE_EXAM_QUESTIONS = 40;
 export const MAX_CYCLE_CHANCES = 3;
 
+export interface ModuleExamTimingSummary {
+  totalSeconds: number;
+  formattedTotal: string;
+  counts: {
+    foundation: number;
+    intermediate: number;
+    advanced: number;
+    conceptual: number;
+    architecture: number;
+    codePractice: number;
+    withCode: number;
+  };
+}
+
+export function computeQuestionTimeSeconds(q: QuizQuestion): number {
+  const base = q.difficulty === 'advanced' ? 120 : q.difficulty === 'intermediate' ? 90 : 60;
+  const cog =
+    q.cognitiveLevel === 'code-practice'
+      ? 30
+      : q.cognitiveLevel === 'architecture'
+      ? 15
+      : 0;
+  const codeBonus = q.codeSnippet && q.codeSnippet.trim().length > 0 ? 15 : 0;
+  return base + cog + codeBonus;
+}
+
+export function formatCountdownSeconds(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds));
+  const hrs = Math.floor(safe / 3600);
+  const mins = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${pad(mins)}:${pad(secs)}`;
+}
+
+export function computeModuleExamTiming(questions: QuizQuestion[]): ModuleExamTimingSummary {
+  let totalSeconds = 0;
+  const counts = {
+    foundation: 0,
+    intermediate: 0,
+    advanced: 0,
+    conceptual: 0,
+    architecture: 0,
+    codePractice: 0,
+    withCode: 0
+  };
+
+  for (const q of questions) {
+    totalSeconds += computeQuestionTimeSeconds(q);
+    if (q.difficulty === 'advanced') counts.advanced++;
+    else if (q.difficulty === 'intermediate') counts.intermediate++;
+    else counts.foundation++;
+
+    if (q.cognitiveLevel === 'code-practice') counts.codePractice++;
+    else if (q.cognitiveLevel === 'architecture') counts.architecture++;
+    else counts.conceptual++;
+
+    if (q.codeSnippet && q.codeSnippet.trim().length > 0) {
+      counts.withCode++;
+    }
+  }
+
+  const mins = Math.floor(totalSeconds / 60);
+  const remSecs = totalSeconds % 60;
+  const formattedTotal = remSecs > 0 ? `${mins} min ${remSecs} s` : `${mins} min`;
+
+  return { totalSeconds, formattedTotal, counts };
+}
+
+export function startTimedModuleExamAttempt(
+  moduleId: number,
+  state: UserStudyState,
+  cycle: ModuleExamCycle,
+  timeLimitSeconds: number,
+  persist = true
+): UserStudyState {
+  const now = new Date().toISOString();
+  const key = String(moduleId);
+  const existingMastery = state.moduleMastery?.[key];
+
+  const updatedCycle: ModuleExamCycle = {
+    ...cycle,
+    currentAttemptStartedAt: now,
+    currentAttemptTimeLimitSeconds: timeLimitSeconds,
+    draftAnswers: {},
+    lastUpdated: now
+  };
+
+  const nextMastery: ModuleMasteryState = {
+    moduleId,
+    status: existingMastery?.status === 'approved' ? 'approved' : 'in-progress',
+    approvedScore: existingMastery?.approvedScore,
+    approvedAt: existingMastery?.approvedAt,
+    requiredRestudyChapterIds: existingMastery?.requiredRestudyChapterIds || [],
+    restudyResetAt: existingMastery?.restudyResetAt,
+    activeCycle: updatedCycle,
+    completedCyclesCount: existingMastery?.completedCyclesCount || 0,
+    lastUpdated: now
+  };
+
+  const next: UserStudyState = {
+    ...state,
+    lastUpdated: now,
+    moduleMastery: {
+      ...(state.moduleMastery || {}),
+      [key]: nextMastery
+    }
+  };
+  if (persist) {
+    saveStudyState(next, true);
+  }
+  return next;
+}
+
+export function updateTimedModuleExamDraftAnswer(
+  moduleId: number,
+  state: UserStudyState,
+  questionId: string,
+  optionIndex: number,
+  persist = true
+): UserStudyState {
+  const key = String(moduleId);
+  const mastery = state.moduleMastery?.[key];
+  if (!mastery?.activeCycle || !mastery.activeCycle.currentAttemptStartedAt) {
+    return state;
+  }
+
+  const now = new Date().toISOString();
+  const updatedCycle: ModuleExamCycle = {
+    ...mastery.activeCycle,
+    draftAnswers: {
+      ...(mastery.activeCycle.draftAnswers || {}),
+      [questionId]: optionIndex
+    },
+    lastUpdated: now
+  };
+
+  const next: UserStudyState = {
+    ...state,
+    lastUpdated: now,
+    moduleMastery: {
+      ...(state.moduleMastery || {}),
+      [key]: {
+        ...mastery,
+        activeCycle: updatedCycle,
+        lastUpdated: now
+      }
+    }
+  };
+  if (persist) {
+    saveStudyState(next, true);
+  }
+  return next;
+}
+
 export function isModuleUnlocked(moduleId: number, studyState: UserStudyState): boolean {
   if (moduleId <= 1) return true;
   const prevState = studyState.moduleMastery?.[String(moduleId - 1)];
@@ -601,13 +756,16 @@ export function submitModuleExamAttempt(
   };
 
   if (existingMastery?.status === 'approved') {
-    outcome = consolidatedScore >= MASTERY_PASS_PERCENTAGE ? 'approved' : 'approved';
+    outcome = 'approved';
     const updatedCycle: ModuleExamCycle = {
       ...cycleSnapshot,
       attemptCount: chanceNumber,
       consolidatedCorrectCount,
       consolidatedScore,
       slots: nextSlots,
+      currentAttemptStartedAt: null,
+      currentAttemptTimeLimitSeconds: null,
+      draftAnswers: {},
       lastUpdated: now
     };
     nextMastery = {
@@ -629,6 +787,9 @@ export function submitModuleExamAttempt(
       consolidatedCorrectCount,
       consolidatedScore,
       slots: nextSlots,
+      currentAttemptStartedAt: null,
+      currentAttemptTimeLimitSeconds: null,
+      draftAnswers: {},
       lastUpdated: now
     };
     nextMastery = {
@@ -667,6 +828,9 @@ export function submitModuleExamAttempt(
       consolidatedCorrectCount,
       consolidatedScore,
       slots: preparedSlots,
+      currentAttemptStartedAt: null,
+      currentAttemptTimeLimitSeconds: null,
+      draftAnswers: {},
       lastUpdated: now
     };
 
@@ -724,6 +888,9 @@ export function submitModuleExamAttempt(
       consolidatedCorrectCount,
       consolidatedScore,
       slots: nextSlots,
+      currentAttemptStartedAt: null,
+      currentAttemptTimeLimitSeconds: null,
+      draftAnswers: {},
       lastUpdated: now
     };
 

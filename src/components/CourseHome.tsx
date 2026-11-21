@@ -25,7 +25,7 @@ import type {
   ModuleMasteryState,
   UserStudyState
 } from '../types/course';
-import { computeCatalogModuleMetrics } from '../utils/storage';
+import { computeCatalogModuleMetrics, getSessionUniqueAnswerStats } from '../utils/storage';
 import { getEffectiveModuleMastery, isModuleUnlocked } from '../utils/masteryGate';
 
 interface CourseHomeProps {
@@ -109,6 +109,7 @@ export const CourseHome: React.FC<CourseHomeProps> = ({
           ? computeCatalogModuleMetrics(studyState, modChapters)
           : {
               evaluatedSessions: 0,
+              answeredQuestionsCount: 0,
               attemptsCount: 0,
               avgMastery: null,
               openGapsCount: 0,
@@ -117,13 +118,9 @@ export const CourseHome: React.FC<CourseHomeProps> = ({
             };
 
       for (const ch of modChapters) {
-        const sessionAttempts = studyState.quizAttempts.filter(
-          (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
-        );
-        if (sessionAttempts.length > 0) {
-          evaluatedSessionScores.push(
-            Math.max(...sessionAttempts.map((a) => a.scorePercentage))
-          );
+        const stats = getSessionUniqueAnswerStats(studyState, ch.session);
+        if (stats.accuracyPercentage !== null) {
+          evaluatedSessionScores.push(stats.accuracyPercentage);
         }
       }
 
@@ -324,7 +321,7 @@ export const CourseHome: React.FC<CourseHomeProps> = ({
             {courseSummary.totalEvaluatedSessions} / {courseSummary.totalAvailableChapters}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            {courseSummary.totalAttempts} tentativa(s) de treino • {courseSummary.totalAvailableQuestions} questões
+            {courseSummary.totalAttempts} questão(ões) respondida(s) • {courseSummary.totalAvailableQuestions} no banco
           </div>
         </div>
 

@@ -13,6 +13,7 @@ import { isFirebaseConfigured } from './cloudConfig';
 import { getFirestoreDb } from './firebaseClient';
 import {
   areStudyStatesEqual,
+  createEmptyStudyState,
   mergeStudyStates,
   normalizeStudyState,
   saveStudyState
@@ -98,6 +99,58 @@ export async function syncStudyStateWithCloud(localState: UserStudyState): Promi
   } catch (err) {
     return {
       state: localState,
+      status: 'offline',
+      error: formatFirestoreError(err)
+    };
+  }
+}
+
+export async function resetStudyStateLocalAndCloud(): Promise<{
+  state: UserStudyState;
+  status: CloudSyncStatus;
+  error?: string;
+}> {
+  const now = new Date().toISOString();
+  const emptyState = createEmptyStudyState(now);
+  saveStudyState(emptyState, true);
+
+  if (!isFirebaseConfigured()) {
+    return { state: emptyState, status: 'unconfigured' };
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return {
+      state: emptyState,
+      status: 'offline',
+      error: 'Progresso local zerado; dispositivo offline no momento para limpar a nuvem.'
+    };
+  }
+
+  const db = getFirestoreDb();
+  if (!db) {
+    return { state: emptyState, status: 'unconfigured' };
+  }
+
+  try {
+    const stateRef = doc(db, STUDY_STATE_COLLECTION, STUDY_STATE_DOC_ID);
+    let timerId: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        setDoc(stateRef, stripUndefined(emptyState)),
+        new Promise<never>((_, reject) => {
+          timerId = setTimeout(
+            () => reject(new Error('Sem conexão rápida com o Firestore; reset salvo localmente.')),
+            2500
+          );
+        })
+      ]);
+      return { state: emptyState, status: 'synced' };
+    } finally {
+      if (timerId !== undefined) clearTimeout(timerId);
+    }
+  } catch (err) {
+    return {
+      state: emptyState,
       status: 'offline',
       error: formatFirestoreError(err)
     };

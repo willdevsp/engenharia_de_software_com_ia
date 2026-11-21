@@ -21,6 +21,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Trash2,
   Upload
 } from 'lucide-react';
 import type {
@@ -32,7 +33,8 @@ import type {
 } from '../types/course';
 import {
   computeCognitiveBreakdown,
-  computeSubtopicDiagnostics
+  computeSubtopicDiagnostics,
+  getSessionUniqueAnswerStats
 } from '../utils/storage';
 import { exportJsonFile, exportKindleEpub } from '../utils/nativeExport';
 import {
@@ -60,6 +62,7 @@ interface AnalyticsDashboardProps {
   syncError?: string | null;
   onSyncNow?: () => void;
   onOpenSettings?: () => void;
+  onResetAllProgress?: () => Promise<void>;
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
@@ -75,10 +78,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   lastSyncedAt,
   syncError,
   onSyncNow,
-  onOpenSettings
+  onOpenSettings,
+  onResetAllProgress
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isExportingEpub, setIsExportingEpub] = useState(false);
+  const [confirmResetDashboard, setConfirmResetDashboard] = useState(false);
+  const [isResettingDashboard, setIsResettingDashboard] = useState(false);
 
   const moduleId = moduleInfo?.id ?? chapters[0]?.module ?? 1;
   const moduleCode = moduleInfo?.code || String(moduleId).padStart(2, '0');
@@ -117,12 +123,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   const sessionStats = useMemo(() => {
     return chapters.map((ch) => {
-      const attempts = studyState.quizAttempts.filter(
-        (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
-      );
-      const latest = attempts[0] || null;
-      const bestScore =
-        attempts.length > 0 ? Math.max(...attempts.map((a) => a.scorePercentage)) : null;
+      const uniqueStats = getSessionUniqueAnswerStats(studyState, ch.session);
       const bankSize = quizzes[ch.session]?.questions.length || 0;
       const isRead = studyState.completedChapters.includes(ch.id);
       const readingPct = isRead ? 100 : studyState.readingProgress[ch.id] || 0;
@@ -134,16 +135,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         isRead,
         readingPct,
         bankSize,
-        attemptsCount: attempts.length,
-        latestScore: latest ? latest.scorePercentage : null,
-        bestScore
+        answeredCount: uniqueStats.answeredCount,
+        attemptsCount: uniqueStats.answeredCount,
+        latestScore: uniqueStats.accuracyPercentage,
+        bestScore: uniqueStats.accuracyPercentage
       };
     });
   }, [chapters, quizzes, studyState]);
 
   const moduleSummary = useMemo(() => {
     const moduleChapterIds = new Set(chapters.map((c) => c.id));
-    const moduleSessionIds = new Set(chapters.map((c) => c.session));
     const evaluatedSessions = sessionStats.filter((s) => s.bestScore !== null);
     const avgScore =
       evaluatedSessions.length > 0
@@ -159,21 +160,17 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     const completedReads = studyState.completedChapters.filter((id) =>
       moduleChapterIds.has(id)
     ).length;
-    const totalAttempts = studyState.quizAttempts.filter(
-      (a) =>
-        (a.mode === 'module-exam' && a.moduleId === moduleId) ||
-        (a.mode !== 'module-exam' && moduleSessionIds.has(a.sessionId))
-    ).length;
+    const totalAnsweredUnique = sessionStats.reduce((acc, s) => acc + s.answeredCount, 0);
 
     return {
       avgScore,
       evaluatedCount: evaluatedSessions.length,
       totalSessions: chapters.length,
       completedReads,
-      totalAttempts,
+      totalAttempts: totalAnsweredUnique,
       totalQuestionsInModule
     };
-  }, [sessionStats, chapters, studyState, quizzes, moduleId]);
+  }, [sessionStats, chapters, studyState, quizzes]);
 
   const handleDownloadEpub = async () => {
     if (isExportingEpub) return;
@@ -303,6 +300,39 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <Upload className="w-3.5 h-3.5" />
               Importar Progresso
             </button>
+            {onResetAllProgress && (
+              <button
+                type="button"
+                data-testid="dashboard-reset-all-progress"
+                disabled={isResettingDashboard}
+                onClick={async () => {
+                  if (!confirmResetDashboard) {
+                    setConfirmResetDashboard(true);
+                    window.setTimeout(() => setConfirmResetDashboard(false), 5000);
+                    return;
+                  }
+                  setIsResettingDashboard(true);
+                  try {
+                    await onResetAllProgress();
+                    setConfirmResetDashboard(false);
+                  } finally {
+                    setIsResettingDashboard(false);
+                  }
+                }}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl font-bold text-xs border transition-colors cursor-pointer ${
+                  confirmResetDashboard
+                    ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-400'
+                    : 'bg-rose-500/20 hover:bg-rose-500/35 text-rose-100 border-rose-400/40'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {isResettingDashboard
+                  ? 'Zerando...'
+                  : confirmResetDashboard
+                  ? 'Confirmar Reset Total?'
+                  : 'Resetar Progresso'}
+              </button>
+            )}
             <input
               ref={fileInputRef}
               type="file"
@@ -415,7 +445,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             {moduleSummary.evaluatedCount} / {moduleSummary.totalSessions}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            {moduleSummary.totalAttempts} tentativa(s) • {moduleSummary.totalQuestionsInModule} questões no banco
+            {moduleSummary.totalAttempts} questão(ões) respondida(s) • {moduleSummary.totalQuestionsInModule} no banco
           </div>
         </div>
 
@@ -710,7 +740,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     ) : null}
                     {badge}
                     <span className="text-xs text-slate-400">
-                      • {s.bankSize} questões • {s.attemptsCount} tentativa(s)
+                      • {s.answeredCount}/{s.bankSize} respondidas
                     </span>
                   </div>
                   <h3 className="text-sm sm:text-base font-bold text-slate-900 mt-1 truncate">
