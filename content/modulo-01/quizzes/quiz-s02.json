@@ -1,0 +1,489 @@
+{
+  "sessionId": "1.2",
+  "moduleId": 1,
+  "title": "1.2 Introdução a LLMs (Large Language Models)",
+  "questions": [
+    {
+      "id": "m01-s02-q01",
+      "sessionId": "1.2",
+      "subtopicTag": "Taxonomia da IA ao Generative AI",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual das expressões de conjuntos abaixo representa corretamente a hierarquia taxonômica desde a Inteligência Artificial até os Grandes Modelos de Linguagem (LLMs)?",
+      "options": [
+        "LLMs ⊃ Machine Learning (ML) ⊃ Inteligência Artificial (IA) ⊃ Deep Learning (DL)",
+        "Inteligência Artificial (IA) ⊃ Machine Learning (ML) ⊃ Deep Learning (DL) ⊃ GenAI & LLMs",
+        "Deep Learning (DL) ⊃ Inteligência Artificial (IA) ⊃ Sistemas Especialistas ⊃ Machine Learning (ML)",
+        "Machine Learning (ML) e Deep Learning (DL) são conjuntos disjuntos que não possuem interseção com a Inteligência Artificial."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: a Inteligência Artificial é o campo mais amplo (incluindo sistemas simbólicos e algoritmos de busca); Machine Learning é o subconjunto de sistemas que aprendem de dados; Deep Learning é o subconjunto do ML baseado em redes neurais profundas multicamadas; e a IA Generativa / LLMs são um subconjunto do Deep Learning focado em modelos fundacionais geradores de novos dados/tokens.",
+      "chapterAnchor": "cap-02-introducao-a-llms#taxonomia-da-ia-ao-generative-ai",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Introduction to LLMs"
+    },
+    {
+      "id": "m01-s02-q02",
+      "sessionId": "1.2",
+      "subtopicTag": "Taxonomia da IA ao Generative AI",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual é a diferença probabilística fundamental entre um modelo de Machine Learning Discriminativo tradicional (como um classificador de spam) e um LLM Auto-Regressivo Generativo?",
+      "options": [
+        "O modelo discriminativo estima a probabilidade condicional de uma classe dado um vetor de entrada P(y | x), enquanto um LLM auto-regressivo modela a distribuição de sequências fatorando P(t_1, ..., t_n) = prod P(t_i | t_1, ..., t_{i-1}) para prever e amostrar novos tokens.",
+        "O modelo discriminativo gera código TypeScript token por token sem dados de entrada, enquanto o LLM apenas retorna valores booleanos true ou false.",
+        "O modelo discriminativo não utiliza funções matemáticas, enquanto o LLM é 100% baseado em regras IF-THEN estáticas.",
+        "Não existe diferença matemática: ambos calculam apenas a média aritmética simples dos bytes da string."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: modelos discriminativos aprendem apenas a fronteira de decisão entre classes P(y | x). Já os LLMs auto-regressivos aprendem a distribuição de probabilidade do próximo token condicionado a todos os tokens anteriores da sequência, permitindo gerar textos e códigos inéditos passo a passo.",
+      "chapterAnchor": "cap-02-introducao-a-llms#taxonomia-da-ia-ao-generative-ai",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – How LLMs Work"
+    },
+    {
+      "id": "m01-s02-q03",
+      "sessionId": "1.2",
+      "subtopicTag": "Tokenização e Byte-Pair Encoding",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Segundo a documentação oficial da OpenAI ('Tokenizer & Token Concepts') e do Google ML Crash Course, por que os LLMs modernos utilizam tokenização por sub-palavras (Subword Tokenization, como BPE) em vez de tokenização por palavras inteiras ou por caracteres isolados?",
+      "options": [
+        "Porque processadores modernos só aceitam strings com no máximo 3 caracteres ASCII.",
+        "Porque o algoritmo BPE criptografa o texto em SHA-256 para que a GPU não precise usar memória RAM.",
+        "Porque a tokenização por sub-palavras garante que toda palavra em qualquer idioma do mundo seja sempre representada por exatamente 1 único token.",
+        "Porque equilibra o tamanho do vocabulário e o comprimento da sequência: evita a explosão de vocabulário e erros de palavras desconhecidas (<UNK>) da tokenização por palavra inteira, ao mesmo tempo em que evita sequências excessivamente longas e pobres em semântica da tokenização por caractere."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: a tokenização por sub-palavras (BPE / SentencePiece) mantém palavras comuns inteiras como um único token (eficiência de contexto) e decompõe palavras raras, neologismos ou identificadores camelCase de código em raízes/bytes conhecidos (eliminando tokens <UNK>).",
+      "chapterAnchor": "cap-02-introducao-a-llms#tokenizacao-e-byte-pair-encoding",
+      "officialDocUrl": "https://platform.openai.com/tokenizer",
+      "officialDocLabel": "OpenAI Platform – Tokenizer & Token Concepts"
+    },
+    {
+      "id": "m01-s02-q04",
+      "sessionId": "1.2",
+      "subtopicTag": "Tokenização e Byte-Pair Encoding",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Como funciona o algoritmo de treinamento de um tokenizador Byte-Pair Encoding (BPE), utilizado em famílias como GPT (`cl100k_base` e `o200k_base`) e Llama 3/4?",
+      "options": [
+        "Divide cada frase exatamente pela metade usando busca binária recursiva até restarem apenas vogais.",
+        "Ordena todas as palavras do dicionário em ordem alfabética e descarta qualquer palavra que tenha mais de 5 letras.",
+        "Começa com um vocabulário base de bytes/caracteres individuais e funde iterativamente o par de tokens adjacentes mais frequente no corpus de treinamento em um novo token, até atingir o tamanho de vocabulário alvo |V|.",
+        "Utiliza uma rede neural convolucional 3D para converter pixels da fonte tipográfica em números primos."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C descreve com exatidão o algoritmo BPE: partindo dos 256 bytes base, conta-se a co-ocorrência de pares adjacentes no corpus e cria-se uma regra de merge para o par mais frequente a cada iteração, até alcançar o tamanho projetado (ex.: ~100k no cl100k_base ou 200k no o200k_base).",
+      "chapterAnchor": "cap-02-introducao-a-llms#tokenizacao-e-byte-pair-encoding",
+      "officialDocUrl": "https://platform.openai.com/tokenizer",
+      "officialDocLabel": "OpenAI Platform – BPE Tokenization Mechanics"
+    },
+    {
+      "id": "m01-s02-q05",
+      "sessionId": "1.2",
+      "subtopicTag": "Tokenização e Byte-Pair Encoding",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual vantagem prática de engenharia o tokenizador `o200k_base` (200.000 tokens, usado no GPT-4o e o3) trouxe em relação ao `cl100k_base` (100.256 tokens, usado no GPT-4 original) para aplicações em Português e geração de código?",
+      "options": [
+        "O o200k_base removeu o suporte a caracteres acentuados do Português para forçar todos os prompts a serem escritos em binário.",
+        "O vocabulário dobrado inclui mais sub-palavras inteiras de idiomas não-ingleses (como o Português) e sequências de indentação de código, reduzindo a quantidade total de tokens necessários para representar o mesmo texto, o que diminui o custo de API e a latência de inferência.",
+        "O o200k_base quadruplica o número de tokens gerados para a mesma frase, aumentando o consumo da janela de contexto.",
+        "O o200k_base substitui os vetores de embedding por consultas SQL diretas no navegador."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: um vocabulário maior (200k tokens) permite que palavras flexionadas em português e padrões comuns de sintaxe de programação sejam codificados com menos quebras em sub-tokens, economizando janela de contexto, largura de banda de memória (KV Cache) e custo financeiro por requisição.",
+      "chapterAnchor": "cap-02-introducao-a-llms#tokenizacao-e-byte-pair-encoding",
+      "officialDocUrl": "https://platform.openai.com/tokenizer",
+      "officialDocLabel": "OpenAI Tokenizer – cl100k_base vs o200k_base"
+    },
+    {
+      "id": "m01-s02-q06",
+      "sessionId": "1.2",
+      "subtopicTag": "Tokenização e Byte-Pair Encoding",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função TypeScript abaixo que aplica uma regra de fusão (merge) do algoritmo Byte-Pair Encoding (BPE) a uma lista de tokens. Se `tokens = ['a', 's', 'y', 'n', 'c', '</w>']` e a regra de fusão aprendida é `first = 'a'`, `second = 's'`, qual será o array `updated` retornado?",
+      "codeSnippet": "function applyBpeMerge(tokens: string[], first: string, second: string): string[] {\n  const updated: string[] = [];\n  let i = 0;\n  while (i < tokens.length) {\n    if (i < tokens.length - 1 && tokens[i] === first && tokens[i + 1] === second) {\n      updated.push(first + second);\n      i += 2;\n    } else {\n      updated.push(tokens[i]);\n      i += 1;\n    }\n  }\n  return updated;\n}",
+      "options": [
+        "['as', 'y', 'n', 'c', '</w>']",
+        "['a', 's', 'yn', 'c', '</w>']",
+        "['async</w>']",
+        "['a', 'sy', 'n', 'c', '</w>']"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "No índice i = 0, tokens[0] é 'a' (igual a first) e tokens[1] é 's' (igual a second). A condição if é satisfeita, empurrando 'as' para o array updated e avançando o ponteiro em i += 2 (para o índice 2, onde está 'y'). Os demais tokens não formam o par ('a', 's') e são copiados individualmente, resultando em ['as', 'y', 'n', 'c', '</w>'].",
+      "chapterAnchor": "cap-02-introducao-a-llms#laboratorio-pratico-tokenizador-bpe-similaridade-de-embeddings-e-self-attention-em-typescript",
+      "officialDocUrl": "https://platform.openai.com/tokenizer",
+      "officialDocLabel": "OpenAI Tokenizer – Subword Merging"
+    },
+    {
+      "id": "m01-s02-q07",
+      "sessionId": "1.2",
+      "subtopicTag": "Embeddings e Espaços Vetoriais Semânticos",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que os Token IDs inteiros gerados pelo tokenizador (ex.: `[142, 8812, 259]`) não podem ser alimentados diretamente nas camadas de atenção do Transformer sem antes passar por uma camada de Embedding (`W_E`)?",
+      "options": [
+        "Porque o Token ID precisa ser convertido em uma imagem PNG antes de entrar no modelo de linguagem.",
+        "Porque GPUs não conseguem armazenar números menores que 1 milhão na memória VRAM.",
+        "Porque a camada de Embedding criptografa os tokens para impedir ataques de SQL Injection.",
+        "Porque Token IDs são apenas índices arbitrários de dicionário sem relação métrica entre si; a camada de Embedding projeta cada ID em um vetor contínuo denso em R^d onde a distância e a direção geométrica capturam relações semânticas e sintáticas."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: o índice numérico de um token no vocabulário é arbitrário (o ID 500 e o ID 501 podem ser palavras sem nenhuma relação). A matriz de Embeddings converte cada ID discreto em um vetor denso multidimensional treinável onde conceitos semelhantes apontam para direções próximas.",
+      "chapterAnchor": "cap-02-introducao-a-llms#embeddings-e-espacos-vetoriais-semanticos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/embeddings",
+      "officialDocLabel": "OpenAI Platform – Vector Embeddings Guide"
+    },
+    {
+      "id": "m01-s02-q08",
+      "sessionId": "1.2",
+      "subtopicTag": "Embeddings e Espaços Vetoriais Semânticos",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função TypeScript de Similaridade de Cosseno abaixo. Dados os vetores de embedding 2D simplificados `vecA = [3, 4]` e `vecB = [6, 8]`, qual será o valor numérico exato retornado por `cosineSimilarity(vecA, vecB)`?",
+      "codeSnippet": "function cosineSimilarity(vecA: number[], vecB: number[]): number {\n  let dot = 0, normA = 0, normB = 0;\n  for (let i = 0; i < vecA.length; i++) {\n    dot += vecA[i] * vecB[i];\n    normA += vecA[i] * vecA[i];\n    normB += vecB[i] * vecB[i];\n  }\n  return dot / (Math.sqrt(normA) * Math.sqrt(normB));\n}",
+      "options": [
+        "50.0 (pois a similaridade de cosseno é igual ao produto escalar bruto sem normalização).",
+        "0.0 (pois os vetores têm magnitudes diferentes e, portanto, são ortogonais).",
+        "1.0 (pois vecB = 2 * vecA, apontando exatamente para a mesma direção no espaço vetorial, com ângulo 0 grau).",
+        "-1.0 (pois todos os componentes são positivos)."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "Calculando: 1) dot = (3 * 6) + (4 * 8) = 18 + 32 = 50. 2) normA = 3² + 4² = 25 -> sqrt(normA) = 5. 3) normB = 6² + 8² = 100 -> sqrt(normB) = 10. 4) dot / (5 * 10) = 50 / 50 = 1.0. Isso ilustra a propriedade essencial da Similaridade de Cosseno: ela mede o alinhamento direcional (cos 0° = 1) independentemente da magnitude escalar dos vetores.",
+      "chapterAnchor": "cap-02-introducao-a-llms#embeddings-e-espacos-vetoriais-semanticos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/embeddings",
+      "officialDocLabel": "OpenAI Platform – Embeddings & Cosine Similarity"
+    },
+    {
+      "id": "m01-s02-q09",
+      "sessionId": "1.2",
+      "subtopicTag": "Embeddings e Espaços Vetoriais Semânticos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que a arquitetura Transformer necessita obrigatoriamente de mecanismos de Codificação Posicional (Positional Encoding senoidal ou RoPE - Rotary Position Embedding), diferentemente das antigas RNNs?",
+      "options": [
+        "Porque o Positional Encoding serve apenas para remover palavras duplicadas da frase antes da tokenização.",
+        "Porque o Transformer processa todos os tokens da janela de contexto em paralelo; sem codificação posicional, a operação de Self-Attention seria invariante à ordem das palavras (tratando a frase como um saco de palavras sem distinguir 'A chamou B' de 'B chamou A').",
+        "Porque o RoPE reduz a dimensão dos vetores de embedding para zero durante a inferência.",
+        "Porque as GPUs exigem que todos os vetores sejam ordenados em ordem crescente de valor numérico."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: como o Self-Attention não possui recorrência sequencial passo a passo, a posição absoluta ou a distância relativa entre tokens (via RoPE em modelos modernos como Llama, Gemini e DeepSeek) precisa ser injetada geometricamente nos vetores para que o modelo compreenda a ordem sintática.",
+      "chapterAnchor": "cap-02-introducao-a-llms#embeddings-e-espacos-vetoriais-semanticos",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Positional Encoding in Transformers"
+    },
+    {
+      "id": "m01-s02-q10",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No mecanismo de Self-Attention de um Transformer, cada vetor de token é projetado em três vetores distintos: Query (Q), Key (K) e Value (V). Utilizando a analogia de sistemas de busca e recuperação de informação, qual é o papel de cada um?",
+      "options": [
+        "Query (Q) representa o que o token atual está procurando no contexto; Key (K) representa o índice/rótulo do que cada token oferece; e Value (V) contém a informação semântica que será agregada proporcionalmente à compatibilidade entre Q e K.",
+        "Query (Q) é a pergunta digitada pelo usuário no frontend; Key (K) é a chave de API secreta da OpenAI; e Value (V) é o preço em dólares da requisição.",
+        "Query (Q) armazena o código HTML; Key (K) armazena a chave primária do banco SQL; e Value (V) é sempre um escalar booleano fixo.",
+        "Query, Key e Value são três cópias idênticas que nunca sofrem multiplicação por matrizes de pesos."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A descreve com precisão o papel de Q, K e V (learned projections Q = X*W_Q, K = X*W_K, V = X*W_V): o produto escalar entre a Query do token i e a Key do token j mede a relevância contextual, que após o softmax pondera a soma dos vetores Value.",
+      "chapterAnchor": "cap-02-introducao-a-llms#arquitetura-transformer-e-mecanismo-de-self-attention",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Self-Attention (Q, K, V)"
+    },
+    {
+      "id": "m01-s02-q11",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Em um LLM generativo de arquitetura Decoder-only (como GPT-4o, Claude 3.7 ou Llama 3/4), qual é a função da Máscara Causal (Causal Mask / Look-Ahead Mask) aplicada sobre a matriz `Q * K^T / sqrt(d_k)` antes do Softmax?",
+      "options": [
+        "Mascarar dados pessoais (CPF e senhas) enviados no prompt do usuário via expressão regular.",
+        "Zerar a diagonal principal para impedir que um token conheça seu próprio significado.",
+        "Preencher toda a matriz com +Infinito para acelerar a multiplicação em precisão int4.",
+        "Preencher as posições acima da diagonal principal (onde j > i) com -Infinito, garantindo que após o Softmax (exp(-Inf) = 0) o token na posição i nunca possa atender ou copiar informações de tokens futuros durante o treinamento paralelo."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: para treinar o modelo a prever o próximo token em todas as posições da sequência simultaneamente sem 'trapacear' olhando o futuro, a Máscara Causal define score[i][j] = -Infinity para todo j > i. Quando o softmax calcula exp(-Infinity), o peso de atenção para tokens futuros torna-se exatamente 0.",
+      "chapterAnchor": "cap-02-introducao-a-llms#arquitetura-transformer-e-mecanismo-de-self-attention",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Causal Self-Attention"
+    },
+    {
+      "id": "m01-s02-q12",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Inspecione o trecho de código TypeScript do nosso laboratório que constrói os escores da atenção causal para uma sequência de `n = 3` tokens. Quantos elementos da linha `i = 1` (segundo token, índice 0-based) receberão o valor `Number.NEGATIVE_INFINITY` antes do Softmax?",
+      "codeSnippet": "for (let i = 0; i < n; i++) {\n  const rowScores: number[] = [];\n  for (let j = 0; j < n; j++) {\n    if (j > i) {\n      rowScores.push(Number.NEGATIVE_INFINITY);\n    } else {\n      rowScores.push(computeScaledDot(Q[i], K[j], dk));\n    }\n  }\n}",
+      "options": [
+        "2 elementos (nas colunas j = 0 e j = 1), pois o token só pode olhar para o futuro.",
+        "Todos os 3 elementos (j = 0, 1, 2) receberão Number.NEGATIVE_INFINITY.",
+        "Apenas 1 elemento (na coluna j = 2), pois o token i = 1 pode atender ao token anterior (j = 0) e a si mesmo (j = 1), mas não ao token futuro (j = 2).",
+        "Nenhum elemento (0), pois para i = 1 a condição j > i nunca é verdadeira quando n = 3."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "Para n = 3, os índices de coluna são j ∈ {0, 1, 2}. Na linha i = 1: para j = 0 (0 > 1 é falso, calcula produto escalar); para j = 1 (1 > 1 é falso, calcula produto escalar); para j = 2 (2 > 1 é verdadeiro, insere Number.NEGATIVE_INFINITY). Portanto, exatamente 1 elemento (j = 2) é mascarado.",
+      "chapterAnchor": "cap-02-introducao-a-llms#laboratorio-pratico-tokenizador-bpe-similaridade-de-embeddings-e-self-attention-em-typescript",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Masked Self-Attention Implementation"
+    },
+    {
+      "id": "m01-s02-q13",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que os blocos Transformer utilizam 'Multi-Head Attention' (múltiplas cabeças de atenção em paralelo, cada uma com suas próprias matrizes W_Q, W_K, W_V) em vez de uma única cabeça de atenção simples?",
+      "options": [
+        "Porque se uma cabeça falhar com erro de hardware na GPU, as outras cabeças funcionam como backup RAID.",
+        "Porque permite que o modelo atenda simultaneamente a informações de diferentes subespaços de representação: enquanto uma cabeça resolve correferência de pronomes, outra pode rastrear escopo de blocos de código e outra capturar relações sintáticas.",
+        "Para permitir que o modelo gere 8 respostas de chat completamente diferentes ao mesmo tempo para usuários distintos.",
+        "Para eliminar a camada Feed-Forward Network (FFN) do bloco Transformer."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: conforme a Seção 3.2.2 de Vaswani et al. (2017), uma única cabeça de atenção tira a média de todas as relações, inibindo a captura simultânea de múltiplos padrões. Com Multi-Head Attention, cada cabeça projeta os tokens em um subespaço distinto (d_k = d_model / h) especializado em um tipo de relação linguística ou estrutural.",
+      "chapterAnchor": "cap-02-introducao-a-llms#arquitetura-transformer-e-mecanismo-de-self-attention",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Section 3.2.2 Multi-Head Attention"
+    },
+    {
+      "id": "m01-s02-q14",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Durante a inferência auto-regressiva de um LLM em produção (ex.: no Ollama, vLLM ou servidores de API), o que é o 'KV Cache' e por que arquiteturas como GQA (Grouped-Query Attention) e MLA (Multi-Head Latent Attention) foram criadas para otimizá-lo?",
+      "options": [
+        "O KV Cache armazena na VRAM da GPU os vetores Key (K) e Value (V) já calculados dos tokens anteriores para não recalculá-los a cada novo token gerado; GQA e MLA comprimem o tamanho desse cache na VRAM para viabilizar janelas de contexto longas e maior concorrência.",
+        "O KV Cache é um banco Redis externo que salva respostas inteiras de perguntas repetidas por 24 horas.",
+        "O KV Cache armazena os pesos do tokenizador BPE no disco SSD para evitar o uso da GPU.",
+        "O KV Cache é usado apenas durante o pré-treinamento para apagar tokens com baixa probabilidade."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: na geração token a token, apenas a Query do último token precisa ser comparada contra todas as Keys e Values passadas. Guardar K e V em cache na VRAM evita custo quadrático por passo de decodificação, mas consome gigabytes de VRAM em contextos longos — problema mitigado por GQA (Llama 3/4) e MLA (DeepSeek-V3/R1).",
+      "chapterAnchor": "cap-02-introducao-a-llms#arquitetura-transformer-e-mecanismo-de-self-attention",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "LLM Inference Architecture & Attention Caching"
+    },
+    {
+      "id": "m01-s02-q15",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função `applyTemperatureSoftmax` abaixo. Se os logits finais previstos pelo modelo para 3 tokens candidatos são `logits = [5.0, 2.0, -1.0]`, o que acontece com a distribuição de probabilidade retornada quando configuramos `temperature = 0` vs. quando aumentamos `temperature` para um valor alto como `5.0`?",
+      "codeSnippet": "function applyTemperatureSoftmax(logits: number[], temperature: number): number[] {\n  if (temperature <= 0) {\n    const maxIdx = logits.indexOf(Math.max(...logits));\n    return logits.map((_, idx) => (idx === maxIdx ? 1.0 : 0.0));\n  }\n  const scaled = logits.map((z) => z / temperature);\n  const maxScaled = Math.max(...scaled);\n  const exps = scaled.map((s) => Math.exp(s - maxScaled));\n  const sum = exps.reduce((a, b) => a + b, 0);\n  return exps.map((e) => Number((e / sum).toFixed(4)));\n}",
+      "options": [
+        "A temperatura altera apenas a velocidade de clock da GPU, sem efeito sobre as probabilidades dos tokens.",
+        "Com temperature = 0, todos os tokens recebem probabilidade igual a 0.3333; com temperature = 5.0, apenas o primeiro token recebe 1.0.",
+        "Valores de temperature maiores que 1.0 zeram todos os logits negativos antes da exponenciação.",
+        "Com temperature = 0 (Greedy Decoding), retorna [1.0, 0.0, 0.0] escolhendo deterministicamente o token de maior logit; com temperature = 5.0, as diferenças entre os logits são reduzidas (divididas por 5), achatando a distribuição e dando mais probabilidade aos tokens secundários."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: dividir os logits z_i por T -> 0 concentra 100% da massa de probabilidade no argmax(z) (decodificação determinística ideal para código e extração estruturada). Dividir por T alto aproxima todos os expoentes z_i / T de zero, tornando a distribuição pós-softmax mais uniforme (mais aleatória/criativa).",
+      "chapterAnchor": "cap-02-introducao-a-llms#laboratorio-pratico-tokenizador-bpe-similaridade-de-embeddings-e-self-attention-em-typescript",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – LLM Decoding & Temperature"
+    },
+    {
+      "id": "m01-s02-q16",
+      "sessionId": "1.2",
+      "subtopicTag": "Arquitetura Transformer e Mecanismo de Self-Attention",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Durante a etapa de amostragem (sampling) do próximo token em um LLM, como funciona o hiperparâmetro `top_p` (Nucleus Sampling)?",
+      "options": [
+        "Limita o tamanho máximo da resposta a p parágrafos.",
+        "Seleciona sempre um número fixo p de palavras aleatórias do dicionário, independentemente de suas probabilidades.",
+        "Ordena os tokens do vocabulário em ordem decrescente de probabilidade e seleciona dinamicamente apenas o menor subconjunto de tokens cuja soma acumulada de probabilidades atinge o limiar p (ex.: 0.90), renormalizando e amostrando apenas desse núcleo.",
+        "Substitui os p primeiros tokens do prompt do usuário por vetores nulos."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: diferentemente do Top-K (que corta sempre um número fixo K de tokens), o Top-P (Nucleus Sampling) adapta dinamicamente o tamanho do pool de candidatos conforme a certeza do modelo — se um token tem 95% de chance e top_p = 0.90, apenas ele entra; se a incerteza é alta, dezenas de tokens entram no núcleo.",
+      "chapterAnchor": "cap-02-introducao-a-llms#arquitetura-transformer-e-mecanismo-de-self-attention",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "LLM Sampling Parameters – Top-P and Top-K"
+    },
+    {
+      "id": "m01-s02-q17",
+      "sessionId": "1.2",
+      "subtopicTag": "O Pipeline de Treinamento em Três Estágios",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a ordem correta e a finalidade de cada etapa no pipeline moderno de treinamento em 3 estágios de um LLM assistente?",
+      "options": [
+        "1) RLHF (sem dados) -> 2) Tokenização manual -> 3) Pre-training apenas com 100 exemplos de chat.",
+        "1) Pre-training auto-supervisionado (previsão do próximo token em trilhões de tokens -> Base Model) -> 2) Supervised Fine-Tuning / SFT (pares instrução-resposta -> seguir comandos) -> 3) RLHF / DPO (alinhamento a preferências humanas, utilidade e segurança).",
+        "1) SFT -> 2) Compilação assembly -> 3) Descarte dos pesos do Transformer.",
+        "1) Pre-training supervisionado com rótulos manuais em cada palavra da internet -> 2) Random Forest -> 3) SVM."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B descreve fielmente o pipeline industrial de 3 estágios: o Pre-training constrói o Base Model aprendendo a distribuição da linguagem e código; o SFT adapta o modelo para o formato de assistente que segue instruções; e o RLHF/DPO alinha o modelo às preferências humanas e segurança.",
+      "chapterAnchor": "cap-02-introducao-a-llms#o-pipeline-de-treinamento-em-tres-estagios",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – LLM Training Pipeline"
+    },
+    {
+      "id": "m01-s02-q18",
+      "sessionId": "1.2",
+      "subtopicTag": "O Pipeline de Treinamento em Três Estágios",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Por que o Estágio 1 (Pre-training) de um LLM sobre trilhões de tokens da web e repositórios de código é classificado como Aprendizado Auto-Supervisionado (Self-Supervised Learning)?",
+      "options": [
+        "Porque não exige que humanos rotulem manualmente cada exemplo: o próprio texto bruto fornece o sinal de supervisão automaticamente, usando os tokens anteriores (t_1 ... t_{i-1}) como entrada e o token seguinte real (t_i) como rótulo alvo na função de perda Cross-Entropy.",
+        "Porque o modelo escreve seu próprio código-fonte em Python antes de existir qualquer dado de treinamento.",
+        "Porque o treinamento ocorre sem função de perda (Loss Function) e sem cálculo de gradientes.",
+        "Porque utiliza apenas 500 frases revisadas manualmente por linguistas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: o aprendizado auto-supervisionado transforma dados não-rotulados (texto/código bruto) em tarefas supervisionadas automáticas (mascarar o futuro e prever o próximo token t_i), permitindo escalar o treinamento para 15+ trilhões de tokens.",
+      "chapterAnchor": "cap-02-introducao-a-llms#o-pipeline-de-treinamento-em-tres-estagios",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Self-Supervised Pre-training"
+    },
+    {
+      "id": "m01-s02-q19",
+      "sessionId": "1.2",
+      "subtopicTag": "O Pipeline de Treinamento em Três Estágios",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Se você enviar a pergunta `'Explique como funciona uma Promise em JavaScript'` diretamente para um Base Model puro (recém-saído do Estágio 1 de Pre-training, antes do SFT e do RLHF), qual comportamento é mais provável de ocorrer?",
+      "options": [
+        "O Base Model não conseguirá gerar nenhum token, pois os pesos só são inicializados na etapa de RLHF.",
+        "O Base Model lançará um erro HTTP 403 informando que só aceita comandos em linguagem Assembly.",
+        "O Base Model executará chamadas automáticas de ferramentas MCP para formatar o disco rígido.",
+        "Em vez de responder diretamente como um assistente prestativo, o Base Model pode apenas continuar completando o documento — por exemplo, listando 'Questão 2: Explique como funciona async/await; Questão 3: O que é Event Loop?' — pois foi treinado apenas para continuar padrões estatísticos de documentos."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: um Base Model é um completador estatístico de documentos (next-token predictor). Ele detém o conhecimento sobre Promises nos pesos, mas ainda não aprendeu o contrato conversacional de 'Usuário pergunta -> Assistente responde', habilidade que é ensinada no Estágio 2 (Supervised Fine-Tuning / Instruction Tuning).",
+      "chapterAnchor": "cap-02-introducao-a-llms#o-pipeline-de-treinamento-em-tres-estagios",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Base Models vs Instruction-Tuned Models"
+    },
+    {
+      "id": "m01-s02-q20",
+      "sessionId": "1.2",
+      "subtopicTag": "O Pipeline de Treinamento em Três Estágios",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "No Estágio 3 de alinhamento, qual é a diferença técnica entre o RLHF clássico (com PPO) e o DPO (Direct Preference Optimization), e qual é o papel da penalidade de divergência KL (Kullback-Leibler)?",
+      "options": [
+        "A divergência KL serve para apagar todo o conhecimento adquirido durante o Pre-training.",
+        "O DPO exige treinar 10 Modelos de Recompensa simultâneos, enquanto o RLHF dispensa dados de preferência humana.",
+        "O RLHF clássico treina um Modelo de Recompensa separado e usa PPO para otimizar o LLM, enquanto o DPO otimiza o LLM diretamente sobre pares de preferência (resposta vencedora vs. perdedora) sem Reward Model separado; em ambos, a restrição de divergência KL impede que o modelo se afaste excessivamente da distribuição do modelo SFT (evitando reward hacking e colapso de linguagem).",
+        "O RLHF é executado apenas no navegador do cliente via localStorage."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: no RLHF com PPO, sem a penalidade de divergência KL em relação ao modelo SFT de referência, o LLM aprende a explorar falhas do Reward Model gerando textos degenerados que pontuam alto artificialmente (reward hacking). O DPO incorpora matematicamente essa mesma restrição KL diretamente na função de perda sobre os pares (y_win, y_lose).",
+      "chapterAnchor": "cap-02-introducao-a-llms#o-pipeline-de-treinamento-em-tres-estagios",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "LLM Alignment – RLHF and Preference Optimization"
+    },
+    {
+      "id": "m01-s02-q21",
+      "sessionId": "1.2",
+      "subtopicTag": "O Pipeline de Treinamento em Três Estágios",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Durante o Pré-Treinamento e o SFT, a função de perda utilizada para avaliar a previsão do próximo token é a Cross-Entropy Loss (`L = -log(P_Atribuida_Ao_Token_Real)`). Analise o código TypeScript abaixo e determine qual dos dois modelos sofreu maior penalização (Loss) ao tentar prever o token real `'return'`:",
+      "codeSnippet": "function tokenCrossEntropyLoss(probAssignedToTrueToken: number): number {\n  return -Math.log(probAssignedToTrueToken);\n}\n// Modelo A atribuiu 0.90 (90%) de probabilidade ao token correto 'return'\n// Modelo B atribuiu 0.01 (1%) de probabilidade ao token correto 'return'",
+      "options": [
+        "O Modelo A sofreu maior perda porque 0.90 é maior que 0.01.",
+        "O Modelo B sofreu uma perda muito maior (-ln(0.01) ≈ 4.605) do que o Modelo A (-ln(0.90) ≈ 0.105), pois a Cross-Entropy penaliza logaritmicamente previsões que atribuem baixa probabilidade ao token verdadeiro.",
+        "Ambos os modelos tiveram perda exatamente igual a 0, pois logaritmos de números menores que 1 são sempre zero.",
+        "O Modelo B teve perda negativa (-4.605), sendo recompensado por errar o token."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: para p ∈ (0, 1], ln(p) é negativo e, portanto, -ln(p) é positivo. Quando p -> 1 (acerto confiante), -ln(1) = 0 (perda zero). Quando p -> 0 (o modelo ficou 'surpreso' com o token real), -ln(p) cresce rapidamente para +Infinito (-ln(0.01) ≈ 4.605), gerando um forte gradiente para corrigir os pesos.",
+      "chapterAnchor": "cap-02-introducao-a-llms#o-pipeline-de-treinamento-em-tres-estagios",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Cross-Entropy Loss in Next-Token Prediction"
+    },
+    {
+      "id": "m01-s02-q22",
+      "sessionId": "1.2",
+      "subtopicTag": "Panorama de Modelos e Arquiteturas Atuais",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a diferença arquitetural entre um LLM Denso (Dense Model, como Llama-3.3-70B) e um LLM baseado em Mixture-of-Experts (MoE, como DeepSeek-V3 com 671B totais / 37B ativos ou Llama 4)?",
+      "options": [
+        "Em um modelo Denso, 100% dos parâmetros são ativados para processar cada token; em um modelo MoE, as camadas Feed-Forward são divididas em múltiplos 'especialistas' e uma rede roteadora (Gating Network) ativa apenas um subconjunto esparso (Top-K) de parâmetros por token, reduzindo o custo de FLOPs e a latência de inferência.",
+        "Um modelo MoE consulta 10 APIs de empresas diferentes via HTTP a cada palavra gerada, enquanto um modelo Denso roda apenas offline.",
+        "Um modelo Denso não possui camadas de Self-Attention, enquanto um modelo MoE não possui camadas de Embedding.",
+        "Em um modelo MoE, o consumo de memória RAM para carregar os pesos do modelo no disco é zero."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: a arquitetura Mixture-of-Experts (MoE) desacopla a capacidade total de armazenamento de conhecimento (total de parâmetros em VRAM) do custo computacional por token (parâmetros ativos por forward pass). Por exemplo, o DeepSeek-V3 tem 671B de parâmetros totais, mas ativa apenas 37B por token.",
+      "chapterAnchor": "cap-02-introducao-a-llms#panorama-de-modelos-e-arquiteturas-atuais",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Modern Transformer Variants & MoE Architectures"
+    },
+    {
+      "id": "m01-s02-q23",
+      "sessionId": "1.2",
+      "subtopicTag": "Panorama de Modelos e Arquiteturas Atuais",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Um arquiteto de software precisa escolher modelos para três cenários: (1) analisar um monorepo inteiro de 800.000 tokens + um vídeo de especificação em uma única chamada; (2) rodar um modelo localmente on-premise sem enviar dados médicos para a nuvem; (3) executar um agente de codificação que alterna entre resposta rápida e Extended Thinking com uso intensivo de MCP. Quais famílias de modelos atendem nativamente melhor a (1), (2) e (3), respectivamente?",
+      "options": [
+        "Todos os modelos existentes possuem exatamente janela de 2.048 tokens e só rodam na nuvem.",
+        "(1) Perceptron de 1958; (2) API proprietária somente-nuvem sem pesos abertos; (3) Modelo de embedding text-embedding-3-small.",
+        "(1) BERT-base (limite de 512 tokens); (2) ChatGPT Web UI; (3) Word2Vec.",
+        "(1) Google Gemini 2.5 Pro (janela multimodal nativa de 1M–2M tokens); (2) Família Meta Llama 3/4 ou DeepSeek/Gemma Open-Weights (executados localmente via Ollama/vLLM); (3) Anthropic Claude 3.7 Sonnet (Hybrid Reasoning e excelência em Coding Agents/MCP)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D relaciona com precisão os diferenciais arquiteturais reais: o Gemini 2.5 Pro destaca-se pela janela multimodal nativa de 1M–2M tokens; modelos Open-Weights como Llama 3/4, Gemma 3 e DeepSeek permitem execução soberana on-premise; e o Claude 3.7 Sonnet (junto aos modelos da família GPT-4.1/o3 e Gemini 2.5) é referência em agentes de engenharia de software com Extended Thinking e MCP.",
+      "chapterAnchor": "cap-02-introducao-a-llms#panorama-de-modelos-e-arquiteturas-atuais",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/embeddings",
+      "officialDocLabel": "Google Gemini API & Model Capabilities"
+    },
+    {
+      "id": "m01-s02-q24",
+      "sessionId": "1.2",
+      "subtopicTag": "Tokenização e Byte-Pair Encoding",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Por que serializar uma lista de 5.000 registros de banco de dados como um array JSON verboso com chaves repetidas consome muito mais tokens (e orçamento de API) do que enviá-la em formato Markdown Table ou CSV/TSV dentro do prompt, e como estimar tokens em TypeScript?",
+      "codeSnippet": "// Formato A (JSON Verboso): [{\"customer_account_status_code\": \"ACTIVE\"}, ...]\n// Formato B (CSV Enxuto):   customer_account_status_code\\nACTIVE\\n...\nfunction estimateTokensPtOrCode(text: string): number {\n  // Regra prática em código/português: ~3.2 a 4 caracteres por token\n  return Math.ceil(text.length / 3.5);\n}",
+      "options": [
+        "Porque o custo de uma chamada de LLM é cobrado por linha de código do backend e nunca pelo número de tokens.",
+        "Porque o tokenizador BPE bloqueia formatos CSV e só aceita arquivos XML.",
+        "Porque no JSON verboso o nome de cada chave e as chaves/aspas de pontuação são re-tokenizados milhares de vezes em cada objeto do array, inflando o número de tokens N e o custo quadrático O(N²) da atenção, enquanto no CSV o cabeçalho aparece apenas na primeira linha.",
+        "Porque chaves JSON não passam pela camada de Embedding."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: em um array JSON de 5.000 objetos com 6 chaves longas cada, os nomes das chaves são repetidos 30.000 vezes, desperdiçando dezenas de milhares de tokens da janela de contexto. Em formatos tabulares compactos (CSV/TSV) para leitura de contexto, os nomes das colunas são declarados uma única vez no cabeçalho.",
+      "chapterAnchor": "cap-02-introducao-a-llms#tokenizacao-e-byte-pair-encoding",
+      "officialDocUrl": "https://platform.openai.com/tokenizer",
+      "officialDocLabel": "OpenAI Platform – Token Optimization & Context Cost"
+    },
+    {
+      "id": "m01-s02-q25",
+      "sessionId": "1.2",
+      "subtopicTag": "Embeddings e Espaços Vetoriais Semânticos",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao trabalhar com embeddings normalizados (onde cada vetor possui norma Euclidiana unitária `||v|| = 1`, como nos modelos `text-embedding-3-small` da OpenAI e `text-embedding-004` do Gemini normalizados), qual otimização computacional podemos aplicar ao calcular a Similaridade de Cosseno em TypeScript?",
+      "codeSnippet": "// Sabendo que ||vecA|| === 1 e ||vecB|| === 1:\nfunction fastCosineForUnitVectors(vecA: number[], vecB: number[]): number {\n  let dot = 0;\n  for (let i = 0; i < vecA.length; i++) {\n    dot += vecA[i] * vecB[i];\n  }\n  return dot;\n}",
+      "options": [
+        "Podemos somar apenas o primeiro e o último elemento do vetor e ignorar as outras 1534 dimensões.",
+        "Como as normas ||vecA|| e ||vecB|| já são iguais a 1, o denominador ||vecA|| * ||vecB|| é 1, reduzindo a Similaridade de Cosseno exatamente ao Produto Escalar (Dot Product) e economizando duas somas de quadrados e duas raízes quadradas por comparação.",
+        "A similaridade de cosseno de vetores unitários é sempre igual a 0, não precisando de loop.",
+        "Vetores unitários não permitem multiplicação de ponto flutuante em JavaScript."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: pela definição cos(θ) = (A · B) / (||A|| ||B||), se ||A|| = 1 e ||B|| = 1, então cos(θ) = A · B. Essa propriedade algébrica simples reduz pela metade o número de operações aritméticas em buscas vetoriais de alta escala.",
+      "chapterAnchor": "cap-02-introducao-a-llms#embeddings-e-espacos-vetoriais-semanticos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/embeddings",
+      "officialDocLabel": "OpenAI Embeddings Guide – Normalized Vectors & Dot Product"
+    }
+  ]
+}

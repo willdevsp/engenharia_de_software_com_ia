@@ -1,0 +1,488 @@
+{
+  "sessionId": "1.3",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.3: Fundamentos de Web Machine Learning",
+  "questions": [
+    {
+      "id": "m01-s03-q01",
+      "sessionId": "1.3",
+      "subtopicTag": "Execução Client-Side e Aceleração de Hardware (WebGL e WebGPU)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Ao arquitetar uma funcionalidade de Visão Computacional que processa o vídeo da webcam do usuário a 60 FPS, qual é a principal vantagem arquitetural de utilizar WebML client-side (TensorFlow.js com WebGL/WebGPU) em comparação com uma API REST de inferência hospedada em servidor cloud?",
+      "options": [
+        "Permite treinar modelos de 70 bilhões de parâmetros diretamente na memória cache L1 da CPU do navegador sem consumo de VRAM.",
+        "Elimina a latência de rede (RTT), garante privacidade total (Zero-Data Egress, mantendo o vídeo localmente) e reduz a zero o custo marginal de servidores de inferência com GPU.",
+        "Substitui automaticamente a necessidade de funções de ativação não-lineares graças ao compilador JIT do motor V8.",
+        "Converte automaticamente modelos em ponto flutuante de 32 bits para inteiros de 1 bit sem perda de precisão através do protocolo HTTP/3."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A execução client-side (WebML) elimina o tráfego de rede (permitindo inferência abaixo de 16.6ms para 60 FPS), garante privacidade por design (os frames da webcam nunca deixam o dispositivo do usuário) e transfere o custo computacional de GPU para a borda (zero custo de servidor de inferência). Modelos de 70B não cabem em cache L1, o V8 não substitui funções de ativação e HTTP/3 não quantiza modelos.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#por-que-webml-para-programadores-javascript",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q02",
+      "sessionId": "1.3",
+      "subtopicTag": "Execução Client-Side e Aceleração de Hardware (WebGL e WebGPU)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a diferença fundamental entre como o backend WebGL e o backend WebGPU do TensorFlow.js executam multiplicações matriciais na placa de vídeo?",
+      "options": [
+        "O WebGL armazena tensores como texturas 2D RGBA e executa cálculos via Fragment Shaders gráficos, enquanto o WebGPU oferece suporte nativo a Compute Shaders (WGSL) e Storage Buffers genéricos de GPU.",
+        "O WebGL roda exclusivamente na CPU usando Web Workers, enquanto o WebGPU utiliza apenas instruções WebAssembly SIMD.",
+        "O WebGL exige placas NVIDIA com suporte proprietário a CUDA no navegador, enquanto o WebGPU roda apenas em dispositivos iOS.",
+        "O WebGPU não suporta números em ponto flutuante (float32), sendo restrito à renderização de malhas poligonais 3D."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Como o WebGL foi concebido para gráficos 3D, o TensorFlow.js precisa codificar tensores em texturas 2D de pixels RGBA e simular operações matemáticas em Fragment Shaders (GLSL). Já a especificação WebGPU mapeia para Vulkan/Metal/Direct3D 12 com suporte nativo a Compute Shaders em WGSL, Storage Buffers arbitrários e memória compartilhada de workgroups.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#por-que-webml-para-programadores-javascript",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API",
+      "officialDocLabel": "MDN WebGPU API Specification"
+    },
+    {
+      "id": "m01-s03-q03",
+      "sessionId": "1.3",
+      "subtopicTag": "Execução Client-Side e Aceleração de Hardware (WebGL e WebGPU)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Analise o trecho de inicialização do TensorFlow.js abaixo. Por que a chamada `await tf.ready()` é obrigatória após `await tf.setBackend('webgpu')`?",
+      "codeSnippet": "import * as tf from '@tensorflow/tfjs';\nimport '@tensorflow/tfjs-backend-webgpu';\n\nawait tf.setBackend('webgpu');\nawait tf.ready();",
+      "options": [
+        "Porque `tf.ready()` faz o download automático do conjunto de dados de treinamento a partir dos servidores do Google.",
+        "Porque a inicialização de adaptadores de hardware GPU (como `navigator.gpu.requestAdapter()`) é assíncrona, e `tf.ready()` aguarda a resolução completa do backend antes que qualquer tensor seja alocado.",
+        "Porque `tf.ready()` compila o código TypeScript da aplicação para binários Java no navegador.",
+        "Porque sem `tf.ready()` todos os tensores são criados com `rank: 0` independentemente do formato passado."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A negociação com a GPU no navegador (especialmente no WebGPU via `navigator.gpu.requestAdapter()` e `requestDevice()`, ou a compilação do runtime WASM) é assíncrona. A Promise `tf.ready()` garante que o backend selecionado esteja totalmente inicializado e pronto para alocar buffers na VRAM.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#por-que-webml-para-programadores-javascript",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q04",
+      "sessionId": "1.3",
+      "subtopicTag": "Anatomia de Tensores (Rank, Shape, Dtype e Strides)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na terminologia oficial do TensorFlow.js, o que representam as propriedades `rank`, `shape` e `dtype` de uma instância de `tf.Tensor`?",
+      "options": [
+        "`rank` é a prioridade da thread na GPU; `shape` é o consumo em bytes na VRAM; `dtype` é o nome do modelo neural.",
+        "`rank` é a quantidade de dimensões (eixos) do tensor; `shape` é um array de inteiros indicando o tamanho de cada dimensão; `dtype` é o tipo primitivo dos elementos armazenados (como 'float32' ou 'int32').",
+        "`rank` é o índice de acurácia do modelo; `shape` é a função de ativação; `dtype` define se o tensor roda em WebGL ou CPU.",
+        "`rank` é o número total de elementos do tensor; `shape` é o endereço físico de memória; `dtype` indica se o tensor é mutável ou imutável."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em TensorFlow.js, `rank` indica o número de dimensões (0D escalar, 1D vetor, 2D matriz, etc.), `shape` é a tupla com a quantidade de elementos em cada eixo (ex: `[32, 10]`), e `dtype` especifica o tipo de dado interno (`'float32'`, `'int32'`, `'bool'`, `'complex64'` ou `'string'`).",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#tensores-na-pratica-rank-shape-dtype-e-strides",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Shapes and Types"
+    },
+    {
+      "id": "m01-s03-q05",
+      "sessionId": "1.3",
+      "subtopicTag": "Anatomia de Tensores (Rank, Shape, Dtype e Strides)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Considere o código abaixo que cria um tensor 3D representando um lote de sequências. Quais serão os valores exatos impressos para `t.rank`, `t.size` e `t.strides`, respectivamente?",
+      "codeSnippet": "const t = tf.zeros([4, 5, 10], 'float32');\nconsole.log(t.rank, t.size, t.strides);",
+      "options": [
+        "rank: 3, size: 200, strides: [50, 10]",
+        "rank: 3, size: 19, strides: [4, 5, 10]",
+        "rank: 200, size: 3, strides: [20, 5]",
+        "rank: 4, size: 200, strides: [200, 50, 10]"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "O `shape` `[4, 5, 10]` possui 3 eixos (`rank: 3`). O número total de elementos é `size = 4 * 5 * 10 = 200`. Para avançar 1 posição no eixo 0 (tamanho 4), pulamos uma matriz inteira de `5 * 10 = 50` elementos no buffer linear; para avançar 1 posição no eixo 1 (tamanho 5), pulamos uma linha de `10` elementos. Logo, `t.strides` é `[50, 10]`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#tensores-na-pratica-rank-shape-dtype-e-strides",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q06",
+      "sessionId": "1.3",
+      "subtopicTag": "Anatomia de Tensores (Rank, Shape, Dtype e Strides)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Por que a operação `tensor.reshape([novoShape])` no TensorFlow.js é considerada uma operação de complexidade quase instantânea O(1) em relação ao volume de dados na VRAM?",
+      "options": [
+        "Porque ela descarta metade dos dados originais na GPU para acelerar a mudança de formato.",
+        "Porque o buffer físico subjacente continua sendo exatamente o mesmo array linear 1D contíguo na memória; o TensorFlow.js apenas cria um novo metadado de tensor com novos valores de `shape` e `strides` apontando para o mesmo buffer.",
+        "Porque o navegador transfere o tensor para o disco SSD via IndexedDB durante o reshape.",
+        "Porque o `reshape` converte automaticamente os valores `float32` em booleanos de 1 bit."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Na memória física, todo tensor é armazenado como um buffer 1D linear. Quando executamos `reshape`, desde que o `size` total seja preservado, nenhuma cópia ou movimentação dos elementos numéricos na VRAM é necessária: apenas um novo objeto descritor de tensor é retornado com `shape` e `strides` recalculados.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#tensores-na-pratica-rank-shape-dtype-e-strides",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q07",
+      "sessionId": "1.3",
+      "subtopicTag": "Anatomia de Tensores (Rank, Shape, Dtype e Strides)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Em uma aplicação web interativa, qual é a diferença de comportamento na UI Thread entre ler os valores de um tensor na GPU usando `await tensor.data()` versus `tensor.dataSync()`?",
+      "options": [
+        "`tensor.dataSync()` bloqueia a Main Thread do navegador enquanto aguarda a GPU finalizar os shaders e transferir os bytes para a CPU, podendo causar travamentos de UI (jank), enquanto `await tensor.data()` realiza a leitura de forma assíncrona sem congelar a interface.",
+        "`await tensor.data()` destrói o tensor na GPU após a leitura, enquanto `tensor.dataSync()` preserva o tensor.",
+        "`tensor.dataSync()` retorna uma string JSON formatada, enquanto `await tensor.data()` retorna um objeto HTMLCanvasElement.",
+        "Não há nenhuma diferença; ambos são síncronos e executam exclusivamente em Web Workers."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A execução na GPU (WebGL/WebGPU) é assíncrona em relação à CPU. Chamar `dataSync()` força um stall/bloqueio síncrono na thread principal do JavaScript até que a fila de comandos da GPU termine e os dados sejam baixados para a RAM. Em produção, `await tensor.data()` é preferido para não travar a renderização da página.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#tensores-na-pratica-rank-shape-dtype-e-strides",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q08",
+      "sessionId": "1.3",
+      "subtopicTag": "Anatomia de Tensores (Rank, Shape, Dtype e Strides)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é o `rank` e o `shape` convencional (formato NHWC) de um tensor que armazena um lote (batch) de 16 imagens coloridas RGB com resolução de 224x224 pixels?",
+      "options": [
+        "Rank 2, com shape `[16, 50176]`.",
+        "Rank 3, com shape `[224, 224, 3]`.",
+        "Rank 4, com shape `[16, 224, 224, 3]`.",
+        "Rank 1, com shape `[2408448]`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "No padrão NHWC utilizado pelo TensorFlow.js para visão computacional, um lote de imagens é representado por um Tensor 4D (`rank: 4`), onde os 4 eixos correspondem a `[BatchSize (N), Height (H), Width (W), Channels (C)]`, resultando em `[16, 224, 224, 3]`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#tensores-na-pratica-rank-shape-dtype-e-strides",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Shapes and Types"
+    },
+    {
+      "id": "m01-s03-q09",
+      "sessionId": "1.3",
+      "subtopicTag": "Álgebra Linear Aplicada e Broadcasting",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Para que a multiplicação matricial `tf.matMul(A, B)` seja matematicamente válida entre uma matriz `A` de shape `[32, 128]` e uma matriz `B` de shape `[K, 64]`, qual deve ser o valor de `K` e qual será o shape da matriz resultante?",
+      "options": [
+        "`K` deve ser 32, e o shape resultante será `[128, 64]`.",
+        "`K` deve ser 128, e o shape resultante será `[32, 64]`.",
+        "`K` deve ser 64, e o shape resultante será `[32, 128]`.",
+        "`K` pode ser qualquer número inteiro positivo graças ao broadcasting automático do `matMul`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Na multiplicação matricial entre `[M, K]` e `[K, N]`, as dimensões internas (`K`) devem ser estritamente iguais (`K = 128`), e a matriz resultante assume as dimensões externas `[M, N]`, ou seja, `[32, 64]`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#algebra-linear-aplicada-e-broadcasting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Operations"
+    },
+    {
+      "id": "m01-s03-q10",
+      "sessionId": "1.3",
+      "subtopicTag": "Álgebra Linear Aplicada e Broadcasting",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a operação de soma com Broadcasting abaixo. Qual será o `shape` do tensor `resultado` e por que a operação é válida?",
+      "codeSnippet": "const ativacoes = tf.ones([16, 64]); // Batch de 16 exemplos, 64 neurônios\nconst bias = tf.ones([64]);          // Vetor de bias com 64 elementos\nconst resultado = tf.add(ativacoes, bias);",
+      "options": [
+        "Lançará uma exceção em tempo de execução, pois não é possível somar um tensor 2D com um tensor 1D.",
+        "O shape será `[16, 64]`, pois a regra de Broadcasting alinha os shapes da direita para a esquerda (`64 === 64`) e expande virtualmente o vetor `bias` ao longo das 16 linhas do batch sem duplicar memória física.",
+        "O shape será `[64]`, pois o TensorFlow.js colapsa automaticamente o tensor maior para o tamanho do menor.",
+        "O shape será `[16, 128]`, pois o operador `tf.add` concatena as dimensões quando os ranks diferem."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Pela regra de Broadcasting (estilo NumPy), os shapes `[16, 64]` e `[64]` (tratado como `[1, 64]`) são alinhados da direita para a esquerda. Como a última dimensão é idêntica (`64`) e a primeira dimensão do bias é implicitamente `1`, o bias é transmitido virtualmente para todas as 16 linhas, gerando um tensor `[16, 64]`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#algebra-linear-aplicada-e-broadcasting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Operations"
+    },
+    {
+      "id": "m01-s03-q11",
+      "sessionId": "1.3",
+      "subtopicTag": "Álgebra Linear Aplicada e Broadcasting",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Quais dos seguintes pares de `shapes` NÃO são compatíveis para uma operação element-wise com Broadcasting (como `tf.add(A, B)`)?",
+      "options": [
+        "`A` com shape `[8, 1, 6, 1]` e `B` com shape `[7, 1, 5]`.",
+        "`A` com shape `[32, 10]` e `B` com shape `[1, 10]`.",
+        "`A` com shape `[16, 4]` e `B` com shape `[16]`.",
+        "`A` com shape `[5, 3, 1]` e `B` com shape `[1, 5]`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "Alinhando da direita para a esquerda: em `[16, 4]` e `[16]` (equivalente a `[1, 16]`), as dimensões finais comparadas são `4` e `16`. Como elas não são iguais e nenhuma delas é `1`, o Broadcasting falha com erro de incompatibilidade de shape. Para funcionar, `B` precisaria ter shape `[16, 1]` ou `[4]`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#algebra-linear-aplicada-e-broadcasting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s03-q12",
+      "sessionId": "1.3",
+      "subtopicTag": "Álgebra Linear Aplicada e Broadcasting",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual é a diferença matemática entre `tf.mul(A, B)` e `tf.matMul(A, B)` quando `A` e `B` são matrizes quadradas de shape `[3, 3]`?",
+      "options": [
+        "`tf.mul(A, B)` realiza a multiplicação elemento a elemento (Produto de Hadamard), enquanto `tf.matMul(A, B)` executa o produto matricial da álgebra linear (produto escalar entre linhas de A e colunas de B).",
+        "São funções sinônimas; `tf.mul` é apenas um alias abreviado para `tf.matMul`.",
+        "`tf.mul` executa na CPU e `tf.matMul` executa exclusivamente em servidores remotos.",
+        "`tf.mul` soma os elementos da diagonal principal, enquanto `tf.matMul` calcula o determinante."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "`tf.mul(A, B)` multiplica cada posição `(i, j)` de `A` diretamente pela mesma posição `(i, j)` de `B` (operação element-wise). Já `tf.matMul(A, B)` calcula o produto matricial formal onde cada célula `(i, j)` é a soma dos produtos da linha `i` de `A` pela coluna `j` de `B`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#algebra-linear-aplicada-e-broadcasting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Operations"
+    },
+    {
+      "id": "m01-s03-q13",
+      "sessionId": "1.3",
+      "subtopicTag": "Gerenciamento de Memória de GPU (tf.tidy e dispose)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Por que o Garbage Collector (GC) automático do motor JavaScript (V8) não é suficiente para evitar vazamentos de memória (Memory Leaks) ao trabalhar com tensores no backend WebGL ou WebGPU?",
+      "options": [
+        "Porque o TensorFlow.js desativa completamente o Garbage Collector do navegador ao ser importado.",
+        "Porque o objeto `tf.Tensor` no JavaScript é apenas um ponteiro leve na heap da CPU que referencia texturas WebGL ou buffers WebGPU alocados na VRAM da placa de vídeo, sobre os quais o GC do V8 não possui visibilidade nem controle de ciclo de vida.",
+        "Porque o Garbage Collector do JavaScript só limpa variáveis declaradas com `var` e ignora `const` e `let`.",
+        "Porque a memória da GPU é somente-leitura (ROM) após a primeira alocação."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O GC do JavaScript gerencia apenas a memória RAM da heap do V8. Os dados reais dos tensores residem na VRAM da GPU (gerenciada pelo driver gráfico via contextos WebGL/WebGPU) e são retidos pelo registro interno do backend do TensorFlow.js até que `.dispose()` ou `tf.tidy()` seja invocado.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#gerenciamento-de-memoria-de-gpu-no-navegador-tf-tidy-e-dispose",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations#memory",
+      "officialDocLabel": "TensorFlow.js Guide – Memory Management"
+    },
+    {
+      "id": "m01-s03-q14",
+      "sessionId": "1.3",
+      "subtopicTag": "Gerenciamento de Memória de GPU (tf.tidy e dispose)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Examine o código abaixo. Quantos tensores novos permanecem alocados na VRAM imediatamente após a conclusão do bloco `tf.tidy()`?",
+      "codeSnippet": "const before = tf.memory().numTensors;\n\nconst output = tf.tidy(() => {\n  const a = tf.tensor1d([1, 2, 3]);\n  const b = tf.tensor1d([4, 5, 6]);\n  const sum = a.add(b);\n  const squared = sum.square();\n  return squared;\n});\n\nconst after = tf.memory().numTensors;\nconsole.log(after - before);",
+      "options": [
+        "4 tensores (`a`, `b`, `sum` e `squared`).",
+        "0 tensores, pois o `tf.tidy()` destrói absolutamente todos os tensores criados dentro dele.",
+        "1 tensor (apenas o tensor `squared` retornado pela função e atribuído a `output`).",
+        "2 tensores (`a` e `b`), pois apenas resultados de operações matemáticas são descartados."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "O `tf.tidy()` monitora todos os tensores alocados durante sua execução (`a`, `b`, `sum` e `squared`) e, ao sair do escopo, invoca `.dispose()` automaticamente nos tensores intermediários (`a`, `b` e `sum`), preservando na VRAM única e exclusivamente o tensor retornado pela função (`squared`).",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#gerenciamento-de-memoria-de-gpu-no-navegador-tf-tidy-e-dispose",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations#memory",
+      "officialDocLabel": "TensorFlow.js Guide – Memory Management (tf.tidy)"
+    },
+    {
+      "id": "m01-s03-q15",
+      "sessionId": "1.3",
+      "subtopicTag": "Gerenciamento de Memória de GPU (tf.tidy e dispose)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Por que passar uma função assíncrona (`async () => { ... }`) para dentro de `tf.tidy()` é um erro grave segundo a documentação oficial do TensorFlow.js?",
+      "options": [
+        "Porque o `tf.tidy()` rastreia uma pilha síncrona de escopo de alocação; uma função `async` retorna uma `Promise` imediatamente na primeira linha `await`, encerrando o escopo do `tidy` antes que os tensores subsequentes sejam criados (ou lançando erro por não suportar Promises).",
+        "Porque funções `async` desativam a placa de vídeo e forçam o fallback para o backend CPU.",
+        "Porque `async/await` não faz parte do padrão ECMAScript suportado pelos navegadores modernos.",
+        "Porque o `tf.tidy()` converte automaticamente qualquer `Promise` em um tensor escalar `NaN`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A documentação oficial do TensorFlow.js enfatiza que a função passada a `tf.tidy(fn)` DEVE ser síncrona e não pode retornar uma Promise. O rastreamento de tensores criados ocorre entre o início e o término imediato da chamada na Call Stack síncrona.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#gerenciamento-de-memoria-de-gpu-no-navegador-tf-tidy-e-dispose",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations#memory",
+      "officialDocLabel": "TensorFlow.js Guide – Memory Management (tf.tidy)"
+    },
+    {
+      "id": "m01-s03-q16",
+      "sessionId": "1.3",
+      "subtopicTag": "Gerenciamento de Memória de GPU (tf.tidy e dispose)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Caso você esteja dentro de uma função executada por `tf.tidy()` e precise impedir que um tensor intermediário específico (por exemplo, um tensor salvo para log de auditoria externa) seja descartado, sem retorná-lo no `return` principal, qual método oficial deve ser utilizado?",
+      "options": [
+        "`tf.keep(tensor)`",
+        "`tensor.clone()`",
+        "`tf.freeze(tensor)`",
+        "`Object.seal(tensor)`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "`tf.keep(tensor)` marca explicitamente o tensor para não ser desalocado pelo escopo `tf.tidy()` que o envolve, transferindo ao desenvolvedor a responsabilidade de chamar `tensor.dispose()` manualmente mais tarde.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#gerenciamento-de-memoria-de-gpu-no-navegador-tf-tidy-e-dispose",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations#memory",
+      "officialDocLabel": "TensorFlow.js Guide – Memory Management"
+    },
+    {
+      "id": "m01-s03-q17",
+      "sessionId": "1.3",
+      "subtopicTag": "Arquitetura de Camadas e Funções de Ativação (ReLU, Sigmoid, Softmax)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "O que aconteceria matematicamente se construíssemos uma rede neural profunda com 20 camadas densas (`Dense`), mas omitíssemos todas as funções de ativação não-lineares (usando apenas ativação linear/identidade em todas as camadas)?",
+      "options": [
+        "A rede aprenderia 20 vezes mais rápido a resolver problemas não-lineares complexos como visão computacional.",
+        "A composição de múltiplas transformações lineares colapsaria algebricamente em uma única transformação linear equivalente (`W_eq * X + b_eq`), tornando a rede de 20 camadas incapaz de aprender relações não-lineares (como a porta XOR).",
+        "A rede se transformaria automaticamente em uma árvore de decisão Random Forest.",
+        "Os tensores aumentariam de `rank` a cada camada até estourar o limite de 20 dimensões."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em álgebra linear, o produto de várias matrizes lineares `W_n * ... * W_2 * W_1` é simplesmente outra matriz linear `W_eq`. Sem funções de ativação não-lineares (como ReLU) entre as camadas, qualquer profundidade extra é matematicamente redundante e a rede só consegue traçar hiperplanos retos.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#arquitetura-de-redes-neurais-e-funcoes-de-ativacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s03-q18",
+      "sessionId": "1.3",
+      "subtopicTag": "Arquitetura de Camadas e Funções de Ativação (ReLU, Sigmoid, Softmax)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual função de ativação é definida por `f(z) = max(0, z)`, sendo a escolha padrão para camadas ocultas (hidden layers) em redes neurais modernas por ser computacionalmente leve e mitigar o desaparecimento do gradiente (vanishing gradient) para valores positivos?",
+      "options": [
+        "Sigmoid",
+        "Softmax",
+        "ReLU (Rectified Linear Unit)",
+        "Tangente Hiperbólica Inversa"
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A função ReLU (`max(0, z)`) zera valores negativos e mantém valores positivos inalterados (com derivada constante igual a 1 para `z > 0`), evitando a saturação exponencial que ocorre nas caudas da Sigmoid em redes profundas.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#arquitetura-de-redes-neurais-e-funcoes-de-ativacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s03-q19",
+      "sessionId": "1.3",
+      "subtopicTag": "Arquitetura de Camadas e Funções de Ativação (ReLU, Sigmoid, Softmax)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Você está projetando a camada de saída de uma rede neural que classifica a ação de um jogador em exatamente uma entre 5 categorias mutuamente exclusivas (`PULAR`, `AGACHAR`, `ESQUERDA`, `DIREITA`, `PARADO`). Qual configuração de unidades e função de ativação deve ser usada na última camada?",
+      "options": [
+        "1 unidade com ativação `relu`.",
+        "5 unidades com ativação `softmax`, pois ela converte os 5 logits brutos em uma distribuição de probabilidade onde cada valor está em `(0, 1)` e a soma das 5 saídas é exatamente `1.0`.",
+        "5 unidades com ativação `linear`, pois probabilidades podem ser negativas.",
+        "1 unidade com ativação `sigmoid`, multiplicada por 5."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em classificação multiclasse mutuamente exclusiva com `K` classes, a camada de saída deve ter `K` neurônios com ativação `Softmax` (`exp(z_i) / sum(exp(z_j))`), garantindo uma distribuição de probabilidade normalizada que soma `1.0`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#arquitetura-de-redes-neurais-e-funcoes-de-ativacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s03-q20",
+      "sessionId": "1.3",
+      "subtopicTag": "Arquitetura de Camadas e Funções de Ativação (ReLU, Sigmoid, Softmax)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Quantos parâmetros treináveis totais (pesos `W` + vieses `b`) existem em uma única camada densa (`tf.layers.dense`) que recebe um vetor de entrada de 10 atributos (`inputShape: [10]`) e possui 32 neurônios (`units: 32, useBias: true`)?",
+      "options": [
+        "42 parâmetros",
+        "320 parâmetros",
+        "352 parâmetros",
+        "1024 parâmetros"
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A matriz de pesos `W` conecta cada uma das 10 entradas a cada um dos 32 neurônios (`10 * 32 = 320` pesos). Somando o vetor de bias `b` (1 viés por neurônio = `32` vieses), temos `320 + 32 = 352` parâmetros treináveis.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#arquitetura-de-redes-neurais-e-funcoes-de-ativacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s03-q21",
+      "sessionId": "1.3",
+      "subtopicTag": "Ciclo de Aprendizado: Forward Pass, Loss, Backpropagation e Otimizadores",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a ordem correta das 4 etapas fundamentais que compõem uma iteração de treinamento de uma rede neural supervisionada?",
+      "options": [
+        "Backpropagation -> Forward Pass -> Inicialização de Pesos -> Exclusão do Modelo.",
+        "Forward Pass (geração da predição) -> Cálculo da Loss (erro entre predição e alvo real) -> Backpropagation (cálculo dos gradientes via regra da cadeia) -> Passo do Otimizador (atualização dos pesos e vieses na direção oposta ao gradiente).",
+        "Otimizador -> Softmax -> Shuffling de Pesos -> Compilação de Shaders.",
+        "Cálculo da Loss -> Remoção das camadas ocultas -> Forward Pass -> Normalização dos pesos para zero."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O ciclo de aprendizado inicia com o Forward Pass para obter `y_hat`, avalia a discrepância com a Loss Function `L(y, y_hat)`, retropropaga as derivadas parciais pelo grafo com o Backpropagation e finaliza com o Otimizador (SGD/Adam) atualizando os parâmetros `theta = theta - lr * grad`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#o-ciclo-de-aprendizado-forward-pass-loss-backpropagation-e-otimizadores",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s03-q22",
+      "sessionId": "1.3",
+      "subtopicTag": "Ciclo de Aprendizado: Forward Pass, Loss, Backpropagation e Otimizadores",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Por que a equação de atualização do Gradiente Descendente subtrai o gradiente (`W_novo = W_atual - learningRate * gradiente`) em vez de somá-lo?",
+      "options": [
+        "Porque no cálculo vetorial o vetor gradiente aponta na direção de maior CRESCIMENTO da função; logo, para MINIMIZAR o erro (Loss), devemos caminhar no sentido oposto ao gradiente.",
+        "Porque os pesos de uma rede neural só podem assumir valores estritamente negativos.",
+        "Porque o navegador WebGL inverte o eixo Y das texturas.",
+        "Para aumentar propositalmente o erro até que ocorra overfitting."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Matematicamente, o gradiente de uma função aponta na direção de sua subida mais íngreme (máxima taxa de aumento). Como nosso objetivo é descer a superfície de custo para minimizar a Loss, damos um passo na direção negativa do gradiente.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#o-ciclo-de-aprendizado-forward-pass-loss-backpropagation-e-otimizadores",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s03-q23",
+      "sessionId": "1.3",
+      "subtopicTag": "Ciclo de Aprendizado: Forward Pass, Loss, Backpropagation e Otimizadores",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a principal vantagem técnica do otimizador `Adam` (`tf.train.adam`) sobre o Gradiente Descendente Estocástico clássico (`tf.train.sgd`)?",
+      "options": [
+        "O Adam não utiliza gradientes nem Backpropagation, sorteando pesos aleatórios até acertar.",
+        "O Adam combina Momentum (média móvel exponencial do primeiro momento dos gradientes) com adaptação individual da taxa de aprendizado por parâmetro (segundo momento dos gradientes ao quadrado, estilo RMSProp), convergindo de forma mais rápida e estável.",
+        "O Adam dispensa a definição de uma função de perda (Loss Function).",
+        "O Adam reduz pela metade a quantidade de neurônios da camada de saída a cada época."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O algoritmo Adam (Adaptive Moment Estimation) mantém estimativas móveis da média (momentum) e da variância não-centrada dos gradientes para cada parâmetro, ajustando dinamicamente o tamanho do passo de cada peso.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#o-ciclo-de-aprendizado-forward-pass-loss-backpropagation-e-otimizadores",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s03-q24",
+      "sessionId": "1.3",
+      "subtopicTag": "Ciclo de Aprendizado: Forward Pass, Loss, Backpropagation e Otimizadores",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao construir uma rede neural usando a API de baixo nível do TensorFlow.js (como no laboratório de conversão Celsius -> Fahrenheit), por que os pesos `W` e o viés `b` devem ser instanciados com `tf.variable(...)` em vez de `tf.tensor(...)` comuns?",
+      "codeSnippet": "const W = tf.variable(tf.randomNormal([1, 1]));\nconst b = tf.variable(tf.zeros([1]));",
+      "options": [
+        "Porque instâncias de `tf.Tensor` padrão são imutáveis, enquanto `tf.Variable` é mutável e registrada automaticamente como parâmetro treinável para que `optimizer.minimize()` possa calcular seus gradientes e atualizar seu valor in-place.",
+        "Porque `tf.tensor()` só aceita strings e `tf.variable()` aceita números.",
+        "Porque `tf.variable()` armazena os dados no LocalStorage do navegador.",
+        "Porque `tf.tensor()` não pode ser usado em operações `tf.matMul`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "No TensorFlow.js, `tf.Tensor` é imutável. Para que um otimizador (`optimizer.minimize`) rastreie derivadas via diferenciação automática e atualize os pesos a cada passo de treinamento com `.assign()`, os parâmetros devem ser encapsulados como `tf.Variable`.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#laboratorio-pratico-motor-neuronal-em-tensores-puros",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Variables and Operations"
+    },
+    {
+      "id": "m01-s03-q25",
+      "sessionId": "1.3",
+      "subtopicTag": "Ciclo de Aprendizado: Forward Pass, Loss, Backpropagation e Otimizadores",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "No laboratório prático de tensores puros, analisamos a expressão da função de perda MSE abaixo. Qual é o `rank` do tensor retornado por `.mean()` e por que `optimizer.minimize()` exige esse formato?",
+      "codeSnippet": "const computeMseLoss = (yPred: tf.Tensor2D, yTrue: tf.Tensor2D): tf.Scalar => {\n  return yPred.sub(yTrue).square().mean() as tf.Scalar;\n};",
+      "options": [
+        "Retorna um tensor de `rank: 0` (um `tf.Scalar`), pois o cálculo de gradiente no Backpropagation exige derivar um único valor escalar de custo global em relação às matrizes de pesos.",
+        "Retorna um tensor de `rank: 2`, pois a função `.mean()` preserva todas as dimensões originais do lote.",
+        "Retorna um array JavaScript nativo de strings.",
+        "Retorna um tensor de `rank: 4` compatível com texturas RGBA."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A operação `.mean()` sem especificar eixo reduz todos os elementos do tensor de diferenças quadráticas a uma única média global (`rank: 0`, `shape: []`, tipo `tf.Scalar`), que é o requisito matemático de `optimizer.minimize(f)` para iniciar a retropropagação dos gradientes.",
+      "chapterAnchor": "cap-03-fundamentos-web-ml#laboratorio-pratico-motor-neuronal-em-tensores-puros",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    }
+  ]
+}

@@ -1,0 +1,486 @@
+{
+  "sessionId": "1.5",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.5: Projetos Práticos com ML na Web (Vídeo e Jogos)",
+  "questions": [
+    {
+      "id": "m01-s05-q01",
+      "sessionId": "1.5",
+      "subtopicTag": "Orçamento de Latência a 60 FPS (16.6ms), WebGPU Delegate e Efeitos Adaptativos",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Para que um jogo ou aplicação interativa de Visão Computacional no navegador mantenha uma taxa de atualização estável de 60 Quadros por Segundo (60 FPS), qual é o orçamento máximo de tempo (latency budget) disponível para processar e renderizar cada quadro individual?",
+      "options": [
+        "100 milissegundos por quadro.",
+        "Aproximadamente 16.67 milissegundos por quadro (`1000 ms / 60`).",
+        "60 milissegundos por quadro.",
+        "1.000 milissegundos por quadro."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Um segundo possui 1.000 milissegundos. Para exibir 60 quadros em 1.000 ms, todo o trabalho de captura, inferência neural na GPU, lógica de jogo e desenho no `<canvas>` deve caber dentro da janela de `1000 / 60 ≈ 16.67 ms`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#arquitetura-de-video-em-tempo-real-no-browser-getusermedia-canvas-e-o-orcamento-de-16-6ms",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/guide",
+      "officialDocLabel": "Google MediaPipe Solutions for Web"
+    },
+    {
+      "id": "m01-s05-q02",
+      "sessionId": "1.5",
+      "subtopicTag": "Pipeline de Vídeo em Tempo Real (getUserMedia, requestAnimationFrame e Canvas)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que configurar `navigator.mediaDevices.getUserMedia` para capturar vídeo em resolução 4K (`3840x2160`) é considerado um antipadrão de performance ao alimentar modelos de visão em tempo real como BlazePalm, BlazePose ou MobileNet?",
+      "options": [
+        "Porque a API `getUserMedia` não suporta vídeos coloridos acima de 320x240.",
+        "Porque as arquiteturas de visão em tempo real redimensionam internamente a entrada para tensores compactos (como `224x224` ou `256x256`); capturar em 4K apenas satura o barramento CPU-GPU copiando milhões de pixels que serão imediatamente descartados no downsampling.",
+        "Porque resoluções altas invertem automaticamente os canais RGB para BGR.",
+        "Porque o elemento `<video>` do HTML5 trava se receber mais de 30 pixels de largura."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Redes convolucionais leves operam sobre entradas de baixa resolução (`224x224` ou `256x256`). Capturar da webcam em `640x480` ou `1280x720` entrega a mesma precisão para o tensor redimensionado com uma fração mínima do custo de transferência de textura para a VRAM.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#arquitetura-de-video-em-tempo-real-no-browser-getusermedia-canvas-e-o-orcamento-de-16-6ms",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q03",
+      "sessionId": "1.5",
+      "subtopicTag": "Pipeline de Vídeo em Tempo Real (getUserMedia, requestAnimationFrame e Canvas)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Examine a verificação abaixo dentro de um loop `requestAnimationFrame`. Qual problema de desempenho ela resolve?",
+      "codeSnippet": "if (video.readyState >= 2 && video.currentTime !== state.lastVideoTime) {\n  state.lastVideoTime = video.currentTime;\n  const result = handLandmarker.detectForVideo(video, performance.now());\n}",
+      "options": [
+        "Evita executar a inferência neural repetidamente sobre exatamente o mesmo frame de vídeo quando a taxa de atualização do monitor (ex: 60Hz ou 120Hz no `requestAnimationFrame`) é superior à taxa de quadros entregue pelo hardware da webcam (ex: 30 FPS).",
+        "Impede que o vídeo seja reproduzido com áudio ativado.",
+        "Converte o elemento `<video>` em um arquivo MP4 salvo no disco rígido.",
+        "Garante que a inferência só ocorra uma única vez durante toda a sessão do usuário."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "O `requestAnimationFrame` acompanha o refresh rate do monitor (60/120/144 Hz), enquanto webcams frequentemente atualizam `video.currentTime` a 30 FPS. Checar `video.currentTime !== state.lastVideoTime` economiza até 50-75% de uso de GPU ao inferir apenas quando há um quadro novo decodificado.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#arquitetura-de-video-em-tempo-real-no-browser-getusermedia-canvas-e-o-orcamento-de-16-6ms",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q04",
+      "sessionId": "1.5",
+      "subtopicTag": "Pipeline de Vídeo em Tempo Real (getUserMedia, requestAnimationFrame e Canvas)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual método nativo do TensorFlow.js converte diretamente um elemento `HTMLVideoElement`, `HTMLCanvasElement` ou `HTMLImageElement` em um `tf.Tensor3D` de pixels na GPU sem precisar extrair arrays manualmente na CPU?",
+      "options": [
+        "`tf.browser.fromPixels(videoElement)`",
+        "`tf.tensor1d(videoElement.src)`",
+        "`JSON.stringify(videoElement)`",
+        "`tf.loadLayersModel(videoElement)`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "`tf.browser.fromPixels(pixels, numChannels)` lê diretamente o buffer gráfico do elemento HTML (`<video>`, `<canvas>`, `<img>` ou `ImageData`) para um tensor 3D `[height, width, channels]` acelerado por GPU.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#arquitetura-de-video-em-tempo-real-no-browser-getusermedia-canvas-e-o-orcamento-de-16-6ms",
+      "officialDocUrl": "https://www.tensorflow.org/js/models",
+      "officialDocLabel": "TensorFlow.js Pre-trained Models Repository"
+    },
+    {
+      "id": "m01-s05-q05",
+      "sessionId": "1.5",
+      "subtopicTag": "Detecção de Objetos e Segmentação com TensorFlow.js (COCO-SSD e Body Segmentation)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a diferença fundamental entre um modelo de Classificação de Imagem puro (como MobileNet) e um modelo de Detecção de Objetos (como o `COCO-SSD` do repositório oficial do TensorFlow.js)?",
+      "options": [
+        "O MobileNet funciona apenas offline, enquanto o COCO-SSD exige conexão via WebSockets.",
+        "Um classificador puro atribui apenas um rótulo global para a imagem inteira, enquanto um Detector de Objetos (COCO-SSD) localiza múltiplos objetos na cena retornando suas coordenadas espaciais (`bbox: [x, y, width, height]`), classe (`class`) e confiança (`score`).",
+        "O COCO-SSD só detecta rostos humanos, enquanto o MobileNet detecta apenas texto.",
+        "O COCO-SSD retorna arquivos de áudio em vez de tensores."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A arquitetura SSD (Single-Shot MultiBox Detector) treinada no dataset MS COCO (80 categorias) combina regressão de caixas delimitadoras (`bbox`) com classificação para múltiplos objetos simultâneos no mesmo quadro.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#visao-computacional-com-modelos-pre-treinados-do-tensorflow-js-coco-ssd-e-segmentacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/models",
+      "officialDocLabel": "TensorFlow.js Pre-trained Models Repository"
+    },
+    {
+      "id": "m01-s05-q06",
+      "sessionId": "1.5",
+      "subtopicTag": "Detecção de Objetos e Segmentação com TensorFlow.js (COCO-SSD e Body Segmentation)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Ao invocar `const predictions = await cocoSsdModel.detect(videoElement)`, o que representam os 4 números dentro do array `predictions[0].bbox`?",
+      "options": [
+        "`[x, y, width, height]`, onde `x` e `y` são as coordenadas do canto superior esquerdo da caixa delimitadora, seguidas pela largura e altura em pixels.",
+        "`[r, g, b, alpha]`, representando a cor média do objeto detectado.",
+        "`[minScore, maxScore, epoch, batchSize]`.",
+        "`[x1, y1, z1, w1]` em coordenadas esféricas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "No pacote oficial `@tensorflow-models/coco-ssd`, a propriedade `bbox` segue a tupla `[x, y, width, height]` compatível diretamente com `ctx.strokeRect(x, y, width, height)` da API 2D do `<canvas>`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#visao-computacional-com-modelos-pre-treinados-do-tensorflow-js-coco-ssd-e-segmentacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/models",
+      "officialDocLabel": "TensorFlow.js Pre-trained Models – Object Detection"
+    },
+    {
+      "id": "m01-s05-q07",
+      "sessionId": "1.5",
+      "subtopicTag": "Detecção de Objetos e Segmentação com TensorFlow.js (COCO-SSD e Body Segmentation)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao carregar o modelo COCO-SSD em um dispositivo móvel ou navegador que prioriza alta taxa de FPS e baixo consumo de memória (`cocoSsd.load({ base })`), qual arquitetura base (`base`) é o padrão otimizado para velocidade?",
+      "options": [
+        "`'lite_mobilenet_v2'`",
+        "`'vgg19_ultra_heavy'`",
+        "`'gpt4_vision'`",
+        "`'resnet152_fp64'`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "O pacote `@tensorflow-models/coco-ssd` utiliza `'lite_mobilenet_v2'` como backbone padrão por possuir o menor footprint de pesos e a maior velocidade de inferência client-side entre as opções (`'mobilenet_v1'`, `'mobilenet_v2'` e `'lite_mobilenet_v2'`).",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#visao-computacional-com-modelos-pre-treinados-do-tensorflow-js-coco-ssd-e-segmentacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/models",
+      "officialDocLabel": "TensorFlow.js Pre-trained Models Repository"
+    },
+    {
+      "id": "m01-s05-q08",
+      "sessionId": "1.5",
+      "subtopicTag": "Detecção de Objetos e Segmentação com TensorFlow.js (COCO-SSD e Body Segmentation)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Para implementar um recurso de 'Desfoque de Fundo' (Background Blur) ou Chroma Key virtual que recorta perfeitamente a silhueta do usuário na webcam, por que devemos utilizar um modelo de Segmentação (`@tensorflow-models/body-segmentation`) em vez do `COCO-SSD`?",
+      "options": [
+        "Porque o COCO-SSD não reconhece a classe `'person'`.",
+        "Porque o COCO-SSD retorna apenas um retângulo (`bbox`) ao redor da pessoa, enquanto o Body Segmentation realiza classificação semântica pixel a pixel, gerando uma máscara precisa da silhueta corporal.",
+        "Porque o Body Segmentation não utiliza a GPU.",
+        "Porque o COCO-SSD só funciona em imagens preto e branco."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A detecção de objetos delimita regiões retangulares grosseiras (`bounding boxes`), enquanto a segmentação semântica (`Body Segmentation` / `Selfie Segmentation`) gera uma máscara densa por pixel separando primeiro plano (corpo) e plano de fundo.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#visao-computacional-com-modelos-pre-treinados-do-tensorflow-js-coco-ssd-e-segmentacao",
+      "officialDocUrl": "https://www.tensorflow.org/js/models",
+      "officialDocLabel": "TensorFlow.js Pre-trained Models – Body Segmentation"
+    },
+    {
+      "id": "m01-s05-q09",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Qual é o segredo arquitetural do pipeline em dois estágios (Detector + Tracker) do Google MediaPipe Hand Landmarker que permite rastrear as mãos em 3D a 60 FPS sem executar a detecção na imagem inteira a cada quadro?",
+      "options": [
+        "Ele envia metade dos quadros para servidores TPU do Google Cloud via WebRTC.",
+        "No primeiro quadro (ou quando perde a mão), ele executa um detector leve de palma (BlazePalm); nos quadros subsequentes em modo `VIDEO`, ele reutiliza a posição anterior para recortar (crop) apenas a região da mão e roda apenas o modelo de regressão dos 21 landmarks sobre esse recorte.",
+        "Ele reduz a resolução do monitor do usuário para 64x64 pixels durante o jogo.",
+        "Ele rastreia apenas 1 dedo por quadro, alternando entre os 5 dedos ao longo de 5 quadros."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A arquitetura em cascata do MediaPipe evita varrer o frame inteiro com o detector de palmas em todos os quadros: enquanto o tracker mantém confiança (`minTrackingConfidence`), o recorte espacial da mão é alimentado diretamente do frame `t-1` para o regressor de 21 marcos no frame `t`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q10",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Na biblioteca oficial `@mediapipe/tasks-vision`, qual classe utilitária é responsável por resolver e inicializar os binários WebAssembly (WASM SIMD) antes de instanciar o `HandLandmarker` ou `ObjectDetector`?",
+      "options": [
+        "`FilesetResolver.forVisionTasks(wasmRootPath)`",
+        "`tf.setBackend('mediapipe')`",
+        "`Navigator.initWasm()`",
+        "`WebAssembly.compileMediaPipe()`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Conforme a documentação oficial do MediaPipe Web JS, `await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm')` carrega o runtime WASM necessário para todas as tarefas de visão.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q11",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao configurar o `HandLandmarker.createFromOptions(vision, options)` para processar um stream contínuo da webcam, qual valor deve ser atribuído a `runningMode` e qual método de inferência deve ser chamado a cada frame?",
+      "options": [
+        "`runningMode: 'IMAGE'` e método `handLandmarker.detect(video)`.",
+        "`runningMode: 'VIDEO'` e método `handLandmarker.detectForVideo(videoElement, timestampMs)`.",
+        "`runningMode: 'STREAM_CLOUD'` e método `handLandmarker.fetch(video)`.",
+        "`runningMode: 'AUDIO'` e método `handLandmarker.listen(video)`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A documentação oficial exige `runningMode: 'VIDEO'` para habilitar o rastreamento temporal entre quadros e o uso do método síncrono `detectForVideo(videoElement, performance.now())` passando o timestamp monotônico do quadro.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q12",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Quantos pontos-chave tridimensionais (3D landmarks `{ x, y, z }`) o MediaPipe Hand Landmarker retorna para CADA mão detectada na cena?",
+      "options": [
+        "5 pontos (apenas as 5 pontas dos dedos).",
+        "10 pontos.",
+        "21 pontos (incluindo pulso, articulações e pontas dos 5 dedos).",
+        "468 pontos."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "O modelo Hand Landmarker do MediaPipe mapeia exatamente 21 marcos anatômicos 3D por mão (índice 0 para o pulso e 4 marcos para cada um dos 5 dedos, totalizando `1 + 5*4 = 21` pontos). 468 pontos pertencem ao Face Mesh.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q13",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "No objeto de resultado `HandLandmarkerResult` retornado por `detectForVideo()`, qual é a diferença entre `result.landmarks` e `result.worldLandmarks`?",
+      "options": [
+        "`result.landmarks` contém coordenadas `(x, y)` normalizadas em `[0.0, 1.0]` relativas às dimensões da imagem, enquanto `result.worldLandmarks` contém coordenadas métricas 3D reais em metros com origem no centro geométrico da mão.",
+        "`result.landmarks` funciona apenas no hemisfério norte e `result.worldLandmarks` no globo todo.",
+        "`result.landmarks` retorna strings e `result.worldLandmarks` retorna booleanos.",
+        "Ambos contêm exatamente os mesmos números em pixels inteiros."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Segundo a especificação do MediaPipe Hand Landmarker, `landmarks` traz coordenadas de tela normalizadas `[0, 1]` (ideais para desenhar sobre o `<canvas>`), enquanto `worldLandmarks` projeta os 21 pontos em espaço físico métrico (em metros, invariante à distância da câmera).",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q14",
+      "sessionId": "1.5",
+      "subtopicTag": "Controle de Jogos Web via Gestos e Geometria Espacial 3D",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Na topologia oficial dos 21 pontos da mão do MediaPipe, quais são os índices correspondentes à Ponta do Polegar (`THUMB_TIP`) e à Ponta do Indicador (`INDEX_FINGER_TIP`), utilizados para calcular a distância euclidiana do gesto de Pinça (Pinch)?",
+      "codeSnippet": "const hand = result.landmarks[0];\nconst thumbTip = hand[/* ??? */];\nconst indexTip = hand[/* ??? */];\nconst pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);",
+      "options": [
+        "Polegar no índice `0` e Indicador no índice `1`.",
+        "Polegar no índice `4` e Indicador no índice `8`.",
+        "Polegar no índice `10` e Indicador no índice `20`.",
+        "Polegar no índice `1` e Indicador no índice `21`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O índice `0` é o pulso (`WRIST`); os índices `1` a `4` formam o polegar (sendo `4` a ponta `THUMB_TIP`); e os índices `5` a `8` formam o indicador (sendo `8` a ponta `INDEX_FINGER_TIP`).",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#rastreamento-de-alta-precisao-com-google-mediapipe-web-hand-pose-e-face-landmarker",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q15",
+      "sessionId": "1.5",
+      "subtopicTag": "Controle de Jogos Web via Gestos e Geometria Espacial 3D",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao mapear a coordenada horizontal `indexTip.x` (que varia de `0.0` a `1.0`) da webcam frontal para a posição `X` da mira do jogador no `<canvas>`, por que aplicamos a inversão `const rawX = 1.0 - indexTip.x`?",
+      "options": [
+        "Porque o MediaPipe retorna coordenadas sempre negativas.",
+        "Para criar o efeito de espelhamento natural (Mirror Mode): na imagem bruta do sensor da câmera frontal, mover a mão para a direita do usuário desloca o ponto para a esquerda do frame (`x` próximo de 0); `1.0 - x` alinha o movimento do cursor com o reflexo intuitivo do jogador.",
+        "Para converter a coordenada X em coordenada Z de profundidade.",
+        "Porque o elemento `<canvas>` do HTML5 tem a origem `(0, 0)` no canto inferior direito."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Webcams frontais entregam o frame na perspectiva da câmera olhando para o usuário. Inverter o eixo horizontal (`1.0 - x`) faz com que o cursor no `<canvas>` se comporte como um espelho, evitando que o jogador mova a mão para a direita e veja a mira ir para a esquerda.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q16",
+      "sessionId": "1.5",
+      "subtopicTag": "Controle de Jogos Web via Gestos e Geometria Espacial 3D",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Coordenadas extraídas frame a frame de sensores de webcam apresentam pequenas oscilações de alta frequência (jitter), fazendo o cursor tremer mesmo com a mão parada. Qual técnica matemática de tempo constante O(1) aplicamos no Game Loop para suavizar a trajetória?",
+      "options": [
+        "Filtro de Média Móvel Exponencial (EMA): `smoothX = alpha * rawX + (1 - alpha) * prevX`.",
+        "Atrasar a renderização do jogo em 5 segundos para calcular a média de 300 quadros futuros.",
+        "Zerar os pesos do MediaPipe a cada 2 quadros.",
+        "Multiplicar as coordenadas por números aleatórios (`Math.random()`)."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A Média Móvel Exponencial (EMA) atua como um filtro passa-baixa de custo computacional desprezível (apenas duas multiplicações e uma soma por eixo), amortecendo o ruído de alta frequência sem introduzir latência perceptível quando `alpha` está entre `0.25` e `0.45`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#ml-aplicado-a-jogos-web-controle-por-gestos-bots-neurais-e-efeitos-adaptativos-a-60-fps",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/guide",
+      "officialDocLabel": "Google MediaPipe Solutions for Web"
+    },
+    {
+      "id": "m01-s05-q17",
+      "sessionId": "1.5",
+      "subtopicTag": "Bots Inteligentes com Redes Neurais e Aprendizado por Reforço / Classificação de Estado",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao substituir uma árvore rígida de `if/else` de um NPC inimigo por uma Rede Neural de Política (Policy Network) em TensorFlow.js que escolhe entre 4 ações discretas a cada quadro, o que deve compor o tensor de entrada e o tensor de saída dessa rede?",
+      "options": [
+        "Entrada: o código-fonte HTML da página; Saída: uma imagem JPEG.",
+        "Entrada: o Vetor de Estado normalizado do ambiente (ex: `[deltaX, deltaY, projDistX, projDistY, botHealth]`); Saída: um vetor de probabilidades gerado por ativação `softmax` sobre as 4 ações disponíveis.",
+        "Entrada: apenas o nome do jogador; Saída: um único número negativo fixo.",
+        "Entrada: um tensor 4D de áudio; Saída: a taxa de quadros do monitor."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em jogos com agentes neurais, a Policy Network mapeia o estado observável do jogo `S_t` (posições relativas, velocidades, vida) para uma distribuição de probabilidade sobre o espaço de ações `A_t` usando uma camada de saída `Softmax`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#ml-aplicado-a-jogos-web-controle-por-gestos-bots-neurais-e-efeitos-adaptativos-a-60-fps",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s05-q18",
+      "sessionId": "1.5",
+      "subtopicTag": "Bots Inteligentes com Redes Neurais e Aprendizado por Reforço / Classificação de Estado",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "No código de decisão do Bot Neural abaixo, qual é o papel da operação `actionProbs.argMax(1).dataSync()[0]`?",
+      "codeSnippet": "const actionProbs = botModel.predict(stateVector) as tf.Tensor; // shape: [1, 4]\nconst bestActionIndex = actionProbs.argMax(1).dataSync()[0];\nreturn BOT_ACTIONS[bestActionIndex];",
+      "options": [
+        "Retorna o maior valor de probabilidade em ponto flutuante (ex: `0.87`).",
+        "Encontra o ÍNDICE (`0`, `1`, `2` ou `3`) da coluna com a maior probabilidade ao longo do eixo 1 (as 4 ações do Softmax) e extrai esse inteiro para selecionar a ação correspondente em `BOT_ACTIONS`.",
+        "Soma todas as 4 probabilidades para verificar se o resultado é igual a 1.",
+        "Zera a memória da GPU."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Enquanto `.max(1)` retornaria o valor da probabilidade máxima, `.argMax(1)` retorna o índice inteiro (`0..3`) onde ocorre o valor máximo ao longo do eixo 1, permitindo mapear diretamente para o array `BOT_ACTIONS`.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Operations"
+    },
+    {
+      "id": "m01-s05-q19",
+      "sessionId": "1.5",
+      "subtopicTag": "Bots Inteligentes com Redes Neurais e Aprendizado por Reforço / Classificação de Estado",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "O que aconteceria com o jogo se a função `decideBotAction(botModel, state)` — que é chamada 60 vezes por segundo dentro do `requestAnimationFrame` — criasse o `stateVector` e chamasse `botModel.predict()` SEM estar envolvida por `tf.tidy()`?",
+      "options": [
+        "O bot ficaria mais inteligente a cada segundo por acumular experiência na VRAM.",
+        "Seriam alocados novos tensores na VRAM a cada frame (~120+ tensores por segundo) sem desalocação, causando um vazamento severo de memória GPU (Memory Leak) que derrubaria a taxa de FPS e travaria o navegador em poucos segundos.",
+        "Nada aconteceria, pois `model.predict()` limpa os tensores de entrada automaticamente.",
+        "O modelo seria salvo automaticamente no IndexedDB a cada frame."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em um loop de 60 FPS, cada chamada a `tf.tensor2d` e `model.predict` aloca buffers na GPU. Sem `tf.tidy()`, milhares de tensores órfãos se acumulam na VRAM em menos de um minuto, levando ao esgotamento do contexto WebGL/WebGPU.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations#memory",
+      "officialDocLabel": "TensorFlow.js Guide – Memory Management"
+    },
+    {
+      "id": "m01-s05-q20",
+      "sessionId": "1.5",
+      "subtopicTag": "Bots Inteligentes com Redes Neurais e Aprendizado por Reforço / Classificação de Estado",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual é a diferença conceitual entre treinar um Bot de Jogo por Imitation Learning (Clonagem Comportamental) versus Reinforcement Learning (Aprendizado por Reforço)?",
+      "options": [
+        "No Imitation Learning, o bot aprende de forma supervisionada imitando pares `[Estado, Ação]` gravados de partidas de jogadores humanos; no Reinforcement Learning, o bot explora ações no ambiente e ajusta sua política guiado por sinais de recompensa positiva ou penalidade.",
+        "O Imitation Learning só funciona em Python e o Reinforcement Learning só funciona em HTML.",
+        "O Imitation Learning não usa redes neurais, apenas expressões regulares.",
+        "No Reinforcement Learning o bot nunca recebe o estado do jogo como entrada."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Clonagem Comportamental (Imitation Learning) trata o controle do bot como classificação supervisionada (`categoricalCrossentropy`) sobre demonstrações humanas, enquanto Reinforcement Learning otimiza a política diretamente pela maximização da recompensa cumulativa.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#ml-aplicado-a-jogos-web-controle-por-gestos-bots-neurais-e-efeitos-adaptativos-a-60-fps",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s05-q21",
+      "sessionId": "1.5",
+      "subtopicTag": "Orçamento de Latência a 60 FPS (16.6ms), WebGPU Delegate e Efeitos Adaptativos",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Na configuração de `baseOptions` do MediaPipe Tasks Vision (`HandLandmarker.createFromOptions`), qual propriedade define que a inferência do modelo `.task` deve utilizar aceleração de hardware gráfico (WebGL/WebGPU) em vez de rodar na CPU?",
+      "codeSnippet": "baseOptions: {\n  modelAssetPath: '.../hand_landmarker.task',\n  delegate: /* ??? */\n}",
+      "options": [
+        "`delegate: 'GPU'`",
+        "`delegate: 'CUDA_SERVER'`",
+        "`delegate: 'LOCAL_STORAGE'`",
+        "`delegate: 'DOM_CANVAS'`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A propriedade `baseOptions.delegate` no `@mediapipe/tasks-vision` aceita `'GPU'` (aceleração gráfica via WebGL/WebGPU) ou `'CPU'` (execução em WebAssembly XNNPACK).",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q22",
+      "sessionId": "1.5",
+      "subtopicTag": "Orçamento de Latência a 60 FPS (16.6ms), WebGPU Delegate e Efeitos Adaptativos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Como um jogo web pode utilizar o `FaceLandmarker` ou `PoseLandmarker` do MediaPipe para criar um efeito visual de Paralaxe 3D (Head-Coupled Perspective) no `<canvas>` a 60 FPS?",
+      "options": [
+        "Rastreando o deslocamento espacial `(x, y, z)` da cabeça do jogador a cada frame e deslocando proporcionalmente as camadas de fundo e o ângulo de projeção da câmera virtual do jogo, criando a ilusão de uma janela tridimensional real.",
+        "Desligando o monitor sempre que o usuário pisca os olhos.",
+        "Enviando uma foto do rosto do usuário para gerar um vídeo MP4 de 10 minutos no servidor.",
+        "Substituindo o `<canvas>` por uma tabela HTML `<table>`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Ao acoplar a matriz de visualização (view frustum / parallax offset) das camadas do `<canvas>` às coordenadas normalizadas da cabeça retornadas a 60 FPS pelo MediaPipe, o jogo responde instantaneamente ao ângulo de visão do jogador.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#ml-aplicado-a-jogos-web-controle-por-gestos-bots-neurais-e-efeitos-adaptativos-a-60-fps",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/guide",
+      "officialDocLabel": "Google MediaPipe Solutions for Web"
+    },
+    {
+      "id": "m01-s05-q23",
+      "sessionId": "1.5",
+      "subtopicTag": "Rastreamento Corporal e Manual com Google MediaPipe Web (Hand e Pose Landmarker)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Quais são os três limiares de confiança configuráveis no `HandLandmarker.createFromOptions` que controlam a sensibilidade do detector inicial de palma, a presença da mão e a manutenção do rastreamento entre frames?",
+      "options": [
+        "`minHandDetectionConfidence`, `minHandPresenceConfidence` e `minTrackingConfidence`.",
+        "`minLoss`, `maxEpochs` e `validationSplit`.",
+        "`minAlpha`, `maxBeta` e `gammaRate`.",
+        "`minWidth`, `minHeight` e `maxFps`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "De acordo com a documentação oficial do MediaPipe Hand Landmarker Web JS, esses três parâmetros (`minHandDetectionConfidence`, `minHandPresenceConfidence` e `minTrackingConfidence`, todos em `[0.0, 1.0]`) governam quando o pipeline pode confiar no tracker rápido ou quando deve reexecutar o detector de palmas completo.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q24",
+      "sessionId": "1.5",
+      "subtopicTag": "Pipeline de Vídeo em Tempo Real (getUserMedia, requestAnimationFrame e Canvas)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Por que verificamos `video.readyState >= 2` (equivalente a `HTMLMediaElement.HAVE_CURRENT_DATA`) antes de passar o elemento `<video>` para `handLandmarker.detectForVideo()` ou `cocoSsd.detect()`?",
+      "options": [
+        "Para garantir que o buffer de vídeo já possui pelo menos o quadro atual decodificado e dimensões válidas (`videoWidth > 0`), evitando exceções de textura vazia na WebGL/WebGPU durante os primeiros milissegundos de inicialização da câmera.",
+        "Para verificar se o usuário possui 2 webcams conectadas ao computador.",
+        "Para confirmar que o vídeo já chegou ao fim da reprodução.",
+        "Para testar se o navegador está no modo escuro."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Antes de `readyState >= 2` (`HAVE_CURRENT_DATA`), o stream da câmera ainda não decodificou um frame de imagem válido (`videoWidth` e `videoHeight` podem ser `0`), o que causaria falha ao tentar alocar a textura de entrada na GPU.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#laboratorio-pratico-motor-de-jogo-controlado-por-gestos-3d-e-bot-neural-autonomo",
+      "officialDocUrl": "https://ai.google.dev/edge/mediapipe/solutions/vision/hand_landmarker/web_js",
+      "officialDocLabel": "MediaPipe Hand Landmarker Web JS Guide"
+    },
+    {
+      "id": "m01-s05-q25",
+      "sessionId": "1.5",
+      "subtopicTag": "Orçamento de Latência a 60 FPS (16.6ms), WebGPU Delegate e Efeitos Adaptativos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Em um jogo web complexo onde tanto a física/renderização 3D quanto um modelo pesado de Visão Computacional disputam tempo na Main Thread, qual estratégia arquitetural do navegador permite isolar o pré-processamento e a execução do modelo para evitar quedas de quadros (frame drops) na UI?",
+      "options": [
+        "Executar o modelo dentro de um Web Worker dedicado utilizando `OffscreenCanvas` e WebGL/WebGPU no Worker, comunicando apenas os vetores leves de coordenadas/ações de volta para a Main Thread via `postMessage`.",
+        "Usar `alert()` a cada quadro para sincronizar a CPU com a GPU.",
+        "Substituir `requestAnimationFrame` por um loop `while(true)` síncrono na Main Thread.",
+        "Armazenar cada frame de vídeo como string Base64 dentro de um cookie HTTP."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Os navegadores modernos suportam contextos WebGL/WebGPU e `OffscreenCanvas` dentro de Web Workers. Deslocar o pipeline de inferência para um Worker libera 100% da Main Thread para a renderização do jogo a 60/120 FPS, trafegando apenas poucos bytes com os landmarks ou a ação escolhida.",
+      "chapterAnchor": "cap-05-projetos-praticos-ml-web#arquitetura-de-video-em-tempo-real-no-browser-getusermedia-canvas-e-o-orcamento-de-16-6ms",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API",
+      "officialDocLabel": "MDN WebGPU API Specification"
+    }
+  ]
+}

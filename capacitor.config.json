@@ -1,0 +1,9 @@
+{
+  "appId": "com.will.engenhariasoftwareia",
+  "appName": "Engenharia IA",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,40 @@
+# Secrets & environment files (keep .env.example template)
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Generated content & web/Kindle/Android build outputs
+dist/
+dist-kindle/
+dist-android/
+public/downloads/
+public/course-assets/
+src/generated/
+
+# Vite & TypeScript caches
+.vite/
+*.tsbuildinfo
+vite.config.*.timestamp-*
+
+# Android / Capacitor / Gradle build artifacts
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+*.apk
+*.aab
+
+# Logs & OS files
+logs/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Local debug screenshots/photos
+Screenshot_*.png
+10007698*.jpg

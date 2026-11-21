@@ -1,0 +1,485 @@
+{
+  "sessionId": "1.7",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.7: Ferramentas de IA para Acelerar sua Vida como Dev",
+  "questions": [
+    {
+      "id": "m01-s07-q01",
+      "sessionId": "1.7",
+      "subtopicTag": "História e Arquitetura Interna do Cursor: Do LSP ao Shadow Workspace",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual limitação arquitetural das extensões tradicionais de editores (como a primeira geração de plugins de autocompletar) levou a equipe do Cursor (Anysphere) e do Windsurf (Codeium) a criarem forks diretos do código-fonte do VS Code (Code - OSS)?",
+      "options": [
+        "O VS Code não permitia que extensões fizessem chamadas HTTP para servidores externos na internet.",
+        "As APIs de extensão do VS Code eram restritas à injeção de Ghost Text simples, impedindo o controle nativo sobre diffs multi-linha inline, predição de salto de cursor (Cursor Jump), orquestração profunda do LSP em um Shadow Workspace invisível e UI de edição multi-arquivo.",
+        "O VS Code não possuía suporte nativo à linguagem TypeScript nem ao protocolo LSP.",
+        "A licença MIT do Code - OSS obrigava qualquer empresa de IA a reescrever o editor do zero em linguagem Assembly."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Um plugin tradicional opera dentro de um sandbox de API limitado (basicamente inserindo texto fantasma na posição atual do cursor via FIM). Ao fazer fork do Code - OSS, IDEs AI-First reescreveram a camada de renderização de diffs inline, o motor de indexação vetorial, a previsão da próxima coordenada do cursor e a comunicação invisível em background com o Language Server Protocol (Shadow Workspace).",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#historia-e-arquitetura-interna-do-cursor-do-lsp-ao-shadow-workspace",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Architecture & Agent Overview"
+    },
+    {
+      "id": "m01-s07-q02",
+      "sessionId": "1.7",
+      "subtopicTag": "História e Arquitetura Interna do Cursor: Do LSP ao Shadow Workspace",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a diferença técnica fundamental entre o autocompletar tradicional baseado em FIM (Fill-In-the-Middle / Ghost Text) e o motor 'Cursor Tab' (Next-Edit Prediction)?",
+      "options": [
+        "O FIM tradicional apenas insere tokens novos na posição exata onde o cursor está parado, enquanto o Cursor Tab analisa o histórico recente de diffs de edição e os erros do LSP para propor reescritas/deleções multi-linha e prever a próxima coordenada (linha, coluna) para onde o cursor deve saltar.",
+        "O FIM tradicional funciona sem conexão com modelos de IA, enquanto o Cursor Tab usa apenas expressões regulares locais.",
+        "O Cursor Tab só funciona em arquivos HTML, enquanto o FIM funciona apenas em Python.",
+        "Não há nenhuma diferença técnica; ambos enviam apenas a linha atual para a API do GPT-3."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em vez de apenas completar o sufixo da linha atual (FIM), o Cursor Tab é um modelo de predição do próximo diff (*Next-Edit Prediction*): ele observa a sequência temporal das edições que o desenvolvedor acabou de fazer, sugere substituições ou deleções de código existente e prevê para qual linha do arquivo o cursor deve pular a seguir.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#historia-e-arquitetura-interna-do-cursor-do-lsp-ao-shadow-workspace",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Documentation – Cursor Tab & Next-Edit Prediction"
+    },
+    {
+      "id": "m01-s07-q03",
+      "sessionId": "1.7",
+      "subtopicTag": "História e Arquitetura Interna do Cursor: Do LSP ao Shadow Workspace",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Como funciona a arquitetura do 'Shadow Workspace' no Cursor para elevar a qualidade do código gerado por LLMs antes de apresentá-lo ao desenvolvedor?",
+      "options": [
+        "Ele envia o código para desenvolvedores humanos terceirizados revisarem manualmente em outro país.",
+        "Ele mantém uma janela/instância oculta do workspace em segundo plano onde o código candidato gerado pela IA é aplicado e validado silenciosamente contra o servidor LSP real (ex.: tsserver), coletando erros de compilação e tipos para que o modelo se auto-corrija sem poluir a tela nem alterar os arquivos reais do usuário.",
+        "Ele aplica um tema visual escuro (Dark Mode) no editor sempre que o modelo está gerando código.",
+        "Ele desativa o verificador de tipos do TypeScript para que nenhum erro apareça na tela do usuário."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Shadow Workspace resolve o problema de LLMs gerarem código 'no escuro' sem feedback do compilador. Ao aplicar o rascunho da IA em uma instância espelhada invisível conectada ao LSP, a IDE captura diagnósticos semânticos (imports faltando, incompatibilidade de tipos) e realimenta o modelo em background antes da entrega final.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#historia-e-arquitetura-interna-do-cursor-do-lsp-ao-shadow-workspace",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Architecture – Shadow Workspace & LSP Feedback"
+    },
+    {
+      "id": "m01-s07-q04",
+      "sessionId": "1.7",
+      "subtopicTag": "História e Arquitetura Interna do Cursor: Do LSP ao Shadow Workspace",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Por que as IDEs AI-First utilizam uma arquitetura de duas etapas chamada 'Fast Apply' (Modelo Planejador gerando um esboço com `// ... existing code ...` + Modelo Fast Apply com Speculative Edits) ao modificar um arquivo de 1.000 linhas?",
+      "options": [
+        "Porque modelos de fronteira erram frequentemente a aritmética de números de linha em unified diffs tradicionais e demorariam dezenas de segundos para reescrever 1.000 linhas inteiras; o modelo Fast Apply funde o esboço semântico com o arquivo original a ~1000 tokens/s usando decodificação especulativa.",
+        "Porque os modelos de fronteira têm um limite máximo de saída de apenas 10 tokens por requisição.",
+        "Porque o comentário `// ... existing code ...` apaga o restante do arquivo para economizar espaço em disco.",
+        "Porque o protocolo HTTP bloqueia arquivos maiores que 100 linhas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Gerar o arquivo inteiro do zero em um modelo grande é lento e caro; gerar `git diff` com contagem de linhas falha por causa da tokenização BPE. Na arquitetura Fast Apply, o modelo principal gera apenas as mudanças cercadas por marcadores `// ... existing code ...`, e um modelo menor especializado (com Speculative Edits baseado no arquivo original) realiza o merge completo instantaneamente.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#historia-e-arquitetura-interna-do-cursor-do-lsp-ao-shadow-workspace",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Documentation – Fast Apply & Composer"
+    },
+    {
+      "id": "m01-s07-q05",
+      "sessionId": "1.7",
+      "subtopicTag": "Comparativo Técnico: VS Code (GitHub Copilot) vs. Cursor vs. Windsurf",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "De acordo com a documentação oficial do Windsurf IDE (Codeium), qual é o diferencial arquitetural do motor 'Cascade' em relação aos chats de IA de primeira geração no que tange à consciência de fluxo (Flow Awareness / Shared Timeline)?",
+      "options": [
+        "O Cascade bloqueia o teclado do desenvolvedor para impedir qualquer edição manual no código.",
+        "O Cascade rastreia em tempo real as ações manuais do desenvolvedor (edições no código, arquivos renomeados, erros de terminal e movimentação entre símbolos) dentro de uma linha do tempo compartilhada, permitindo que a IA compreenda e continue o trabalho humano mesmo com um prompt curto como 'Continue nos demais endpoints'.",
+        "O Cascade funciona exclusivamente para código escrito em linguagem COBOL.",
+        "O Cascade não permite editar mais de um arquivo por projeto."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O motor Cascade do Windsurf mantém uma linha do tempo unificada entre as ações do humano e do agente. Se o desenvolvedor refatora manualmente uma variável ou executa um comando no terminal, esses eventos entram automaticamente no contexto ativo do Cascade sem precisar copiá-los e explicá-los no chat.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#comparativo-tecnico-vs-code-github-copilot-vs-cursor-vs-windsurf",
+      "officialDocUrl": "https://docs.windsurf.com/windsurf/cascade",
+      "officialDocLabel": "Windsurf Documentation – Cascade Flows"
+    },
+    {
+      "id": "m01-s07-q06",
+      "sessionId": "1.7",
+      "subtopicTag": "Comparativo Técnico: VS Code (GitHub Copilot) vs. Cursor vs. Windsurf",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a correspondência correta dos arquivos de governança e instruções persistentes de projeto entre as três principais IDEs AI-First?",
+      "options": [
+        "VS Code Copilot: `.github/copilot-instructions.md` | Cursor: `.cursor/rules/*.mdc` (e `.cursorrules`) | Windsurf: `.windsurfrules` (e Memories).",
+        "VS Code Copilot: `package.json` | Cursor: `tsconfig.json` | Windsurf: `.gitignore`.",
+        "Todas as três IDEs leem exclusivamente o arquivo `C:\\Windows\\system32\\ai.ini`.",
+        "Nenhuma das três IDEs suporta arquivos de instruções versionados no Git."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Conforme as documentações oficiais de cada ferramenta, o VS Code Copilot utiliza `.github/copilot-instructions.md` (e `.github/instructions/*.instructions.md`), o Cursor utiliza `.cursor/rules/*.mdc` (além de suportar `.cursorrules` legado na raiz) e o Windsurf utiliza `.windsurfrules` combinado com seu sistema de Memories.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#comparativo-tecnico-vs-code-github-copilot-vs-cursor-vs-windsurf",
+      "officialDocUrl": "https://code.visualstudio.com/docs/copilot/copilot-customization",
+      "officialDocLabel": "VS Code Docs – Custom Instructions for Copilot"
+    },
+    {
+      "id": "m01-s07-q07",
+      "sessionId": "1.7",
+      "subtopicTag": "Comparativo Técnico: VS Code (GitHub Copilot) vs. Cursor vs. Windsurf",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "No Windsurf IDE, qual é a diferença operacional entre o arquivo `.windsurfrules` e o sistema de 'Memories' documentado em `docs.windsurf.com/windsurf/memories`?",
+      "options": [
+        "Não há diferença; ambos são arquivos binários criptografados.",
+        "O `.windsurfrules` contém regras determinísticas declaradas explicitamente pelo engenheiro e versionadas no repositório, enquanto as Memories podem ser geradas e atualizadas automaticamente pelo Cascade ao aprender fatos persistentes sobre o workspace (como comandos de build ou convenções descobertas durante as sessões).",
+        "As Memories são apagadas toda vez que o usuário pressiona a tecla Enter.",
+        "O `.windsurfrules` serve apenas para configurar a cor de fundo do terminal."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No Windsurf, `.windsurfrules` funciona como a constituição estática do projeto definida pelo time, enquanto as *Memories* atuam como uma memória episódica/semântica persistente que o próprio agente Cascade registra automaticamente quando descobre peculiaridades do ambiente ou preferências recorrentes do desenvolvedor.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#comparativo-tecnico-vs-code-github-copilot-vs-cursor-vs-windsurf",
+      "officialDocUrl": "https://docs.windsurf.com/windsurf/memories",
+      "officialDocLabel": "Windsurf Documentation – Memories & Rules"
+    },
+    {
+      "id": "m01-s07-q08",
+      "sessionId": "1.7",
+      "subtopicTag": "Indexação Vetorial Local da Codebase, Merkle Trees e @Symbols",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Qual é o papel da estrutura de dados 'Merkle Tree' (Árvore de Merkle) no pipeline de indexação vetorial de codebase do Cursor?",
+      "options": [
+        "Substituir o banco de dados PostgreSQL da aplicação do usuário por uma blockchain pública.",
+        "Permitir a detecção incremental em tempo logarítmico O(log N) de quais arquivos foram modificados localmente através da comparação hierárquica de hashes criptográficos SHA-256, reindexando e recalculando embeddings apenas dos arquivos que mudaram.",
+        "Comprimir imagens PNG da pasta assets para formato JPEG.",
+        "Executar testes unitários do Jest em paralelo na placa de vídeo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Em um repositório com dezenas de milhares de arquivos, recalcular embeddings de tudo a cada edição seria inviável. Usando uma Merkle Tree (onde cada diretório possui um hash derivado dos hashes dos seus arquivos filhos), a IDE identifica instantaneamente apenas as subárvores e arquivos cujos hashes mudaram para atualizar o índice vetorial.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#indexacao-vetorial-local-da-codebase-merkle-trees-e-symbols",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Documentation – Codebase Indexing"
+    },
+    {
+      "id": "m01-s07-q09",
+      "sessionId": "1.7",
+      "subtopicTag": "Indexação Vetorial Local da Codebase, Merkle Trees e @Symbols",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Durante a etapa de chunking (fragmentação) do código-fonte para geração de embeddings na IDE, por que utiliza-se um parser de AST incremental (como o Tree-sitter) em vez de cortar o texto fixamente a cada 500 caracteres?",
+      "options": [
+        "Porque o Tree-sitter traduz automaticamente qualquer código para linguagem C.",
+        "Porque o corte cego por número fixo de caracteres parte funções, classes e interfaces ao meio, destruindo a coesão semântica e o contexto de escopo do código, enquanto o AST chunking preserva unidades sintáticas completas (funções, métodos, declarações de tipo).",
+        "Porque modelos de embedding aceitam apenas arquivos que tenham exatamente 1 linha.",
+        "Porque o Tree-sitter não utiliza memória RAM."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O fatiamento orientado pela Abstract Syntax Tree (AST) garante que cada chunk enviado ao modelo de embedding represente um bloco lógico coerente (ex.: uma função inteira com sua assinatura e caminho de classe/módulo), aumentando drasticamente a precisão da recuperação (Retrieval) no RAG de código.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#indexacao-vetorial-local-da-codebase-merkle-trees-e-symbols",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Documentation – Codebase Indexing & Context"
+    },
+    {
+      "id": "m01-s07-q10",
+      "sessionId": "1.7",
+      "subtopicTag": "Indexação Vetorial Local da Codebase, Merkle Trees e @Symbols",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Segundo a documentação oficial do Cursor sobre `@Symbols` (`docs.cursor.com/context/@-symbols/overview`), qual símbolo deve ser utilizado quando uma biblioteca externa (ex.: Tailwind CSS v4 ou Capacitor 7) lançou uma versão nova após a data de corte de treinamento do LLM e você precisa evitar que a IA alucine configurações antigas?",
+      "options": [
+        "`@Git`",
+        "`@Docs` (adicionando e indexando a URL da documentação oficial atualizada da biblioteca para consulta via RAG dedicado).",
+        "`@Terminal`",
+        "`@Folders` apontando para a lixeira do sistema operacional."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O símbolo `@Docs` permite selecionar documentações oficiais já indexadas pelo Cursor ou cadastrar a URL de qualquer documentação oficial atualizada. O Cursor faz o crawling, indexa as páginas e injeta os trechos oficiais atualizados na janela de contexto, neutralizando o problema do knowledge cutoff.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#indexacao-vetorial-local-da-codebase-merkle-trees-e-symbols",
+      "officialDocUrl": "https://docs.cursor.com/context/@-symbols/overview",
+      "officialDocLabel": "Cursor Documentation – @Symbols Overview (@Docs)"
+    },
+    {
+      "id": "m01-s07-q11",
+      "sessionId": "1.7",
+      "subtopicTag": "Indexação Vetorial Local da Codebase, Merkle Trees e @Symbols",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Antes de abrir um Pull Request, você deseja que a IA audite exclusivamente as modificações não commitadas na sua árvore de trabalho atual (working tree) em busca de regressões ou vazamento de credenciais. Qual operador de contexto do Cursor realiza essa injeção diretamente?",
+      "options": [
+        "`@Git` (selecionando o diff do working state / branch atual).",
+        "`@Web`",
+        "`@Docs`",
+        "Não é possível ler diffs do Git em IDEs AI-First."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O símbolo `@Git` permite injetar diretamente os commits recentes, o diff contra a branch principal ou o estado atual da árvore de trabalho (*Git Working State*) no prompt, viabilizando auditorias de código precisas antes do commit.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#indexacao-vetorial-local-da-codebase-merkle-trees-e-symbols",
+      "officialDocUrl": "https://docs.cursor.com/context/@-symbols/overview",
+      "officialDocLabel": "Cursor Documentation – @Git Context Symbol"
+    },
+    {
+      "id": "m01-s07-q12",
+      "sessionId": "1.7",
+      "subtopicTag": "Modos de Operação: Ask/Chat, Edit/Composer, Cascade e Agentic Execution",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Em qual situação de engenharia o desenvolvedor deve escolher deliberadamente o modo 'Ask' (Chat somente leitura) em vez do 'Agent Mode'?",
+      "options": [
+        "Quando deseja que a IA crie 15 arquivos novos e rode `npm test` automaticamente.",
+        "Quando está explorando a arquitetura de um módulo crítico, avaliando trade-offs de design ou realizando uma auditoria de segurança sem querer que a IA aplique modificações nos arquivos ou execute comandos no terminal.",
+        "Nunca, pois o modo Ask foi removido de todas as IDEs modernas.",
+        "Apenas quando o computador está desligado."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O modo Ask opera em regime Read-Only (somente leitura). Ele é fundamental para planejamento arquitetural (*Plan before you Execute*), compreensão de fluxos complexos e discussões de design antes de autorizar o Agent Mode a modificar a árvore de arquivos.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#modos-de-operacao-ask-chat-edit-composer-cascade-e-agentic-execution",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Ask, Edit and Agent Modes"
+    },
+    {
+      "id": "m01-s07-q13",
+      "sessionId": "1.7",
+      "subtopicTag": "Modos de Operação: Ask/Chat, Edit/Composer, Cascade e Agentic Execution",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Quais capacidades técnicas definem o loop de execução do 'Agent Mode' no Cursor Composer, Windsurf Cascade e VS Code Copilot Agent?",
+      "options": [
+        "Apenas completar a palavra atual enquanto o usuário digita.",
+        "Um ciclo autônomo ReAct (Reason + Act + Observe) capaz de descobrir arquivos na codebase via busca semântica/grep, aplicar edições multi-arquivo com checkpoints de reversão, inspecionar erros de lint/compilador do LSP e executar comandos no terminal (como suítes de testes) iterando até corrigir as falhas.",
+        "Um script estático que formata arquivos com Prettier ao salvar.",
+        "Uma chamada única de API que não possui acesso à árvore de diretórios nem aos diagnósticos do compilador."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Agent Mode fecha o ciclo de feedback da engenharia: o agente planeja, busca contexto por conta própria, edita múltiplos arquivos, observa os erros reportados pelo LSP ou pela saída (`stdout`/`stderr`) de testes rodados no terminal e auto-corrige o código iterativamente.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#modos-de-operacao-ask-chat-edit-composer-cascade-e-agentic-execution",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Agent Mode Capabilities"
+    },
+    {
+      "id": "m01-s07-q14",
+      "sessionId": "1.7",
+      "subtopicTag": "Modos de Operação: Ask/Chat, Edit/Composer, Cascade e Agentic Execution",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Durante uma sessão longa no Agent Mode (Composer / Cascade), o agente realiza uma refatoração que toma um rumo arquitetural indesejado no 4º turno de conversa. Qual recurso nativo da IDE permite desfazer com segurança todas as alterações de múltiplos arquivos feitas a partir daquele ponto?",
+      "options": [
+        "Formatar o disco rígido e clonar o repositório novamente.",
+        "O sistema de Checkpoints (Restore Checkpoint / Revert), que restaura atomicamente o estado de todos os arquivos modificados pelo agente para o snapshot exato anterior àquele prompt.",
+        "Pressionar Ctrl+Z manualmente dentro de cada um dos 40 arquivos alterados na esperança de acertar a ordem.",
+        "Desinstalar a IDE e instalar novamente."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Tanto o Cursor Composer quanto o Windsurf Cascade e o Copilot Edits mantêm snapshots transacionais (*Checkpoints*) associados a cada mensagem enviada na conversa. Clicar em *Restore Checkpoint* reverte limpa e atomicamente todos os arquivos criados ou editados após aquele ponto.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#modos-de-operacao-ask-chat-edit-composer-cascade-e-agentic-execution",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Checkpoints in Composer/Agent"
+    },
+    {
+      "id": "m01-s07-q15",
+      "sessionId": "1.7",
+      "subtopicTag": "Governança de IA com .cursor/rules/*.mdc, .cursorrules e Custom Instructions",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que a documentação oficial do Cursor (`docs.cursor.com/context/rules-for-ai`) recomenda migrar de um único arquivo `.cursorrules` monolítico na raiz para múltiplos arquivos modulares em `.cursor/rules/*.mdc`?",
+      "options": [
+        "Porque o arquivo `.cursorrules` só aceitava no máximo 10 palavras.",
+        "Porque em projetos reais ou monorepos um `.cursorrules` único injeta regras irrelevantes em toda conversa (ex.: regras de estilização React poluindo a janela de contexto durante a escrita de uma migration SQL no backend), enquanto arquivos `.mdc` permitem ativação seletiva por `globs` de arquivos ou descoberta semântica via `description`.",
+        "Porque a extensão `.mdc` compila as regras em código de máquina executável pela GPU.",
+        "Porque o Git bloqueia commits de arquivos ocultos na raiz do projeto."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A arquitetura modular `.cursor/rules/*.mdc` evita a poluição da janela de contexto (*context bloat*). Ao segmentar as regras por domínio (ex.: `frontend-ui.mdc`, `backend-db.mdc`, `testing-vitest.mdc`) com `globs` específicos, o LLM recebe apenas as diretrizes pertinentes aos arquivos que estão sendo manipulados.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#governanca-de-ia-com-cursor-rules-mdc-cursorrules-e-custom-instructions",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Project Rules (.cursor/rules)"
+    },
+    {
+      "id": "m01-s07-q16",
+      "sessionId": "1.7",
+      "subtopicTag": "Governança de IA com .cursor/rules/*.mdc, .cursorrules e Custom Instructions",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o frontmatter YAML de um arquivo `.cursor/rules/database-pgvector.mdc` abaixo:\nComo o motor do Cursor classificará e ativará essa regra durante o trabalho no Agent Mode?",
+      "codeSnippet": "---\ndescription: Padrões obrigatórios para queries SQL no PostgreSQL, índices HNSW e operadores de distância do pgvector.\nglobs: []\nalwaysApply: false\n---",
+      "options": [
+        "Modo Always Apply: será injetada obrigatoriamente em todos os prompts, mesmo ao editar um arquivo CSS.",
+        "Modo Agent Requested: como `alwaysApply` é `false` e não há `globs` ativos, o agente lê o campo `description` e decide autonomamente carregar a regra quando identificar que a tarefa do usuário envolve PostgreSQL ou pgvector.",
+        "A regra será ignorada e deletada pela IDE porque a lista `globs` está vazia.",
+        "A regra causará um erro de sintaxe fatal ao abrir o editor."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Conforme a especificação oficial do Cursor e o analisador que construímos no Laboratório 7.1, quando `alwaysApply: false` e `globs` está vazio, a presença de uma `description` semântica clara configura a regra no modo **Agent Requested**, permitindo que o agente a carregue sob demanda quando o tópico da tarefa coincidir com a descrição.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#governanca-de-ia-com-cursor-rules-mdc-cursorrules-e-custom-instructions",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Rule Activation Modes (.mdc)"
+    },
+    {
+      "id": "m01-s07-q17",
+      "sessionId": "1.7",
+      "subtopicTag": "Governança de IA com .cursor/rules/*.mdc, .cursorrules e Custom Instructions",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Em uma regra `.cursor/rules/backend-typescript.mdc` de alta maturidade, qual é o motivo técnico de proibir a keyword `enum` nativa do TypeScript e exigir o padrão `as const` com tipo derivado `(typeof OBJ)[keyof typeof OBJ]`?",
+      "codeSnippet": "export const ORDER_STATUS = {\n  PENDING: 'PENDING',\n  PAID: 'PAID',\n} as const;\nexport type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];",
+      "options": [
+        "Porque `enum` nativo do TypeScript não faz parte do padrão ECMAScript puro e emite objetos IIFE mutáveis/bidirecionais em runtime (que dificultam o tree-shaking e o `--experimental-strip-types` do Node.js 24), enquanto `as const` preserva um objeto JavaScript literal imutável com segurança total de tipos em tempo de compilação.",
+        "Porque `enum` nativo só permite armazenar no máximo dois valores.",
+        "Porque o comando `as const` criptografa as strings em memória.",
+        "Porque o VS Code não possui syntax highlighting para a palavra `enum`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Enums do TypeScript são uma das poucas construções da linguagem que geram código JavaScript adicional em tempo de compilação (não apenas apagamento de tipos), sendo incompatíveis com o modo *type stripping* nativo do Node.js moderno (`--experimental-strip-types`). Codificar essa regra em `.cursor/rules/*.mdc` impede que o LLM gere `enum` por hábito estatístico.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#governanca-de-ia-com-cursor-rules-mdc-cursorrules-e-custom-instructions",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Enforcing Project Conventions"
+    },
+    {
+      "id": "m01-s07-q18",
+      "sessionId": "1.7",
+      "subtopicTag": "Governança de IA com .cursor/rules/*.mdc, .cursorrules e Custom Instructions",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual configuração de frontmatter `.mdc` deve ser utilizada para garantir que uma regra de estilização Tailwind CSS v4 seja injetada automaticamente **apenas** quando o agente ou o desenvolvedor estiver manipulando componentes React `.tsx` ou arquivos de folha de estilo `.css`?",
+      "options": [
+        "`alwaysApply: true` sem `globs`.",
+        "`globs: [\"src/**/*.tsx\", \"src/**/*.css\"]` com `alwaysApply: false`.",
+        "`description: \"Não carregue esta regra\"` com `alwaysApply: true`.",
+        "`globs: [\"*.sql\"]`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O modo *Auto Attached* é configurado definindo `alwaysApply: false` e fornecendo os padrões de caminho no campo `globs` (`[\"src/**/*.tsx\", \"src/**/*.css\"]`), garantindo que a regra só ocupe tokens na janela de contexto quando arquivos de UI estiverem em foco.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#governanca-de-ia-com-cursor-rules-mdc-cursorrules-e-custom-instructions",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Glob-based Project Rules"
+    },
+    {
+      "id": "m01-s07-q19",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "O que define o conceito de 'Vibe Coding', popularizado por Andrej Karpathy em 2025 e amplamente aplicado na criação rápida de protótipos e Micro-SaaS?",
+      "options": [
+        "Programar ouvindo música eletrônica sem utilizar nenhum assistente de Inteligência Artificial.",
+        "Um fluxo de desenvolvimento orientado por intenção em linguagem natural onde o desenvolvedor guia agentes de IA (como Cursor Composer ou Windsurf Cascade) para gerar, executar e corrigir iterativamente funcionalidades completas de ponta a ponta com intervenção manual mínima na digitação de boilerplate.",
+        "Escrever código exclusivamente em blocos de notas sem compilador e sem testes.",
+        "Substituir bancos de dados relacionais por planilhas impressas em papel."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Vibe Coding descreve a mudança de nível de abstração onde o criador opera como diretor de produto e arquiteto de prompts sobre um agente autônomo multi-arquivo, acelerando radicalmente a transição entre ideia e software funcional.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#vibe-coding-o-case-levelsio-pieter-levels-e-os-limites-de-seguranca-e-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Agent Mode Workflow"
+    },
+    {
+      "id": "m01-s07-q20",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "No estudo de caso de Pieter Levels (`@levelsio` — criador do PhotoAI, InteriorAI e fly.pieter.com, faturando +$100k/mês como desenvolvedor solo), por que a escolha de uma stack enxuta, monolítica e com poucas camadas de abstração indireta potencializa a eficácia das IDEs AI-First?",
+      "options": [
+        "Porque os LLMs se recusam a responder prompts de empresas que têm mais de um funcionário.",
+        "Porque arquiteturas enxutas e diretas possuem menor dispersão de arquivos e menor entropia de abstrações cerimoniais, permitindo que o fluxo completo da funcionalidade caiba com alta precisão na janela de contexto do agente sem que ele se perca em dezenas de camadas indiretas.",
+        "Porque uma stack enxuta dispensa o uso de protocolo HTTPS e servidores web.",
+        "Porque o Stripe só processa pagamentos de sistemas escritos em um único arquivo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Além de eliminar o overhead operacional para um fundador solo, manter uma stack coesa e sem sobre-engenharia (*over-engineering*) reduz a distância semântica entre a entrada e a saída do código. Isso facilita a recuperação de contexto pelo indexador da IDE e reduz erros de integração multi-camada pelo agente.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#vibe-coding-o-case-levelsio-pieter-levels-e-os-limites-de-seguranca-e-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Context & Rules Best Practices"
+    },
+    {
+      "id": "m01-s07-q21",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Durante uma sessão de Vibe Coding sem supervisão, o agente gera a linha abaixo em um componente React de um Micro-SaaS:\n`const stripeKey = import.meta.env.VITE_STRIPE_SECRET_KEY;`\nPor que o auditor construído no Laboratório 7.1 classifica essa linha como `CRITICAL_SECURITY` (`SEC-01-CLIENT-SECRET-LEAK`)?",
+      "codeSnippet": "const stripeKey = import.meta.env.VITE_STRIPE_SECRET_KEY;",
+      "options": [
+        "Porque o Vite não suporta variáveis de ambiente que contenham a palavra STRIPE.",
+        "Porque bundlers de frontend (como Vite e Next.js) embutem qualquer variável prefixada com `VITE_` ou `NEXT_PUBLIC_` diretamente no código JavaScript estático enviado ao navegador do usuário, expondo a chave secreta privada do servidor para qualquer pessoa que inspecione a aba Network/Sources do DevTools.",
+        "Porque variáveis `const` são mais lentas que `var` no navegador.",
+        "Porque chaves do Stripe só podem ser lidas a partir de arquivos `.txt` públicos na pasta `/public`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Um dos erros mais graves e frequentes de iniciantes em Vibe Coding é pedir para a IA 'fazer a chamada da OpenAI ou do Stripe funcionar rápido no frontend'. O agente frequentemente prefixa a chave privada com `VITE_` ou `NEXT_PUBLIC_` para fazê-la funcionar no browser, vazando a credencial mestre de produção no bundle público.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#laboratorio-pratico-compilador-e-validador-de-regras-cursor-rules-mdc-e-guardrails-anti-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Security Guardrails in Rules"
+    },
+    {
+      "id": "m01-s07-q22",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "O que é o ataque de cadeia de suprimentos conhecido como 'Slopsquatting' (alucinação de pacotes) e qual configuração de segurança no Agent Mode da IDE o previne?",
+      "options": [
+        "É quando o agente instala pacotes legítimos muito rapidamente; previne-se limitando a velocidade da internet.",
+        "Ocorre quando um LLM alucina o nome de um pacote inexistente em comandos `npm install` ou `pip install`, e atacantes registram previamente esses nomes alucinados nos repositórios públicos contendo malware; previne-se exigindo aprovação humana para instalação de novas dependências e restringindo o auto-run do terminal a uma allowlist segura.",
+        "É um erro de placa de vídeo que distorce as cores da IDE.",
+        "É quando dois desenvolvedores editam a mesma linha no Git simultaneamente."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. LLMs podem sugerir pacotes com nomes plausíveis mas inexistentes (ou variações com typos). Pesquisadores de segurança demonstraram que essas alucinações são repetitivas, permitindo que atacantes publiquem pacotes maliciosos com esses exatos nomes (*Slopsquatting*). Nunca permita que um agente execute `npm install <pacote-novo>` em modo `auto-run` cego sem verificar a procedência do pacote.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#vibe-coding-o-case-levelsio-pieter-levels-e-os-limites-de-seguranca-e-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/chat/agent",
+      "officialDocLabel": "Cursor Documentation – Terminal Auto-Run & Allowlists"
+    },
+    {
+      "id": "m01-s07-q23",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual lição técnica de arquitetura de segurança ficou evidente nos primeiros dias após o lançamento viral do jogo multiplayer `fly.pieter.com` construído via Vibe Coding por `@levelsio`?",
+      "options": [
+        "Jogos 3D em JavaScript não conseguem renderizar mais de um avião na tela.",
+        "O código gerado rapidamente para fazer o protótipo funcionar confiava nos dados enviados pelo cliente via WebSocket sem validação estrita de limites, sanitização e rate-limiting no servidor (Autoridade Server-Side), permitindo que usuários mal-intencionados injetassem payloads gigantescos e manipulassem o estado global até que barreiras de segurança server-side fossem implementadas.",
+        "O protocolo WebSocket foi descontinuado pelos navegadores modernos em 2025.",
+        "É impossível ganhar dinheiro com jogos construídos no navegador."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Agentes de IA otimizam por padrão para fazer a funcionalidade 'funcionar rapidamente no caminho feliz' (confiando nas coordenadas e tamanhos de objeto enviados pelo cliente WebSocket). Em sistemas em produção, toda entrada vinda do cliente deve ser tratada como hostil e validada sob autoridade estrita do servidor com schemas (ex.: Zod) e rate-limiting.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#vibe-coding-o-case-levelsio-pieter-levels-e-os-limites-de-seguranca-e-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Rules for AI"
+    },
+    {
+      "id": "m01-s07-q24",
+      "sessionId": "1.7",
+      "subtopicTag": "Vibe Coding, o Case @levelsio (Pieter Levels) e os Limites de Segurança e Dívida Técnica",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Por que agentes de IA sob pressão para resolver um erro de compilação ou runtime durante o Vibe Coding frequentemente introduzem o anti-padrão `try { ... } catch (e) {}` (bloco catch vazio) ou `: any`, e como o engenheiro impede essa degradação?",
+      "options": [
+        "Porque blocos catch vazios melhoram a performance da CPU em 400%.",
+        "Porque silenciar a exceção ou apagar o tipo com `any` faz o erro imediato do linter/terminal desaparecer com o menor esforço local, mas gera dívida técnica severa e falhas silenciosas em produção; impede-se combinando regras explícitas em `.cursor/rules/*.mdc`, ESLint/TypeScript strict (`no-empty`, `no-explicit-any`) e testes unitários automatizados.",
+        "Porque o JavaScript exige que todo bloco catch seja vazio.",
+        "Não há problema algum em usar catch vazio em sistemas financeiros."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No loop de auto-correção, se não houver regras estritas de linter e `.cursor/rules`, a maneira mais curta para um LLM eliminar um erro de tipo ou uma exceção não tratada é usar `as any` ou engolir o erro em um `catch {}` vazio. Configurar regras que forcem o compilador/linter a rejeitar `any` e `catch` vazio bloqueia esse atalho destrutivo no próprio loop do agente.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#laboratorio-pratico-compilador-e-validador-de-regras-cursor-rules-mdc-e-guardrails-anti-divida-tecnica",
+      "officialDocUrl": "https://docs.cursor.com/context/rules-for-ai",
+      "officialDocLabel": "Cursor Documentation – Preventing Anti-Patterns with Project Rules"
+    },
+    {
+      "id": "m01-s07-q25",
+      "sessionId": "1.7",
+      "subtopicTag": "Indexação Vetorial Local da Codebase, Merkle Trees e @Symbols",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a função do arquivo `.cursorignore` (ou `.codeiumignore` no Windsurf) na governança de contexto e segurança de uma IDE AI-First?",
+      "options": [
+        "Impedir que o compilador TypeScript compile arquivos de teste.",
+        "Bloquear a leitura, indexação vetorial e envio para servidores de LLM de arquivos sensíveis (como `.env`, chaves privadas `.pem`, dumps de banco de dados com PII de clientes) ou diretórios ruidosos (`dist/`, `build/`, assets binários), além do que já está no `.gitignore`.",
+        "Apagar automaticamente do computador todos os arquivos listados nele.",
+        "Desativar o salvamento automático de arquivos no editor."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Muitas vezes arquivos como `.env.local` ou pastas com dados de teste locais existem no disco do desenvolvedor. Configurar o `.cursorignore` garante que o indexador da Merkle Tree e as ferramentas de leitura do Agent Mode não indexem nem enviem segredos, credenciais ou dados sensíveis para os provedores de LLM na nuvem.",
+      "chapterAnchor": "cap-07-ferramentas-ia-devs-vibe-coding#indexacao-vetorial-local-da-codebase-merkle-trees-e-symbols",
+      "officialDocUrl": "https://docs.cursor.com/",
+      "officialDocLabel": "Cursor Documentation – Ignore Files & Privacy"
+    }
+  ]
+}

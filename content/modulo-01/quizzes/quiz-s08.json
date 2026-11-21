@@ -1,0 +1,487 @@
+{
+  "sessionId": "1.8",
+  "moduleId": 1,
+  "title": "Avaliação Técnica — Sessão 1.8: MCPs e Automação para Devs",
+  "questions": [
+    {
+      "id": "m01-s08-q01",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual problema estrutural da engenharia de software assistida por IA o Model Context Protocol (MCP) foi projetado para resolver?",
+      "options": [
+        "Substituir a arquitetura Transformer por um modelo de rede neural recorrente mais leve para execução no navegador.",
+        "Eliminar o problema de integração M × N entre aplicações hospedeiras de IA (Hosts) e ferramentas/fontes de dados externas, padronizando a comunicação em um protocolo universal M + N.",
+        "Comprimir modelos de linguagem de 70 bilhões de parâmetros em arquivos binários GGUF de 4 bits sem perda de perplexidade.",
+        "Unificar exclusivamente a estilização CSS de componentes gerados por diferentes IDEs como VS Code, Cursor e Windsurf."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: A alternativa B descreve exatamente a motivação arquitetural do MCP segundo a documentação oficial (modelcontextprotocol.io): transformar a matriz fragmentada M × N (onde cada IDE precisava construir conectores proprietários para cada ferramenta) em um padrão aberto M + N baseado em JSON-RPC 2.0. As demais alternativas confundem o MCP com arquiteturas de redes neurais, quantização GGUF (Ollama) ou estilização de UI.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#arquitetura-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Core Architecture"
+    },
+    {
+      "id": "m01-s08-q02",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Na topologia oficial do Model Context Protocol, qual é a relação de cardinalidade e responsabilidade entre o MCP Host, o MCP Client e o MCP Server?",
+      "options": [
+        "Um único MCP Client global conecta-se diretamente a múltiplos MCP Hosts através de sockets UDP sem estado.",
+        "O MCP Host (ex.: Cursor, Windsurf, Claude Desktop) instancia múltiplos MCP Clients internos, onde cada MCP Client mantém uma sessão dedicada 1:1 com um único MCP Server.",
+        "O MCP Server roda obrigatoriamente dentro da GPU do modelo de linguagem e gerencia a interface gráfica do usuário.",
+        "O MCP Host é um banco de dados relacional que armazena os pesos do LLM, enquanto o MCP Client é um navegador web comum."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: Segundo a especificação de arquitetura do MCP, o MCP Host é a aplicação de usuário (IDE ou desktop app) que coordena múltiplos MCP Clients; cada MCP Client mantém uma conexão stateful 1:1 isolada com um respectivo MCP Server. As alternativas A, C e D violam a topologia oficial.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#arquitetura-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Core Architecture"
+    },
+    {
+      "id": "m01-s08-q03",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual protocolo de mensagens da camada de aplicação é utilizado pelo Model Context Protocol para estruturar requisições, respostas e notificações entre Client e Server?",
+      "options": [
+        "GraphQL Subscriptions sobre WebRTC puro.",
+        "SOAP 1.2 com envelopes XML assinados via X.509.",
+        "JSON-RPC 2.0 (com suporte a requisições identificadas por id, respostas result/error e notificações unidirecionais).",
+        "gRPC binário obrigatório com compilação estática de arquivos .proto em todas as ferramentas."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "Correta: Toda a camada de protocolo do MCP é fundamentada em mensagens JSON-RPC 2.0 codificadas em UTF-8, trafegadas sobre transportes como stdio ou SSE/Streamable HTTP. Não são utilizados GraphQL, SOAP XML ou gRPC/Protobuf.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#arquitetura-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Core Architecture (Message Format)"
+    },
+    {
+      "id": "m01-s08-q04",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao desenvolver um servidor MCP local em Node.js/TypeScript que utiliza o transporte `StdioServerTransport`, por que a documentação oficial proíbe o uso de `console.log()` para mensagens de debug?",
+      "codeSnippet": "const transport = new StdioServerTransport();\nawait server.connect(transport);\n// Por que devemos usar console.error() em vez de console.log()?",
+      "options": [
+        "Porque o Node.js desativa a função console.log quando um pacote importa módulos ES (ESM).",
+        "Porque no transporte stdio o canal stdout é reservado exclusivamente para o fluxo de pacotes JSON-RPC 2.0; escrever texto livre em stdout corrompe o parser do MCP Client, devendo os logs irem para stderr (console.error).",
+        "Porque console.log envia automaticamente os dados para servidores externos de telemetria da OpenAI.",
+        "Porque console.log bloqueia a thread principal do V8 por 30 segundos em sistemas Windows."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: No transporte stdio, o MCP Client lê o stdout do subprocesso do MCP Server esperando estritamente mensagens JSON-RPC 2.0 delimitadas por quebra de linha. Qualquer saída de `console.log()` injeta strings não-JSON no stdout e quebra a sessão. Logs devem sempre ser gravados em `stderr` via `console.error()`.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#laboratorio-mcp-servidor-customizado",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP Quickstart – Logging in Stdio Servers"
+    },
+    {
+      "id": "m01-s08-q05",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Analise a sequência de handshake de inicialização de uma sessão MCP segundo a especificação oficial. Qual é a ordem exata de mensagens JSON-RPC 2.0 antes que chamadas operacionais como `tools/call` possam ocorrer?",
+      "options": [
+        "1) Server envia `tools/list` -> 2) Client responde `ack` -> 3) LLM encerra a conexão.",
+        "1) Client envia requisição `initialize` (com protocolVersion e capabilities) -> 2) Server responde com seu `result` (protocolVersion e server capabilities) -> 3) Client envia a notificação `notifications/initialized`.",
+        "1) Client envia `tools/call` diretamente sem handshake -> 2) Server solicita autenticação OAuth 1.0.",
+        "1) Server envia `notifications/initialized` -> 2) Client responde com `initialize`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: O ciclo de vida oficial exige que o Client inicie com a requisição `initialize`, receba a resposta com as `capabilities` negociadas do Server e confirme que está pronto enviando a notificação unidirecional `notifications/initialized`. Somente após essa confirmação o tráfego operacional (`tools/list`, `tools/call`, `resources/read`) é liberado.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#arquitetura-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Initialization Lifecycle"
+    },
+    {
+      "id": "m01-s08-q06",
+      "sessionId": "1.8",
+      "subtopicTag": "Primitivas do MCP: Tools, Resources e Prompts",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "O Model Context Protocol define três primitivas principais expostas pelos servidores: `Resources`, `Tools` e `Prompts`. De acordo com a documentação oficial, qual é a diferença fundamental de controle entre elas?",
+      "options": [
+        "Resources são controlados pelo modelo (LLM), Tools são controladas apenas pelo sistema operacional e Prompts são controlados pelo banco de dados.",
+        "Resources são controlados pela aplicação (leitura passiva de dados via URI), Tools são controladas pelo modelo/LLM (execução ativa de funções com JSON Schema) e Prompts são controlados pelo usuário (templates reutilizáveis como slash commands).",
+        "Não há diferença entre Resources e Tools; ambos são apenas arquivos de texto estáticos sem parâmetros.",
+        "Prompts são usados para executar comandos bash com privilégio root sem confirmação, enquanto Tools servem apenas para exibir ícones na IDE."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: A especificação do MCP distingue as três primitivas pela fronteira de controle: Resources são Application-controlled (dados e contextos identificados por URI, sem efeitos colaterais); Tools são Model-controlled (funções executáveis que o LLM decide invocar autonomamente); e Prompts são User-controlled (templates expostos na interface para o desenvolvedor acionar).",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#primitivas-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Core Primitives"
+    },
+    {
+      "id": "m01-s08-q07",
+      "sessionId": "1.8",
+      "subtopicTag": "Primitivas do MCP: Tools, Resources e Prompts",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Quando uma Tool executada por um MCP Server encontra um erro recuperável de domínio (por exemplo, um arquivo não encontrado ou uma falha HTTP 404 em uma API externa), qual estrutura de retorno permite que o LLM enxergue a falha e tente auto-corrigir seus parâmetros no próximo turno?",
+      "codeSnippet": "// Qual objeto de retorno do handler da Tool sinaliza erro de execução ao LLM?",
+      "options": [
+        "Chamar `process.exit(99)` imediatamente para derrubar o processo do servidor MCP.",
+        "Retornar `{ isError: true, content: [{ type: 'text', text: 'Descrição detalhada do erro...' }] }` no resultado do `tools/call`.",
+        "Retornar uma string vazia `\"\"` com status HTTP 204 sem corpo JSON-RPC.",
+        "Escrever o erro com `console.log()` no stdout sem retornar nada na Promise."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: Segundo a especificação de Tools do MCP, erros de execução da ferramenta (Tool Execution Errors) devem ser reportados dentro do objeto `result` configurando a flag booleana `isError: true` acompanhada da mensagem explicativa no array `content`. Isso entrega o feedback de erro ao contexto do LLM para que o agente possa corrigir os argumentos e tentar novamente.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#primitivas-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP Specification – Tool Error Handling (isError)"
+    },
+    {
+      "id": "m01-s08-q08",
+      "sessionId": "1.8",
+      "subtopicTag": "Primitivas do MCP: Tools, Resources e Prompts",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Para que um LLM saiba exatamente quais argumentos passar ao invocar uma ferramenta via `tools/call`, o que cada definição de ferramenta retornada pelo método `tools/list` deve conter obrigatoriamente?",
+      "options": [
+        "O código-fonte compilado em Assembly x86 da função.",
+        "Os campos `name`, `description` e um `inputSchema` válido no padrão JSON Schema definindo as propriedades e tipos esperados.",
+        "Um arquivo de imagem PNG demonstrando a tela da ferramenta.",
+        "A chave privada SSH do servidor de produção."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: No protocolo MCP, cada item da lista `tools` retornada por `tools/list` expõe `name`, `description` e `inputSchema` (um objeto JSON Schema tipo `object`). O Host repassa esse schema ao modelo para garantir chamadas de ferramenta estruturadas e tipadas.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#primitivas-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/docs/concepts/architecture",
+      "officialDocLabel": "Model Context Protocol – Tools & JSON Schema"
+    },
+    {
+      "id": "m01-s08-q09",
+      "sessionId": "1.8",
+      "subtopicTag": "Automação de Testes E2E com Playwright MCP e Inspeção de DOM",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que a geração tradicional de testes End-to-End (E2E) por um LLM — olhando apenas o código-fonte estático `.tsx` sem o Playwright MCP — frequentemente produz testes quebradiços que falham na primeira execução?",
+      "options": [
+        "Porque o Playwright não suporta aplicações escritas em TypeScript ou React.",
+        "Porque sem inspecionar o DOM real renderizado no navegador, o modelo tenta adivinhar seletores, ignorando portais dinâmicos, estados de hidratação, componentes terceiros (ex.: Radix/Shadcn) e a árvore de acessibilidade final.",
+        "Porque arquivos `.spec.ts` exigem compilação em linguagem C++ antes de rodar no Node.js.",
+        "Porque LLMs não conseguem gerar chamadas assíncronas com `async/await`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: Olhando apenas o código-fonte estático, o LLM não enxerga o DOM resultante após a renderização de bibliotecas de UI, portais, animações e chamadas de API. O Playwright MCP resolve isso abrindo o navegador real e inspecionando a árvore de elementos viva antes de escrever os seletores do teste.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#testes-e2e-playwright-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "MCP Official Servers – Browser Automation (Playwright/Puppeteer)"
+    },
+    {
+      "id": "m01-s08-q10",
+      "sessionId": "1.8",
+      "subtopicTag": "Automação de Testes E2E com Playwright MCP e Inspeção de DOM",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a principal vantagem técnica do modo padrão do Playwright MCP (`browser_snapshot`) operar sobre a Árvore de Acessibilidade (Accessibility Tree / ARIA Snapshot) em vez de depender exclusivamente de capturas de tela (Screenshots/Vision)?",
+      "options": [
+        "A Árvore de Acessibilidade fornece uma representação textual estruturada e determinística com roles ARIA, labels e referências exatas de elementos, consumindo muito menos tokens e evitando erros de adivinhação de coordenadas (X, Y) em pixels.",
+        "A Árvore de Acessibilidade desativa o motor JavaScript V8 do navegador para economizar bateria.",
+        "Capturas de tela não podem ser geradas em computadores com sistema operacional Windows ou Linux.",
+        "O modo Snapshot converte automaticamente todo o banco de dados PostgreSQL em arquivos CSS."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O `browser_snapshot` do Playwright MCP extrai a Accessibility Tree em formato estruturado (YAML/texto), fornecendo roles semânticos (`button`, `textbox`, `alert`), nomes acessíveis e `ref`s determinísticos. Isso torna a interação rápida, barata em tokens e alinhada com as melhores práticas de seletores do Playwright (`getByRole`, `getByLabel`).",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#testes-e2e-playwright-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "Playwright MCP – Accessibility Snapshot Architecture"
+    },
+    {
+      "id": "m01-s08-q11",
+      "sessionId": "1.8",
+      "subtopicTag": "Automação de Testes E2E com Playwright MCP e Inspeção de DOM",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Analise o arquivo `.cursor/mcp.json` abaixo. Qual trecho configura corretamente o servidor oficial do Playwright MCP via transporte `stdio` usando `npx`?",
+      "codeSnippet": "{\n  \"mcpServers\": {\n    \"playwright\": {\n      // Qual configuração pertence a este bloco?\n    }\n  }\n}",
+      "options": [
+        "\"command\": \"npx\", \"args\": [\"-y\", \"@playwright/mcp@latest\"]",
+        "\"url\": \"ftp://playwright.local:21/binary\", \"protocol\": \"soap\"",
+        "\"script\": \"rm -rf node_modules\", \"mode\": \"kernel\"",
+        "\"browser\": \"internet-explorer-6\", \"headless\": 999"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: A configuração padrão de um servidor MCP local via stdio no `.cursor/mcp.json` especifica a chave `\"command\": \"npx\"` e o array `\"args\": [\"-y\", \"@playwright/mcp@latest\"]`, permitindo ao Host iniciar o servidor sem bloquear em prompts de instalação.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#testes-e2e-playwright-mcp",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP Quickstart – Configuring MCP Servers in Host JSON"
+    },
+    {
+      "id": "m01-s08-q12",
+      "sessionId": "1.8",
+      "subtopicTag": "Automação de Testes E2E com Playwright MCP e Inspeção de DOM",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Durante uma sessão de debugging automatizado com o Playwright MCP, um formulário React não envia os dados ao clicar no botão. Quais duas ferramentas expostas pelo Playwright MCP o agente deve acionar para diagnosticar se houve uma exceção JavaScript no cliente ou uma falha HTTP na API?",
+      "options": [
+        "`browser_console_messages` (para ler erros e logs do console do browser) e `browser_network_requests` (para inspecionar chamadas HTTP e status codes como 400/500).",
+        "`postgres_drop_table` e `git_force_push`.",
+        "`audio_record_microphone` e `bluetooth_scan_devices`.",
+        "`css_randomize_colors` e `html_delete_body`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O servidor Playwright MCP expõe ferramentas específicas de observabilidade do navegador em tempo real: `browser_console_messages` captura erros lançados no runtime JS e `browser_network_requests` lista as requisições XHR/Fetch realizadas e seus códigos de status HTTP.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#testes-e2e-playwright-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "Playwright MCP Tools Reference"
+    },
+    {
+      "id": "m01-s08-q13",
+      "sessionId": "1.8",
+      "subtopicTag": "Eliminação de Alucinações com Servidores MCP de Documentação (Context7)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a causa raiz técnica pela qual LLMs de última geração frequentemente geram código com APIs depreciadas ou configurações obsoletas (como misturar sintaxes do Tailwind v3 em um projeto Tailwind v4 ou Next.js 13 em um projeto Next.js 15)?",
+      "options": [
+        "Os modelos possuem uma data de corte de treinamento (Knowledge Cutoff) e pesos estatísticos dominados pelo grande volume de código legado presente na internet na época do pré-treinamento.",
+        "As IDEs AI-First bloqueiam propositalmente o uso de versões recentes do Node.js.",
+        "O compilador TypeScript converte automaticamente código moderno para ECMAScript 3.",
+        "Os modelos de linguagem só conseguem ler documentações escritas em latim clássico."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Como os pesos do modelo são congelados no pré-treinamento (Knowledge Cutoff) e bibliotecas mais antigas possuem muito mais exemplos acumulados no corpus público, o modelo tende a regredir para padrões legados a menos que receba a documentação atualizada na janela de contexto via MCP.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#documentacao-atualizada-context7",
+      "officialDocUrl": "https://modelcontextprotocol.io/introduction",
+      "officialDocLabel": "Model Context Protocol – Grounding LLMs with Live Context"
+    },
+    {
+      "id": "m01-s08-q14",
+      "sessionId": "1.8",
+      "subtopicTag": "Eliminação de Alucinações com Servidores MCP de Documentação (Context7)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao utilizar o servidor MCP de documentação Context7 (`@upstash/context7-mcp`), qual é a sequência correta de ferramentas que o agente invoca para recuperar a documentação oficial atualizada de uma biblioteca?",
+      "options": [
+        "Primeiro invoca `resolve-library-id` (para traduzir o nome do pacote em um ID canônico compatível) e, em seguida, invoca `get-library-docs` passando o ID resolvido e o tópico desejado.",
+        "Invoca `npm_uninstall_all` seguido de `format_hard_drive`.",
+        "Envia um e-mail SMTP manual para o autor da biblioteca e aguarda 48 horas.",
+        "Chama `browser_take_screenshot` na tela inicial vazia do sistema operacional."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O fluxo de duas etapas do Context7 MCP consiste em chamar `resolve-library-id` para localizar o identificador exato da biblioteca no índice e, logo após, chamar `get-library-docs` com o `context7CompatibleLibraryID` (e parâmetros opcionais como `topic` e `tokens`) para injetar a documentação atualizada no contexto.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#documentacao-atualizada-context7",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "MCP Ecosystem – Documentation Servers (Context7)"
+    },
+    {
+      "id": "m01-s08-q15",
+      "sessionId": "1.8",
+      "subtopicTag": "Eliminação de Alucinações com Servidores MCP de Documentação (Context7)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Como um engenheiro de software pode garantir que o agente do Cursor ou Windsurf consulte automaticamente o servidor MCP de documentação antes de implementar integrações com bibliotecas externas, sem depender de lembrar de pedir isso a cada prompt?",
+      "options": [
+        "Codificando uma diretriz explícita nas regras de projeto da IDE (`.cursor/rules/*.mdc` ou `.windsurfrules`) que instrui o agente a invocar as tools do servidor MCP de documentação sempre que manipular dependências externas.",
+        "Desligando o acesso à rede da máquina de desenvolvimento.",
+        "Apagando o arquivo `package.json` do repositório Git.",
+        "Aumentando a temperatura do modelo para 2.0."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Combinar regras persistentes de workspace (`.cursor/rules/*.mdc`) com servidores MCP instalados cria um fluxo determinístico onde o agente verifica a versão no `package.json` e consulta a documentação oficial no MCP antes de gerar o código.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#documentacao-atualizada-context7",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP Best Practices in AI IDEs"
+    },
+    {
+      "id": "m01-s08-q16",
+      "sessionId": "1.8",
+      "subtopicTag": "Navegação Web, Busca e Extração Estruturada (Fetch, Brave Search e Firecrawl MCP)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a função primordial do servidor oficial `@modelcontextprotocol/server-fetch` ao recuperar o conteúdo de uma URL técnica para um agente de IA?",
+      "options": [
+        "Baixar apenas arquivos de vídeo `.mp4` em resolução 8K.",
+        "Realizar a requisição HTTP da página web e converter o conteúdo HTML principal em Markdown limpo (com suporte a paginação via `max_length` e `start_index`), economizando tokens da janela de contexto.",
+        "Compilar kernels Linux remotamente via protocolo Telnet.",
+        "Executar mineração de criptomoedas no navegador do servidor alvo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Correta: O servidor oficial Fetch MCP busca o conteúdo de uma URL e extrai o texto relevante convertendo o HTML em Markdown limpo para consumo eficiente pelo LLM, além de suportar leitura paginada através dos parâmetros `max_length` e `start_index`.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#navegacao-web-scraping-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "Model Context Protocol – Official Fetch Server"
+    },
+    {
+      "id": "m01-s08-q17",
+      "sessionId": "1.8",
+      "subtopicTag": "Navegação Web, Busca e Extração Estruturada (Fetch, Brave Search e Firecrawl MCP)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao usar a ferramenta `fetch` do servidor `@modelcontextprotocol/server-fetch` para ler uma RFC extensa de 25.000 caracteres, a primeira chamada com `max_length: 5000` retorna os primeiros 5.000 caracteres e informa que o conteúdo foi truncado. Como o agente deve proceder para ler o próximo bloco sem perder nem duplicar texto?",
+      "options": [
+        "Invocar novamente a ferramenta `fetch` para a mesma `url` passando `start_index: 5000` e `max_length: 5000`.",
+        "Reiniciar o computador, pois o protocolo MCP só permite uma chamada por sessão.",
+        "Passar `start_index: -9999` para ler o arquivo de trás para frente.",
+        "Trocar o transporte JSON-RPC por cabos coaxiais analógicos."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O parâmetro `start_index` do Fetch MCP permite paginação baseada em deslocamento de caracteres (offset). Ao passar `start_index: 5000`, o servidor retorna o fragmento seguinte a partir do caractere 5000.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#navegacao-web-scraping-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "Official Fetch MCP – Pagination Parameters (max_length & start_index)"
+    },
+    {
+      "id": "m01-s08-q18",
+      "sessionId": "1.8",
+      "subtopicTag": "Navegação Web, Busca e Extração Estruturada (Fetch, Brave Search e Firecrawl MCP)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Em qual cenário de engenharia o uso do **Firecrawl MCP** (`firecrawl-mcp`) é tecnicamente superior ao `@modelcontextprotocol/server-fetch` básico?",
+      "options": [
+        "Quando o alvo é uma Single-Page Application (SPA) que exige renderização de JavaScript dinâmico em headless browser, crawling recursivo de múltiplas subpáginas ou extração estruturada validada por JSON Schema (`firecrawl_extract`).",
+        "Quando queremos ler um arquivo `.txt` que já está salvo localmente na área de trabalho sem acesso à internet.",
+        "Quando precisamos editar diretamente os registradores da placa de som do computador local.",
+        "Nunca, pois o Firecrawl MCP só funciona em servidores mainframe da década de 1970."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Enquanto o Fetch MCP faz requisições HTTP estáticas, o Firecrawl MCP executa renderização completa de JavaScript para SPAs, contorna bloqueios comuns, varre sublinks (`firecrawl_crawl`) e extrai objetos JSON estritamente tipados (`firecrawl_extract`).",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#navegacao-web-scraping-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "MCP Servers – Web Scraping & Firecrawl Integration"
+    },
+    {
+      "id": "m01-s08-q19",
+      "sessionId": "1.8",
+      "subtopicTag": "Navegação Web, Busca e Extração Estruturada (Fetch, Brave Search e Firecrawl MCP)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual servidor MCP deve ser combinado ao Fetch/Firecrawl quando o agente ainda NÃO conhece a URL exata da solução e precisa primeiro pesquisar na web por um código de erro específico ou advisory de segurança (CVE)?",
+      "options": [
+        "Um servidor MCP de busca web (SERP), como o `@modelcontextprotocol/server-brave-search` (utilizando a ferramenta `brave_web_search`).",
+        "O servidor `@modelcontextprotocol/server-sqlite`, que armazena toda a internet mundial em um arquivo local de 2 KB.",
+        "Um servidor de impressão matricial LPT1.",
+        "Nenhum, pois o protocolo MCP proíbe pesquisas por palavras-chave."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Servidores MCP de busca como o Brave Search MCP expõem `brave_web_search` para consultar índices de pesquisa em tempo real, descobrindo as URLs relevantes que em seguida podem ser lidas em profundidade com Fetch ou Firecrawl MCP.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#navegacao-web-scraping-mcp",
+      "officialDocUrl": "https://github.com/modelcontextprotocol/servers",
+      "officialDocLabel": "Model Context Protocol – Brave Search Server"
+    },
+    {
+      "id": "m01-s08-q20",
+      "sessionId": "1.8",
+      "subtopicTag": "Orquestração Visual Bidirecional com n8n (MCP Client Tool e MCP Server Trigger)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "O que significa afirmar que o **n8n** possui suporte **bidirecional** ao Model Context Protocol?",
+      "options": [
+        "Significa que o n8n pode tanto consumir ferramentas de servidores MCP externos (através do sub-nó `MCP Client Tool` conectado a um AI Agent) quanto expor seus próprios workflows visuais como um servidor MCP (através do nó `MCP Server Trigger`) para IDEs como Cursor e Claude Desktop.",
+        "Significa que o cabos de rede do servidor n8n precisam ser conectados simultaneamente em duas placas-mãe.",
+        "Significa que o n8n traduz código Python para COBOL e de COBOL de volta para Python.",
+        "Significa que os nós visuais no canvas do n8n podem ser arrastados tanto para a esquerda quanto para a direita."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Segundo a documentação oficial do n8n Advanced AI, a integração MCP opera nas duas pontas: o `MCP Client Tool` permite que agentes dentro do n8n consumam servidores MCP externos, enquanto o `MCP Server Trigger` transforma workflows do n8n em servidores MCP acessíveis via SSE/HTTP por clientes externos.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#orquestracao-visual-n8n-mcp",
+      "officialDocUrl": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/",
+      "officialDocLabel": "n8n Documentation – MCP Client Tool & MCP Server Trigger"
+    },
+    {
+      "id": "m01-s08-q21",
+      "sessionId": "1.8",
+      "subtopicTag": "Orquestração Visual Bidirecional com n8n (MCP Client Tool e MCP Server Trigger)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Uma equipe de plataforma deseja permitir que os desenvolvedores, diretamente do chat do Cursor IDE, acionem um fluxo corporativo governado que cria um ticket no Jira, provisiona um banco de testes e notifica o canal de DevOps no Slack. Qual nó do n8n deve iniciar esse workflow para expô-lo ao Cursor?",
+      "options": [
+        "`MCP Server Trigger`, que gera um endpoint SSE/Streamable HTTP autenticável para ser registrado no `.cursor/mcp.json` da IDE.",
+        "`Cron Schedule Trigger` configurado para rodar apenas uma vez a cada ano bissexto.",
+        "`Manual Trigger`, pois o Cursor clica fisicamente com o mouse na tela do servidor remoto.",
+        "`IMAP Email Read`, exigindo que a IDE envie cartas postais físicas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O nó `MCP Server Trigger` no n8n expõe as ferramentas conectadas a ele através de um endpoint MCP padronizado (SSE/HTTP), permitindo que qualquer MCP Host (como o Cursor IDE) descubra e invoque o workflow corporativo via `tools/call`.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#orquestracao-visual-n8n-mcp",
+      "officialDocUrl": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/",
+      "officialDocLabel": "n8n Documentation – Exposing Workflows via MCP Server Trigger"
+    },
+    {
+      "id": "m01-s08-q22",
+      "sessionId": "1.8",
+      "subtopicTag": "Orquestração Visual Bidirecional com n8n (MCP Client Tool e MCP Server Trigger)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Em uma instância self-hosted do n8n, você adicionou um nó **AI Agent** conectado ao sub-nó **`MCP Client Tool`** para consumir um servidor MCP que expõe 15 ferramentas, mas por segurança você quer permitir que o agente utilize apenas 2 ferramentas específicas de leitura. Como o `MCP Client Tool` do n8n permite restringir esse escopo?",
+      "options": [
+        "Configurando o campo `Tools to Include` no nó `MCP Client Tool` para o modo `Selected` (ou `All Except`) e selecionando apenas as 2 ferramentas autorizadas da lista descoberta via `tools/list`.",
+        "Não é possível filtrar ferramentas no n8n; o agente sempre executa todas as 15 ferramentas simultaneamente em paralelo.",
+        "Editando o binário do kernel Linux com um editor hexadecimal.",
+        "Desinstalando o banco de dados do n8n antes de cada pergunta."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: Conforme a documentação oficial do sub-nó `MCP Client Tool` no n8n, o parâmetro `Tools to Include` permite escolher entre `All`, `Selected` (whitelist explícita das tools permitidas) ou `All Except` (blacklist de tools sensíveis), aplicando o princípio do menor privilégio ao agente.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#orquestracao-visual-n8n-mcp",
+      "officialDocUrl": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/",
+      "officialDocLabel": "n8n Documentation – MCP Client Tool Parameters (Tools to Include)"
+    },
+    {
+      "id": "m01-s08-q23",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao construir um servidor MCP em TypeScript utilizando a classe `McpServer` do pacote oficial `@modelcontextprotocol/sdk`, qual biblioteca é utilizada nativamente pelo método `server.tool(name, description, schema, handler)` para declarar e validar o schema dos parâmetros de entrada?",
+      "codeSnippet": "server.tool(\n  \"inspect_package_dependencies\",\n  \"Lê o package.json de um diretório local\",\n  { projectPath: z.string().describe(\"Caminho absoluto do projeto\") },\n  async ({ projectPath }) => { /* ... */ }\n);",
+      "options": [
+        "Zod (`z.string()`, `z.number()`, `z.enum()`), cujos schemas são automaticamente convertidos pelo SDK para `inputSchema` no formato JSON Schema e validados em runtime.",
+        "jQuery 1.4 DOM Selectors.",
+        "Hibernate XML Mapping do Java EE 5.",
+        "Expressões regulares escritas em Perl sem tipagem."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O SDK TypeScript oficial (`@modelcontextprotocol/sdk`) integra-se nativamente ao **Zod** na assinatura de `server.tool()`, convertendo automaticamente as definições Zod em objetos JSON Schema para o método `tools/list` e validando o payload recebido em `tools/call`.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#laboratorio-mcp-servidor-customizado",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP TypeScript SDK – Defining Tools with Zod"
+    },
+    {
+      "id": "m01-s08-q24",
+      "sessionId": "1.8",
+      "subtopicTag": "Arquitetura do Model Context Protocol (Host, Client, Server e JSON-RPC 2.0)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual ferramenta oficial de linha de comando permite testar e depurar interativamente um servidor MCP customizado no navegador (inspecionando `tools/list`, disparando `tools/call` e visualizando os payloads JSON-RPC) antes de plugá-lo no Cursor ou Claude Desktop?",
+      "options": [
+        "`npx @modelcontextprotocol/inspector <comando-do-servidor>` (MCP Inspector).",
+        "`npm audit fix --force`.",
+        "`git bisect start`.",
+        "`ping 127.0.0.1 -t`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: O **MCP Inspector** (`npx @modelcontextprotocol/inspector`) é a ferramenta oficial fornecida pelo projeto Model Context Protocol para simular um MCP Client visual, testar ferramentas, ler resources e depurar o tráfego JSON-RPC 2.0 de qualquer servidor MCP.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#laboratorio-mcp-servidor-customizado",
+      "officialDocUrl": "https://modelcontextprotocol.io/quickstart",
+      "officialDocLabel": "MCP Quickstart – Testing with MCP Inspector"
+    },
+    {
+      "id": "m01-s08-q25",
+      "sessionId": "1.8",
+      "subtopicTag": "Orquestração Visual Bidirecional com n8n (MCP Client Tool e MCP Server Trigger)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Considere a configuração abaixo no `.cursor/mcp.json` conectando a IDE a um servidor remoto exposto pelo `MCP Server Trigger` do n8n. Qual mecanismo de segurança garante que apenas desenvolvedores autorizados possam listar e invocar os workflows do n8n?",
+      "codeSnippet": "{\n  \"mcpServers\": {\n    \"n8n-devops-hub\": {\n      \"url\": \"https://n8n.empresa.com/mcp/devops-assistant/sse\",\n      \"headers\": {\n        \"Authorization\": \"Bearer <TOKEN_SECRETO>\"\n      }\n    }\n  }\n}",
+      "options": [
+        "O uso de transporte HTTP/SSE com autenticação baseada em cabeçalho (`Authorization: Bearer <TOKEN>`) validada diretamente no nó `MCP Server Trigger` do n8n sobre TLS (HTTPS).",
+        "O protocolo MCP não suporta nenhum tipo de cabeçalho HTTP ou autenticação em servidores remotos.",
+        "A segurança depende exclusivamente de esconder o endereço IP do servidor mudando a fonte do editor para cor branca.",
+        "O arquivo `.cursor/mcp.json` criptografa automaticamente o banco de dados PostgreSQL com chaves quânticas sem configurar headers."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Correta: No transporte remoto via SSE / Streamable HTTP, o cliente MCP envia os `headers` configurados (como `Authorization: Bearer <TOKEN>`) em todas as requisições ao endpoint do `MCP Server Trigger` no n8n, que valida a credencial antes de aceitar a sessão JSON-RPC.",
+      "chapterAnchor": "cap-08-mcps-e-automacao-devs#orquestracao-visual-n8n-mcp",
+      "officialDocUrl": "https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp/",
+      "officialDocLabel": "n8n Documentation – Securing MCP Server Trigger Endpoints"
+    }
+  ]
+}

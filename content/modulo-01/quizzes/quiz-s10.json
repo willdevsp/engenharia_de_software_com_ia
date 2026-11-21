@@ -1,0 +1,486 @@
+{
+  "sessionId": "1.10",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.10: Modelos Open-Source vs. Proprietários (OpenRouter e Ollama)",
+  "questions": [
+    {
+      "id": "m01-s10-q01",
+      "sessionId": "1.10",
+      "subtopicTag": "Matriz Comparativa: Modelos Proprietários vs. Open-Weights",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a distinção técnica e prática fundamental entre um modelo Proprietário (Closed-Source, como GPT-4o ou Claude 3.7 Sonnet) e um modelo Open-Weights (como Llama 3.3, Qwen 2.5 ou DeepSeek-R1)?",
+      "options": [
+        "Modelos proprietários utilizam a arquitetura Transformer, enquanto modelos Open-Weights só podem utilizar redes recorrentes (RNNs) sem mecanismo de atenção.",
+        "Nos modelos Open-Weights, os arquivos de pesos neurais treinados são disponibilizados publicamente para download e execução soberana em infraestrutura própria (local ou VPC privada), enquanto modelos proprietários só podem ser consumidos via chamadas de API gerenciadas pelo provedor.",
+        "Modelos Open-Weights exigem obrigatoriamente que o desenvolvedor re-treine o modelo do zero antes do primeiro uso, enquanto modelos proprietários já vêm pré-treinados.",
+        "Modelos proprietários não cobram por volume de tokens processados, ao passo que modelos Open-Weights cobram royalties por cada token gerado localmente no Ollama."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Nos modelos Open-Weights, os tensores de pesos já treinados são publicados para download (e convertidos para formatos como GGUF), permitindo execução 100% local ou em infraestrutura privada sem egresso de dados nem cobrança por token de API. Modelos proprietários mantêm seus pesos fechados e exigem chamadas de rede para a API do provedor.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#matriz-comparativa-modelos-proprietarios-vs-open-weights",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama Documentation – Overview & Local Execution"
+    },
+    {
+      "id": "m01-s10-q02",
+      "sessionId": "1.10",
+      "subtopicTag": "Matriz Comparativa: Modelos Proprietários vs. Open-Weights",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Uma instituição hospitalar brasileira precisa processar laudos médicos contendo dados pessoais sensíveis (PII/PHI protegidos pela LGPD) sob uma política corporativa estrita de Zero-Data Egress (nenhum byte de dado de paciente pode sair da rede interna do hospital). Qual decisão arquitetural atende a esse requisito?",
+      "options": [
+        "Consumir a API pública do OpenRouter configurando temperature: 0 para evitar que os dados saiam da rede local.",
+        "Hospedar modelos Open-Weights (como Llama 3.3 ou Qwen 2.5 quantizados em GGUF) e modelos de embedding (nomic-embed-text) localmente via Ollama dentro da rede privada do hospital.",
+        "Utilizar exclusivamente o endpoint público da OpenAI com chave de API no frontend React para que a requisição parta do navegador do médico.",
+        "Substituir o banco de dados por arquivos CSV na nuvem pública sem criptografia."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Quando há proibição absoluta de egresso de dados (Zero-Data Egress / ambientes Air-Gapped), qualquer chamada a APIs de nuvem externa viola a política de rede. A execução local de modelos Open-Weights e embeddings via Ollama garante que o processamento ocorra 100% dentro da memória e GPUs da infraestrutura interna.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#matriz-comparativa-modelos-proprietarios-vs-open-weights",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama Documentation – Local REST API"
+    },
+    {
+      "id": "m01-s10-q03",
+      "sessionId": "1.10",
+      "subtopicTag": "Matriz Comparativa: Modelos Proprietários vs. Open-Weights",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Sob a ótica de Engenharia de Custos (FinOps), como se comportam as curvas de custo de APIs Proprietárias versus Inferência Local/Própria com modelos Open-Weights à medida que o volume de uso escala?",
+      "options": [
+        "APIs proprietárias possuem custo fixo mensal independente do número de tokens, enquanto a inferência local cobra por cada token emitido ao sistema operacional.",
+        "APIs proprietárias operam sob custo variável (OPEX linear por milhão de tokens de entrada/saída, ideal para tráfego baixo ou esparso), enquanto a inferência própria possui custo fixo de hardware/GPU mas custo marginal por token próximo de zero (tornando-se mais econômica em alto volume contínuo).",
+        "Ambas as abordagens possuem exatamente o mesmo modelo de cobrança por token imposto pelo protocolo HTTP.",
+        "A inferência local só é financeiramente viável quando o sistema processa menos de 10 requisições por mês."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. APIs gerenciadas cobram por token consumido (excelente quando o volume é baixo, pois não há servidor ocioso). Contudo, sob carga contínua e massiva (ex.: indexação de milhões de documentos ou classificação 24/7), o custo fixo de uma GPU dedicada rodando modelos Open-Weights dilui o custo marginal por token a praticamente zero.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#matriz-comparativa-modelos-proprietarios-vs-open-weights",
+      "officialDocUrl": "https://openrouter.ai/docs/quick-start",
+      "officialDocLabel": "OpenRouter Documentation – Overview"
+    },
+    {
+      "id": "m01-s10-q04",
+      "sessionId": "1.10",
+      "subtopicTag": "Matriz Comparativa: Modelos Proprietários vs. Open-Weights",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual vantagem relacionada à reprodutibilidade e estabilidade de versão (prevenção de Model Drift silencioso) os modelos Open-Weights executados localmente oferecem em comparação a endpoints proprietários em nuvem?",
+      "options": [
+        "O arquivo de pesos local (identificado por seu hash SHA-256 no Ollama) é imutável e determinístico, impedindo que atualizações silenciosas do provedor alterem o comportamento do sistema ou depreciem o modelo sem controle da equipe.",
+        "Modelos locais atualizam seus pesos sozinhos a cada requisição sem intervenção do desenvolvedor.",
+        "Modelos proprietários nunca sofrem depreciação de versão na nuvem.",
+        "Modelos locais não utilizam pesos numéricos, eliminando variações probabilísticas mesmo com temperature alta."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em APIs na nuvem, provedores podem atualizar checkpoints ou descontinuar versões antigas de modelos, exigindo migração forçada de prompts. Ao rodar um artefato GGUF local versionado por digest SHA-256 no Ollama, você congela exatamente os pesos validados pela sua bateria de testes.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#matriz-comparativa-modelos-proprietarios-vs-open-weights",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Documentation – Modelfile & Model Digests"
+    },
+    {
+      "id": "m01-s10-q05",
+      "sessionId": "1.10",
+      "subtopicTag": "Matriz Comparativa: Modelos Proprietários vs. Open-Weights",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que modelos como Llama 3.3 ou Gemma 2 são frequentemente chamados pela comunidade técnica de 'Open-Weights' em vez de 'Open-Source' no sentido estrito da Open Source Initiative (OSI)?",
+      "options": [
+        "Porque seus pesos só podem ser lidos em formato de texto puro sem compressão binária.",
+        "Porque, embora os pesos treinados sejam abertos para download e execução gratuita, os datasets brutos completos de pré-treinamento e os pipelines internos de cluster geralmente não são publicados ou possuem restrições comerciais de escala na licença.",
+        "Porque eles não podem ser executados em sistemas operacionais Linux.",
+        "Porque eles só funcionam quando conectados simultaneamente à API paga da OpenAI."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A distinção entre Open-Weights e Open-Source estrito reside no fato de que os laboratórios publicam os pesos finais treinados e o código de inferência (garantindo soberania de execução local), mas raramente abrem o corpus bruto de trilhões de tokens ou impõem cláusulas para empresas com mais de 700 milhões de usuários mensais.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#matriz-comparativa-modelos-proprietarios-vs-open-weights",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama Documentation – Model Library"
+    },
+    {
+      "id": "m01-s10-q06",
+      "sessionId": "1.10",
+      "subtopicTag": "Orquestração Multi-Modelo e Fallbacks com OpenRouter",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "De acordo com a documentação oficial do OpenRouter (Quick Start), como um desenvolvedor Node.js pode utilizar o SDK oficial da OpenAI (`openai`) para consumir modelos da Anthropic, Google ou Meta através do OpenRouter?",
+      "codeSnippet": "import OpenAI from 'openai';\n\nconst client = new OpenAI({\n  baseURL: 'https://openrouter.ai/api/v1',\n  apiKey: process.env.OPENROUTER_API_KEY,\n});",
+      "options": [
+        "Não é possível usar o SDK da OpenAI; o OpenRouter exige um protocolo binário proprietário via UDP.",
+        "Basta instanciar o cliente OpenAI configurando a propriedade baseURL para 'https://openrouter.ai/api/v1' e passando a chave OPENROUTER_API_KEY, informando o modelo desejado no formato 'provedor/nome-do-modelo' (ex: 'anthropic/claude-3.7-sonnet').",
+        "É necessário recompilar o pacote npm openai substituindo todas as chamadas fetch por conexões WebSockets manuais.",
+        "O SDK da OpenAI só aceita modelos cujo nome comece estritamente com o prefixo 'gpt-' mesmo ao alterar a baseURL."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O OpenRouter implementa compatibilidade drop-in com a especificação Chat Completions da OpenAI. Alterando `baseURL: 'https://openrouter.ai/api/v1'` e `apiKey`, qualquer código existente escrito com o SDK da OpenAI passa a poder invocar centenas de modelos usando identificadores como `'anthropic/claude-3.7-sonnet'` ou `'google/gemini-2.5-pro'`. ",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#orquestrando-multiplos-modelos-com-openrouter",
+      "officialDocUrl": "https://openrouter.ai/docs/quick-start",
+      "officialDocLabel": "OpenRouter Docs – Using the OpenAI SDK"
+    },
+    {
+      "id": "m01-s10-q07",
+      "sessionId": "1.10",
+      "subtopicTag": "Orquestração Multi-Modelo e Fallbacks com OpenRouter",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a chamada abaixo enviada ao OpenRouter e indique o que acontecerá se o endpoint da Anthropic retornar erro HTTP 529 (Overloaded) ou 429 (Rate Limit):",
+      "codeSnippet": "const response = await openrouter.chat.completions.create({\n  model: 'anthropic/claude-3.7-sonnet',\n  models: [\n    'anthropic/claude-3.7-sonnet',\n    'openai/gpt-4o',\n    'deepseek/deepseek-r1'\n  ],\n  messages: [{ role: 'user', content: 'Refatore esta classe.' }]\n});",
+      "options": [
+        "O OpenRouter lançará imediatamente uma exceção fatal para a aplicação Node.js sem tentar nenhum outro modelo.",
+        "O OpenRouter acionará o mecanismo de Automatic Fallback: ao detectar a indisponibilidade ou rate-limit do modelo primário ('anthropic/claude-3.7-sonnet'), redirecionará transparentemente a requisição para 'openai/gpt-4o' (e depois 'deepseek/deepseek-r1' se necessário), retornando no campo response.model qual modelo efetivamente respondeu.",
+        "O OpenRouter executará os três modelos simultaneamente e concatenará os três textos na mesma string de saída.",
+        "O parâmetro models é ignorado pelo OpenRouter a menos que os três modelos pertençam à mesma empresa."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Segundo a documentação de Model Routing do OpenRouter, o array `models` define uma cadeia ordenada de fallback automático. Se o modelo primário falhar por indisponibilidade, erro de servidor ou rate limit, o gateway tenta automaticamente o próximo modelo da lista e informa o modelo vencedor na propriedade `response.model`.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#orquestrando-multiplos-modelos-com-openrouter",
+      "officialDocUrl": "https://openrouter.ai/docs/features/model-routing",
+      "officialDocLabel": "OpenRouter Docs – Model Routing & Fallbacks"
+    },
+    {
+      "id": "m01-s10-q08",
+      "sessionId": "1.10",
+      "subtopicTag": "Orquestração Multi-Modelo e Fallbacks com OpenRouter",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Ao consumir modelos Open-Weights na nuvem via OpenRouter (como Llama 3.3 70B ou DeepSeek-R1), múltiplos provedores de infraestrutura de GPU (Together, Fireworks, DeepInfra) podem hospedar o mesmo modelo. Qual configuração do objeto `provider` no payload do OpenRouter garante que a requisição NUNCA seja roteada para provedores que armazenam ou treinam em cima dos prompts enviados?",
+      "options": [
+        "provider: { data_collection: 'deny', require_parameters: true }",
+        "provider: { incognito_mode: 100 }",
+        "provider: { disable_ssl: true }",
+        "provider: { order: ['public-logging-only'] }"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Na especificação de Provider Routing do OpenRouter, a propriedade `data_collection: 'deny'` dentro do objeto `provider` instrui o roteador a filtrar e excluir qualquer provedor de infraestrutura subjacente que retenha payloads para treinamento, garantindo roteamento apenas para provedores com política Zero Data Retention. Já `require_parameters: true` garante que apenas provedores que suportam todos os parâmetros enviados sejam selecionados.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#orquestrando-multiplos-modelos-com-openrouter",
+      "officialDocUrl": "https://openrouter.ai/docs/features/model-routing",
+      "officialDocLabel": "OpenRouter Docs – Provider Routing & Data Privacy"
+    },
+    {
+      "id": "m01-s10-q09",
+      "sessionId": "1.10",
+      "subtopicTag": "Orquestração Multi-Modelo e Fallbacks com OpenRouter",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual é a finalidade dos cabeçalhos HTTP opcionais `HTTP-Referer` e `X-Title` recomendados na configuração de `defaultHeaders` ao inicializar o cliente do OpenRouter?",
+      "options": [
+        "São obrigatórios para criptografar a chave de API usando SHA-512; sem eles a requisição retorna HTTP 401.",
+        "Identificam a URL e o nome da sua aplicação nos logs de observabilidade, analytics de custos por app e nos rankings opcionais do OpenRouter.",
+        "Substituem o campo model no corpo da requisição JSON.",
+        "Forçam o modelo a responder exclusivamente no idioma definido no X-Title."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Conforme a documentação Quick Start do OpenRouter, `HTTP-Referer` e `X-Title` são cabeçalhos opcionais que atribuem as requisições ao seu aplicativo no painel de telemetria/custos do OpenRouter e nos rankings públicos opcionais da plataforma.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#orquestrando-multiplos-modelos-com-openrouter",
+      "officialDocUrl": "https://openrouter.ai/docs/quick-start",
+      "officialDocLabel": "OpenRouter Docs – Request Headers"
+    },
+    {
+      "id": "m01-s10-q10",
+      "sessionId": "1.10",
+      "subtopicTag": "Orquestração Multi-Modelo e Fallbacks com OpenRouter",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Em uma arquitetura que utiliza o fallback automático do OpenRouter com `models: ['anthropic/claude-3.7-sonnet', 'openai/gpt-4o']`, como o código Node.js deve verificar programaticamente se a requisição foi atendida pelo modelo primário ou por um modelo de contingência (fallback)?",
+      "options": [
+        "Não é possível saber qual modelo respondeu, pois o OpenRouter oculta essa informação no payload de retorno.",
+        "Inspecionando a propriedade `completion.model` no objeto JSON retornado pela API, que contém o identificador exato do modelo que efetivamente gerou a resposta.",
+        "Verificando se o status HTTP da resposta foi 200 (primário) ou 404 (fallback).",
+        "Contando o número de palavras da resposta gerada."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A resposta JSON do OpenRouter sempre popula o campo de topo `model` (`completion.model`) com o ID canônico do modelo que efetivamente processou o prompt. Comparar `completion.model` com o modelo primário solicitado permite registrar métricas de failover e observabilidade.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#orquestrando-multiplos-modelos-com-openrouter",
+      "officialDocUrl": "https://openrouter.ai/docs/features/model-routing",
+      "officialDocLabel": "OpenRouter Docs – Fallback Response Format"
+    },
+    {
+      "id": "m01-s10-q11",
+      "sessionId": "1.10",
+      "subtopicTag": "Quantização GGUF e Arquitetura de Inferência Local",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "O que é o processo de Quantização Pós-Treinamento (Post-Training Quantization) aplicado aos modelos executados pelo Ollama?",
+      "options": [
+        "É a remoção de metade das frases do prompt do usuário antes de enviá-lo ao modelo.",
+        "É a técnica de compressão que converte os pesos numéricos da rede neural de ponto flutuante de alta precisão (como FP16 de 16 bits) para representações inteiras de menor precisão em blocos (como 4-bit Q4_K_M ou 8-bit Q8_0), reduzindo drasticamente o consumo de VRAM/RAM com perda mínima de qualidade.",
+        "É o processo de converter código JavaScript para Python antes da inferência.",
+        "É o aumento da precisão dos pesos de 16 bits para 128 bits para ocupar mais espaço em disco."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A quantização mapeia tensores originalmente em FP16/BF16 (2 bytes por parâmetro) para inteiros de 4 a 8 bits agrupados em blocos com fatores de escala. Isso permite que um modelo de 8 bilhões de parâmetros caiba em ~5.4 GB de VRAM/RAM em vez de ~19 GB.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#quantizacao-gguf-e-arquitetura-do-ollama",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Documentation – GGUF & Quantization"
+    },
+    {
+      "id": "m01-s10-q12",
+      "sessionId": "1.10",
+      "subtopicTag": "Quantização GGUF e Arquitetura de Inferência Local",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Utilizando a fórmula prática de dimensionamento de memória $M_{\\text{GB}} \\approx P \\times (b / 8) \\times 1.2$ (que inclui 20% de margem para o KV Cache e ativações), qual é a memória aproximada exigida para rodar um modelo de 8 Bilhões de parâmetros ($P = 8$) em precisão original FP16 ($b = 16$) versus quantizado em 4 bits ($b \\approx 4.5$, padrão Q4_K_M)?",
+      "options": [
+        "FP16 exige ~19.2 GB de VRAM/RAM, enquanto Q4_K_M reduz a exigência para ~5.4 GB, viabilizando a execução fluida em notebooks e GPUs de consumo.",
+        "Ambos exigem exatamente 128 GB de memória RAM.",
+        "FP16 exige 2 GB, enquanto Q4_K_M exige 40 GB.",
+        "Q4_K_M não utiliza memória RAM nem VRAM, rodando diretamente do disco rígido sem mapeamento."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Para $P = 8$ em FP16 ($16/8 = 2$ bytes/parâmetro): $8 \\times 2 \\times 1.2 = 19.2\\text{ GB}$. Já em Q4_K_M ($\\sim 4.5/8 = 0.5625$ bytes/parâmetro): $8 \\times 0.5625 \\times 1.2 = 5.4\\text{ GB}$. Essa redução de mais de 70% é o que torna o Ollama viável em máquinas de desenvolvedores.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#quantizacao-gguf-e-arquitetura-do-ollama",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama Documentation – Memory & Model Sizing"
+    },
+    {
+      "id": "m01-s10-q13",
+      "sessionId": "1.10",
+      "subtopicTag": "Quantização GGUF e Arquitetura de Inferência Local",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Quais elementos são empacotados dentro de um único arquivo binário no formato GGUF (GPT-Generated Unified Format) utilizado pelo motor llama.cpp e pelo Ollama?",
+      "options": [
+        "Apenas um link URL apontando para a API da OpenAI.",
+        "Os metadados da arquitetura do modelo (camadas, dimensões, hiperparâmetros), o vocabulário completo do tokenizador e todos os tensores de pesos quantizados alinhados para carregamento rápido via mmap().",
+        "Apenas o código-fonte em Python do PyTorch sem os pesos treinados.",
+        "Arquivos de áudio MP3 pré-gravados com as respostas do modelo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O formato GGUF foi projetado para ser um artefato binário único e autocontido para inferência rápida: inclui cabeçalho completo de metadados KV, tabelas do tokenizador e tensores quantizados prontos para mapeamento direto em memória (`mmap`) na CPU ou GPU.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#quantizacao-gguf-e-arquitetura-do-ollama",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Documentation – GGUF Import"
+    },
+    {
+      "id": "m01-s10-q14",
+      "sessionId": "1.10",
+      "subtopicTag": "Quantização GGUF e Arquitetura de Inferência Local",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Na nomenclatura de quantização `Q4_K_M` (o esquema padrão da biblioteca de modelos do Ollama), qual é a vantagem técnica da abordagem K-Quant Medium (`_K_M`) sobre uma quantização uniforme ingênua de 4 bits?",
+      "options": [
+        "Ela preserva tensores críticos e mais sensíveis da arquitetura Transformer (como projeções de valor de atenção e camadas feed-forward específicas) em precisão mista superior (5 ou 6 bits) usando super-blocos de escala, mantendo os demais pesos em 4 bits.",
+        "Ela converte apenas os primeiros 100 parâmetros do modelo e apaga todas as camadas restantes.",
+        "Ela obriga o modelo a gerar no máximo 4 palavras por resposta.",
+        "Ela só funciona em processadores de 4 bits fabricados na década de 1970."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Os esquemas K-Quant (`Q4_K_M`, `Q5_K_M`) utilizam quantização em super-blocos com precisão mista: camadas cujo erro de arredondamento degradaria fortemente a perplexidade do modelo recebem 5 ou 6 bits, enquanto a maioria das matrizes usa 4 bits, atingindo uma média de ~4.5 bits por peso com fidelidade muito próxima de 16 bits.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#quantizacao-gguf-e-arquitetura-do-ollama",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Documentation – Quantization Schemes"
+    },
+    {
+      "id": "m01-s10-q15",
+      "sessionId": "1.10",
+      "subtopicTag": "Quantização GGUF e Arquitetura de Inferência Local",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Qual é a porta HTTP padrão na qual o daemon servidor local do Ollama escuta conexões REST API e qual comando CLI exibe quais modelos estão atualmente carregados na memória RAM/VRAM (incluindo o percentual de offload na GPU)?",
+      "options": [
+        "Porta 3000; comando `ollama delete-all`.",
+        "Porta 11434 (`http://localhost:11434`); comando `ollama ps`.",
+        "Porta 5432; comando `ollama sql`.",
+        "Porta 8080; comando `npm start`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O daemon do Ollama escuta por padrão em `http://localhost:11434` (ou `127.0.0.1:11434`). O comando `ollama ps` lista os modelos atualmente ativos em memória, o tamanho alocado, a proporção processada em CPU vs. GPU e o tempo restante de `keep_alive`.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#quantizacao-gguf-e-arquitetura-do-ollama",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama REST API Reference – Host & CLI"
+    },
+    {
+      "id": "m01-s10-q16",
+      "sessionId": "1.10",
+      "subtopicTag": "Customização de Modelos Locais com Modelfile",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "De acordo com a especificação oficial do `Modelfile` do Ollama, qual instrução é OBRIGATÓRIA e deve iniciar a definição do modelo?",
+      "options": [
+        "SYSTEM",
+        "FROM",
+        "ADAPTER",
+        "ENTRYPOINT"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A instrução `FROM` é a única instrução obrigatória em um `Modelfile`, definindo o modelo base da biblioteca do Ollama (ex.: `FROM qwen2.5-coder:7b`) ou apontando para um arquivo `.gguf` local (`FROM ./model.gguf`).",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#customizacao-de-modelos-locais-com-modelfile",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Docs – Modelfile Instructions (FROM)"
+    },
+    {
+      "id": "m01-s10-q17",
+      "sessionId": "1.10",
+      "subtopicTag": "Customização de Modelos Locais com Modelfile",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Um desenvolvedor está construindo um sistema RAG local com Ollama e percebe que, ao enviar prompts de 10.000 tokens contendo vários trechos de documentação, o modelo ignora completamente as instruções colocadas no início do prompt. Qual parâmetro do `Modelfile` (ou do objeto `options` na API) precisa ser ajustado para corrigir esse truncamento?",
+      "options": [
+        "`PARAMETER num_ctx 16384`, pois o Ollama limita por padrão a janela de contexto ativa (`num_ctx`, frequentemente 2048 ou 4096 tokens) para economizar memória VRAM do KV Cache.",
+        "`PARAMETER temperature 2.0`, pois temperaturas baixas apagam tokens do início do prompt.",
+        "`PARAMETER seed 42`, que multiplica a memória da GPU por 10.",
+        "`PARAMETER top_k 1`, que desativa o tokenizador."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Na especificação do `Modelfile` e da API do Ollama, `num_ctx` define o tamanho da janela de contexto alocada para o KV Cache na VRAM. O valor padrão conservador (2048 tokens) faz com que prompts maiores sofram truncamento caso `num_ctx` não seja explicitamente expandido (ex.: `PARAMETER num_ctx 16384`).",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#customizacao-de-modelos-locais-com-modelfile",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Docs – Modelfile Valid Parameters (num_ctx)"
+    },
+    {
+      "id": "m01-s10-q18",
+      "sessionId": "1.10",
+      "subtopicTag": "Customização de Modelos Locais com Modelfile",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Após salvar um arquivo personalizado chamado `Modelfile.revisor` no diretório atual, qual comando CLI oficial do Ollama compila e registra o novo modelo sob o nome `revisor-ts` no daemon local?",
+      "options": [
+        "`ollama build -t revisor-ts .`",
+        "`ollama create revisor-ts -f ./Modelfile.revisor`",
+        "`ollama install ./Modelfile.revisor --name revisor-ts`",
+        "`ollama compile Modelfile.revisor`"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O comando oficial documentado em `modelfile.md` é `ollama create <nome-do-modelo> -f <caminho-do-Modelfile>`, que lê as instruções (`FROM`, `PARAMETER`, `SYSTEM`, etc.) e registra o modelo derivado localmente.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#customizacao-de-modelos-locais-com-modelfile",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Docs – Creating a Model from a Modelfile"
+    },
+    {
+      "id": "m01-s10-q19",
+      "sessionId": "1.10",
+      "subtopicTag": "Customização de Modelos Locais com Modelfile",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual é a função das instruções `ADAPTER` e `MESSAGE` dentro de um `Modelfile` do Ollama?",
+      "options": [
+        "`ADAPTER` aplica pesos de Fine-Tuning leve (LoRA / Low-Rank Adaptation) sobre o modelo base, enquanto `MESSAGE` pré-carrega exemplos de conversação (`user` / `assistant`) funcionando como Few-Shot Prompting embutido.",
+        "`ADAPTER` configura a placa de rede Wi-Fi e `MESSAGE` envia e-mails via SMTP.",
+        "Ambas servem apenas para adicionar comentários que são ignorados pelo compilador do Ollama.",
+        "`ADAPTER` converte o modelo para a nuvem da AWS e `MESSAGE` apaga o System Prompt."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Conforme a documentação oficial do `Modelfile`, `ADAPTER` carrega um adaptador LoRA (Safetensors ou GGUF) acoplado ao modelo base do `FROM`, e `MESSAGE <role> <content>` embute turnos exemplares (`user`/`assistant`) no contexto inicial de todas as execuções do modelo.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#customizacao-de-modelos-locais-com-modelfile",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Docs – ADAPTER and MESSAGE Instructions"
+    },
+    {
+      "id": "m01-s10-q20",
+      "sessionId": "1.10",
+      "subtopicTag": "Customização de Modelos Locais com Modelfile",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o trecho de `Modelfile` abaixo. Qual será o comportamento do modelo resultante ao ser invocado?",
+      "codeSnippet": "FROM qwen2.5-coder:7b\nPARAMETER temperature 0.0\nPARAMETER num_ctx 16384\nSYSTEM \"\"\"\nResponda exclusivamente com código SQL compatível com PostgreSQL 16 e extensão pgvector.\n\"\"\"",
+      "options": [
+        "O modelo gerará respostas altamente aleatórias e criativas com janela máxima de 512 tokens.",
+        "O modelo operará de forma determinística (greedy decoding com temperature 0.0), suportará até 16.384 tokens de janela de contexto e terá o System Prompt de especialista em PostgreSQL/pgvector injetado automaticamente em todas as sessões.",
+        "O comando falhará porque aspas triplas não são permitidas na instrução SYSTEM do Modelfile.",
+        "O modelo apagará o banco PostgreSQL local ao ser carregado."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A instrução `PARAMETER temperature 0.0` torna a seleção de tokens determinística (escolhendo sempre o token de maior probabilidade), `num_ctx 16384` dimensiona o KV Cache para 16k tokens e o bloco `SYSTEM` com aspas triplas define a diretriz permanente do modelo.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#customizacao-de-modelos-locais-com-modelfile",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/modelfile.md",
+      "officialDocLabel": "Ollama Docs – Modelfile Syntax & Multiline Strings"
+    },
+    {
+      "id": "m01-s10-q21",
+      "sessionId": "1.10",
+      "subtopicTag": "Consumo da API Local do Ollama (/api/chat e /api/embed) em Node.js",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Ao fazer uma requisição HTTP direta (`fetch`) para o endpoint `POST http://localhost:11434/api/chat` do Ollama sem especificar a propriedade `stream`, qual é o comportamento padrão da API REST segundo a documentação oficial (`docs/api.md`)?",
+      "options": [
+        "Por padrão, `stream` é `true` na API REST do Ollama, retornando um fluxo de objetos JSON separados por quebra de linha (NDJSON) conforme cada token é gerado; para receber um único objeto JSON consolidado ao final, deve-se passar explicitamente `stream: false`.",
+        "Por padrão, a API bloqueia a conexão por 10 minutos e nunca envia resposta caso `stream` seja omitido.",
+        "A API REST do Ollama não suporta streaming de tokens.",
+        "O endpoint `/api/chat` retorna exclusivamente arquivos XML compactados em ZIP."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Diferente da API da OpenAI (onde `stream` é `false` por padrão), nos endpoints `/api/chat` e `/api/generate` da REST API nativa do Ollama, o padrão é `stream: true` (NDJSON). Quando desejamos fazer `await response.json()` de uma só vez em uma chamada REST direta, precisamos definir `stream: false` no payload.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#consumindo-a-api-local-do-ollama-em-nodejs",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama REST API Reference – Generate a chat completion (/api/chat)"
+    },
+    {
+      "id": "m01-s10-q22",
+      "sessionId": "1.10",
+      "subtopicTag": "Consumo da API Local do Ollama (/api/chat e /api/embed) em Node.js",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "De acordo com a documentação atual da API do Ollama (`docs/api.md`), qual é o endpoint oficial recomendado para gerar Vector Embeddings localmente e qual vantagem seu parâmetro `input` oferece para pipelines de ingestão RAG?",
+      "codeSnippet": "const res = await fetch('http://localhost:11434/api/embed', {\n  method: 'POST',\n  body: JSON.stringify({\n    model: 'nomic-embed-text',\n    input: ['Trecho 1 sobre RAG', 'Trecho 2 sobre pgvector']\n  })\n});",
+      "options": [
+        "O endpoint oficial é `POST /api/embed` (que substituiu o legado `/api/embeddings`), e seu parâmetro `input` aceita tanto uma string única quanto um array de strings (`string[]`) para geração em lote (batch) em uma única chamada, retornando a matriz `embeddings: number[][]`.",
+        "O Ollama não possui endpoint de embeddings; ele só gera texto conversacional.",
+        "O endpoint é `GET /api/vectors` e só aceita uma única palavra de no máximo 5 letras por chamada.",
+        "O parâmetro `input` só aceita arquivos de imagem PNG."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. A documentação oficial `docs/api.md` define `POST /api/embed` como o endpoint atual para geração de embeddings (marcando `/api/embeddings` como superseded/legado). O campo `input` aceita um array de strings para processamento em lote na GPU e retorna `{ embeddings: [[...], [...]] }`.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#consumindo-a-api-local-do-ollama-em-nodejs",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama REST API Reference – Generate Embeddings (/api/embed)"
+    },
+    {
+      "id": "m01-s10-q23",
+      "sessionId": "1.10",
+      "subtopicTag": "Consumo da API Local do Ollama (/api/chat e /api/embed) em Node.js",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Como a biblioteca oficial `ollama` (`ollama-js`) e o endpoint `/api/chat` garantem que a saída de um modelo local respeite estritamente um contrato de dados tipado (Structured Outputs)?",
+      "options": [
+        "Passando um objeto JSON Schema válido na propriedade `format` da chamada `ollama.chat({ model, messages, format: schema })`, o que restringe a amostragem de tokens do modelo em tempo de execução para produzir um JSON 100% aderente ao schema.",
+        "Passando `forceTypeScript: true` na URL de conexão HTTP.",
+        "Não há suporte a JSON no Ollama; é obrigatório usar expressões regulares para tentar adivinhar os campos no texto livre.",
+        "Definindo `temperature: 100`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Tanto a REST API (`/api/chat`) quanto o SDK `ollama-js` aceitam um JSON Schema completo no parâmetro `format`. Internamente, o Ollama converte o JSON Schema em uma gramática formal (GBNF) que mascara tokens inválidos durante a inferência, garantindo um JSON sintaticamente válido e compatível com o contrato.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#consumindo-a-api-local-do-ollama-em-nodejs",
+      "officialDocUrl": "https://github.com/ollama/ollama-js",
+      "officialDocLabel": "Ollama JS SDK – Structured Outputs (format)"
+    },
+    {
+      "id": "m01-s10-q24",
+      "sessionId": "1.10",
+      "subtopicTag": "Consumo da API Local do Ollama (/api/chat e /api/embed) em Node.js",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é o efeito do parâmetro `keep_alive` nas chamadas aos endpoints `/api/chat` e `/api/embed` do Ollama?",
+      "options": [
+        "Define por quanto tempo (ex.: `'10m'`, `'1h'`, ou `0` para descarregar imediatamente) o modelo permanecerá carregado na memória VRAM/RAM após o término da requisição, evitando a latência de Cold Start (carregamento de disco) nas próximas chamadas.",
+        "Define o tempo máximo que o usuário pode digitar no teclado antes do computador desligar.",
+        "Impede que o modelo termine a geração da resposta, gerando tokens infinitamente por 5 minutos.",
+        "Envia pacotes de ping para o servidor do OpenRouter a cada segundo."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Carregar vários gigabytes de pesos GGUF do SSD para a VRAM leva de 1 a 5 segundos (Cold Start). O parâmetro `keep_alive` (padrão de 5 minutos) controla por quanto tempo o daemon do Ollama mantém os tensores residentes na VRAM aguardando novas requisições, ou permite liberar a VRAM imediatamente passando `keep_alive: 0`.",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#consumindo-a-api-local-do-ollama-em-nodejs",
+      "officialDocUrl": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+      "officialDocLabel": "Ollama REST API Reference – Request Parameters (keep_alive)"
+    },
+    {
+      "id": "m01-s10-q25",
+      "sessionId": "1.10",
+      "subtopicTag": "Consumo da API Local do Ollama (/api/chat e /api/embed) em Node.js",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "No laboratório prático do `HybridAIRouter` construído nesta sessão, quais são os dois gatilhos arquiteturais que desviam automaticamente uma requisição do gateway de nuvem (OpenRouter) para o servidor local do Ollama?",
+      "options": [
+        "1) Detecção preventiva de dados sensíveis/PII ou chaves privadas no prompt (Compliance Routing), garantindo que dados sigilosos não saiam de `localhost`; e 2) Failover resiliente caso a conexão com a internet ou os provedores de nuvem sofram indisponibilidade total.",
+        "1) Sempre que o prompt tiver menos de 50 palavras; e 2) Sempre que o horário do servidor for ímpar.",
+        "1) Quando o usuário solicita uma resposta em inglês; e 2) Quando a temperatura é menor que 0.5.",
+        "O HybridAIRouter nunca envia requisições para o Ollama se a chave do OpenRouter estiver configurada."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Uma arquitetura híbrida madura combina roteamento por política de segurança/privacidade (qualquer prompt contendo PII, segredos ou flag `forceLocal` é processado exclusivamente no Ollama local) com alta disponibilidade (se a chamada ao OpenRouter falhar por queda de rede externa, o bloco `catch` aciona o failover transparente para o modelo local).",
+      "chapterAnchor": "cap-10-open-source-vs-proprietarios-ollama#laboratorio-pratico-gateway-hibrido-com-fallback-local",
+      "officialDocUrl": "https://openrouter.ai/docs/features/model-routing",
+      "officialDocLabel": "OpenRouter & Ollama Hybrid Routing Architecture"
+    }
+  ]
+}

@@ -1,0 +1,485 @@
+{
+  "sessionId": "1.11",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.11: Introdução a Agents e Automação Avançada",
+  "questions": [
+    {
+      "id": "m01-s11-q01",
+      "sessionId": "1.11",
+      "subtopicTag": "De Chatbots Passivos a Agentes Ativos (Workflows vs. Agents)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a diferença estrutural entre um Chatbot Passivo (inferência de turno único) e um Agente Autônomo de IA?",
+      "options": [
+        "Um chatbot passivo utiliza placas de vídeo (GPUs), enquanto um agente autônomo só pode rodar em CPUs sem aceleração.",
+        "Um chatbot passivo recebe um prompt e retorna uma resposta estática em turno único sem interagir ativamente com o ambiente nem verificar o resultado; já um agente autônomo raciocina sobre um objetivo, decompõe etapas, invoca ferramentas externas (Tool Calling), observa o feedback do ambiente e itera em loop até concluir a missão.",
+        "Um agente autônomo é qualquer prompt que comece com a frase 'Atue como um especialista sênior'.",
+        "Um chatbot passivo não utiliza tokenização BPE, enquanto o agente autônomo cria seu próprio vocabulário a cada requisição."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A diferença entre um chatbot passivo e um agente autônomo reside no fluxo de controle iterativo e na interação com o ambiente externo: o agente opera em um loop contínuo de Percepção, Raciocínio/Planejamento, Ação (Tool Calling) e Observação (Feedback) até que o critério de parada da missão seja atingido.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#de-chatbots-passivos-a-agentes-ativos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Building Effective Agents"
+    },
+    {
+      "id": "m01-s11-q02",
+      "sessionId": "1.11",
+      "subtopicTag": "De Chatbots Passivos a Agentes Ativos (Workflows vs. Agents)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "De acordo com a taxonomia oficial da Anthropic no documento 'Building Effective Agents', qual é a distinção arquitetural entre 'Workflows' e 'Agents' dentro dos sistemas agênticos?",
+      "options": [
+        "Em Workflows, LLMs e ferramentas são orquestrados através de caminhos de código pré-definidos e determinísticos escritos pelo engenheiro; em Agents, o próprio LLM direciona dinamicamente seus processos, decisões e uso de ferramentas em tempo de execução.",
+        "Workflows são exclusivos para a linguagem Python, enquanto Agents só existem em JavaScript.",
+        "Workflows não podem chamar ferramentas nem APIs externas, enquanto Agents não possuem System Prompt.",
+        "Agents são sempre mais baratos, mais rápidos e mais previsíveis do que Workflows lineares."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. A Anthropic define 'Workflows' como sistemas onde o fluxo de controle (a sequência de etapas, desvios e chamadas) é governado por código determinístico pré-definido, ao passo que 'Agents' são sistemas onde o LLM mantém autonomia para decidir dinamicamente quais ferramentas acionar e quantos passos executar.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#de-chatbots-passivos-a-agentes-ativos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflows vs. Agents"
+    },
+    {
+      "id": "m01-s11-q03",
+      "sessionId": "1.11",
+      "subtopicTag": "De Chatbots Passivos a Agentes Ativos (Workflows vs. Agents)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Segundo as recomendações de arquitetura da Anthropic em 'Building Effective Agents', quando uma equipe de engenharia deve escolher implementar um Agente Autônomo completo em vez de um Workflow determinístico?",
+      "options": [
+        "Sempre, mesmo para tarefas triviais como formatar uma data ou traduzir um parágrafo fixo, pois agentes têm custo zero.",
+        "Quando o problema é aberto (open-ended) e é impossível prever de antemão o número exato de etapas ou quais arquivos/ferramentas precisarão ser inspecionados (como investigar e corrigir um bug complexo em um repositório), justificando o trade-off de maior latência e consumo de tokens.",
+        "Apenas quando o sistema não possui acesso a testes automatizados nem logs de erro.",
+        "Quando a equipe deseja eliminar completamente o uso de JSON Schema."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A recomendação central da Anthropic é buscar sempre a arquitetura mais simples possível e só adotar Agentes Autônomos quando a natureza da tarefa exigir flexibilidade dinâmica (número de passos imprevisível a priori e tomada de decisão adaptativa baseada em observações intermediárias).",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#de-chatbots-passivos-a-agentes-ativos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – When (and when not) to use agents"
+    },
+    {
+      "id": "m01-s11-q04",
+      "sessionId": "1.11",
+      "subtopicTag": "De Chatbots Passivos a Agentes Ativos (Workflows vs. Agents)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Quais são os principais trade-offs (custos arquiteturais) ao substituir uma chamada única de LLM por um Agente Autônomo multi-iteração?",
+      "options": [
+        "Redução do consumo de tokens para zero e eliminação de qualquer latência de rede.",
+        "Aumento de latência total (múltiplos round-trips sequenciais ao modelo), maior consumo cumulativo de tokens (histórico crescente a cada iteração do loop) e risco de propagação de erros compostos caso não existam guardrails e verificações de ground truth.",
+        "Incompatibilidade total com modelos da família Claude, GPT ou Llama.",
+        "Impossibilidade de ler arquivos em formato UTF-8."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Como um agente executa $N$ iterações sequenciais reenviando o histórico acumulado de chamadas e observações de ferramentas, ele troca latência e custo de tokens por capacidade de resolução autônoma de tarefas complexas.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#de-chatbots-passivos-a-agentes-ativos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Agent Trade-offs"
+    },
+    {
+      "id": "m01-s11-q05",
+      "sessionId": "1.11",
+      "subtopicTag": "Anatomia do Agent Loop e o Padrão ReAct",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Quais são os 4 estágios fundamentais que compõem o ciclo iterativo de execução de um Agente Autônomo (Agent Loop / Padrão ReAct)?",
+      "options": [
+        "1. Compilação C++ -> 2. Mineração de Criptomoedas -> 3. Formatação CSS -> 4. Desligamento do Servidor.",
+        "1. Percepção e Contexto -> 2. Raciocínio e Planejamento (LLM Core) -> 3. Ação / Invocação de Ferramentas (Tool Calling) -> 4. Observação e Feedback (Grounding).",
+        "1. Tokenização -> 2. Backpropagation -> 3. Ajuste de Pesos -> 4. Reinicialização do Banco de Dados.",
+        "1. Login OAuth -> 2. Envio de E-mail -> 3. Limpeza de Cache -> 4. Logout."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O padrão ReAct (Reason + Act) estrutura o Agent Loop em quatro fases contínuas: Percepção do contexto e estado atual, Raciocínio/Planejamento sobre o próximo passo, Ação via Tool Calling e Observação do resultado retornado pelo ambiente antes de decidir se itera novamente ou encerra.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#anatomia-do-agent-loop-e-o-padrao-react",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – How Agents Work"
+    },
+    {
+      "id": "m01-s11-q06",
+      "sessionId": "1.11",
+      "subtopicTag": "Anatomia do Agent Loop e o Padrão ReAct",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Durante o estágio de 'Ação / Tool Calling' no ciclo de um agente, quem efetivamente executa o código da ferramenta (como ler um arquivo do disco, consultar o PostgreSQL ou rodar `npx vitest`)?",
+      "options": [
+        "Os servidores da OpenAI ou da Anthropic acessam diretamente o disco rígido local da sua máquina via túnel mágico sem passar pelo Node.js.",
+        "O LLM NÃO executa nenhuma função diretamente: ele apenas emite uma intenção estruturada em JSON (contendo o nome da ferramenta e os argumentos). É o runtime da aplicação hospedeira (seu código Node.js) que intercepta esse JSON, valida permissões, executa a função real localmente e devolve o resultado ao modelo.",
+        "O navegador do usuário compila os pesos do LLM em código assembly que altera o banco de dados sozinho.",
+        "As ferramentas são apenas simuladas na imaginação do LLM e nunca são executadas de verdade."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Um LLM é um modelo matemático que recebe tokens e emite tokens. No Tool Calling, o modelo gera um objeto JSON declarando qual função deseja chamar e com quais argumentos. O processo Node.js hospeda o loop, executa a função determinística no sistema operacional/rede e anexa o retorno (`role: 'tool'`) para a próxima iteração.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#anatomia-do-agent-loop-e-o-padrao-react",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/tool-use",
+      "officialDocLabel": "Anthropic Docs – How Tool Use Works"
+    },
+    {
+      "id": "m01-s11-q07",
+      "sessionId": "1.11",
+      "subtopicTag": "Anatomia do Agent Loop e o Padrão ReAct",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Na especificação de Chat Completions (OpenAI / OpenRouter / Ollama), como o código do Agent Loop em Node.js identifica que o modelo decidiu invocar uma ferramenta em vez de encerrar a conversa com uma resposta final ao usuário?",
+      "codeSnippet": "const choice = response.choices[0];\nconst assistantMsg = choice.message;",
+      "options": [
+        "Verificando se `assistantMsg.tool_calls` existe e possui elementos (acompanhado de `choice.finish_reason === 'tool_calls'`, ou `stop_reason === 'tool_use'` na API nativa da Anthropic).",
+        "Verificando se o status HTTP da resposta foi 404.",
+        "Verificando se `assistantMsg.content` contém a palavra 'FIM' em letras maiúsculas.",
+        "Verificando se a propriedade `response.temperature` mudou para negativo."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Quando o LLM decide acionar uma ou mais ferramentas, a API popula o array `message.tool_calls` (cada item com `id`, `type: 'function'` e `function: { name, arguments }`) e sinaliza `finish_reason: 'tool_calls'`. Quando o modelo conclui a missão sem precisar de mais ferramentas, `tool_calls` vem vazio/indefinido e `finish_reason` é `'stop'`.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#anatomia-do-agent-loop-e-o-padrao-react",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/function-calling",
+      "officialDocLabel": "OpenAI Docs – Function Calling Lifecycle"
+    },
+    {
+      "id": "m01-s11-q08",
+      "sessionId": "1.11",
+      "subtopicTag": "Anatomia do Agent Loop e o Padrão ReAct",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Após o runtime Node.js executar a ferramenta solicitada pelo LLM no `toolCall`, como o resultado (Observação) deve ser anexado ao array `messages` para a próxima iteração do Agent Loop?",
+      "codeSnippet": "const observation = await executeTool(toolCall);\nmessages.push({\n  role: 'tool',\n  tool_call_id: toolCall.id,\n  content: observation\n});",
+      "options": [
+        "Adicionando primeiro a mensagem `assistantMessage` (que continha o `tool_calls`) ao array `messages` e, em seguida, adicionando para cada `toolCall` uma mensagem com `role: 'tool'`, `tool_call_id: toolCall.id` e `content` com o texto/JSON retornado pela ferramenta.",
+        "Apagando todo o array `messages` anterior e enviando uma mensagem vazia sem `tool_call_id`.",
+        "Adicionando o resultado como `role: 'system'` sem vincular ao `id` da chamada.",
+        "Salvando o resultado em um arquivo `.txt` na Área de Trabalho sem enviá-lo de volta ao LLM."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O protocolo de Tool Calling exige que a mensagem do assistente contendo a solicitação (`tool_calls`) seja preservada no histórico e imediatamente seguida pelas mensagens de resultado (`role: 'tool'`) referenciando exatamente o `tool_call_id` de cada ferramenta invocada.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#laboratorio-pratico-construindo-um-coding-agent-com-loop-autonomo-em-nodejs",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/function-calling",
+      "officialDocLabel": "OpenAI Docs – Returning Tool Outputs"
+    },
+    {
+      "id": "m01-s11-q09",
+      "sessionId": "1.11",
+      "subtopicTag": "Anatomia do Agent Loop e o Padrão ReAct",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual é o papel cognitivo do estágio 4 ('Observação e Feedback / Grounding') na prevenção de alucinações durante a execução de um agente?",
+      "options": [
+        "Ele ancora o próximo passo de raciocínio do modelo na verdade factual do ambiente real (ex.: o conteúdo real de um arquivo lido ou o erro real do compilador), substituindo suposições estatísticas por evidências concretas a cada passo.",
+        "Ele desliga o mecanismo de Self-Attention do Transformer para economizar bateria.",
+        "Ele impede que o modelo leia o System Prompt.",
+        "Ele aumenta a temperatura do modelo para 1.8 a cada erro encontrado."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como enfatizado em 'Building Effective Agents', a grande força de um agente é obter 'ground truth' (verdade factual do ambiente) em cada progresso do loop. Em vez de alucinar o que existe em um arquivo ou se um código compila, o agente observa a saída real da ferramenta e ajusta seu plano com base em fatos.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#anatomia-do-agent-loop-e-o-padrao-react",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Environmental Ground Truth"
+    },
+    {
+      "id": "m01-s11-q10",
+      "sessionId": "1.11",
+      "subtopicTag": "Engenharia de Tool Calling e Agent-Computer Interface (ACI)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "No guia 'Building Effective Agents', a Anthropic introduz o conceito de ACI (Agent-Computer Interface) em analogia à HCI (Human-Computer Interface). O que significa projetar uma excelente ACI?",
+      "options": [
+        "Criar interfaces gráficas 3D com animações CSS para que o LLM veja botões coloridos via webcam.",
+        "Dedicar rigor de engenharia à ergonomia das ferramentas consumidas pelo LLM: nomes claros, descrições detalhadas de quando e como usar, parâmetros com JSON Schema estrito, design à prova de erros (poka-yoke) e mensagens de erro orientadas à auto-correção.",
+        "Remover todas as descrições (`description`) das funções para economizar 50 tokens no prompt.",
+        "Exigir que o modelo envie argumentos em código binário hexadecimal sem validação."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A Anthropic destaca que a qualidade de um agente depende tanto do design de suas ferramentas (ACI) quanto do prompt principal. Ferramentas bem documentadas, com formatos que evitam erros conhecidos do modelo (poka-yoke) e schemas claros aumentam drasticamente a taxa de sucesso.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#engenharia-de-tool-calling-e-contratos-de-interface",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Appendix 2: Prompt Engineering your Tools (ACI)"
+    },
+    {
+      "id": "m01-s11-q11",
+      "sessionId": "1.11",
+      "subtopicTag": "Engenharia de Tool Calling e Agent-Computer Interface (ACI)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Qual exemplo abaixo ilustra a aplicação do princípio 'Poka-Yoke' (design à prova de erros) recomendado pela Anthropic ao projetar uma ferramenta de edição de código para um Coding Agent?",
+      "options": [
+        "Projetar a ferramenta para substituir um bloco de texto exato (`targetSnippet` -> `replacementSnippet`) em vez de exigir que o LLM calcule manualmente números de linhas (`startLine`, `endLine`) ou offsets de bytes, onde LLMs frequentemente cometem erros de off-by-one.",
+        "Exigir que o LLM calcule o hash CRC32 do arquivo inteiro antes de permitir qualquer edição.",
+        "Criar uma única ferramenta genérica chamada `do_anything(arg1, arg2)` sem descrição dos parâmetros.",
+        "Bloquear o retorno de mensagens de erro quando o patch falha."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No Apêndice 2 de 'Building Effective Agents', a Anthropic relata que modelos cometem erros frequentes quando forçados a contar números de linhas ou escapar strings complexas em diffs brutos. Mudar a interface da ferramenta (ACI) para substituição de trechos exatos com contexto eliminou uma classe inteira de falhas.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#engenharia-de-tool-calling-e-contratos-de-interface",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Poka-yoke your tools"
+    },
+    {
+      "id": "m01-s11-q12",
+      "sessionId": "1.11",
+      "subtopicTag": "Engenharia de Tool Calling e Agent-Computer Interface (ACI)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Quando um agente invoca a ferramenta `apply_code_patch` passando um `targetSnippet` que não existe exatamente no arquivo alvo, qual é a melhor prática de tratamento de erro dentro do executor de ferramentas em Node.js?",
+      "options": [
+        "Chamar `process.exit(1)` imediatamente para derrubar o servidor Node.js.",
+        "Capturar a falha e retornar uma string de Observação clara e instrutiva na mensagem `role: 'tool'` (ex.: 'ERRO: targetSnippet não encontrado em src/cart.js. Use read_repository_file para conferir a indentação atual'), permitindo que o LLM se auto-corrija na próxima iteração do loop.",
+        "Retornar `'SUCESSO'` mesmo sem ter alterado o arquivo para não frustrar o modelo.",
+        "Apagar o arquivo alvo do disco."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Em arquiteturas agênticas, falhas de ferramentas esperadas devem ser convertidas em Observações textuais ricas devolvidas ao modelo (`role: 'tool'`). Ao ler a causa exata do erro e a dica de recuperação, o LLM consegue ler o arquivo novamente e reenviar o patch corrigido.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#engenharia-de-tool-calling-e-contratos-de-interface",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/tool-use",
+      "officialDocLabel": "Anthropic Docs – Handling Tool Errors"
+    },
+    {
+      "id": "m01-s11-q13",
+      "sessionId": "1.11",
+      "subtopicTag": "Engenharia de Tool Calling e Agent-Computer Interface (ACI)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Ao definir o contrato JSON Schema dos parâmetros de uma ferramenta (`parameters`), qual é a função das propriedades `required: ['relativePath']` e `additionalProperties: false`?",
+      "options": [
+        "Garantir que o modelo sempre forneça o parâmetro obrigatório `relativePath` e impedir que ele invente campos inexistentes fora do contrato esperado pela função JavaScript.",
+        "Permitir que o modelo chame a ferramenta sem passar nenhum argumento.",
+        "Desativar a validação de tipos nos argumentos da função.",
+        "Fazer com que a função seja executada duas vezes seguidas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O uso de `required` e `additionalProperties: false` no JSON Schema de uma ferramenta ativa a validação estrita de geração estruturada, impedindo alucinação de nomes de parâmetros.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#engenharia-de-tool-calling-e-contratos-de-interface",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/function-calling",
+      "officialDocLabel": "OpenAI Docs – Strict Tool Schemas"
+    },
+    {
+      "id": "m01-s11-q14",
+      "sessionId": "1.11",
+      "subtopicTag": "Padrões Composicionais da Anthropic (Chaining, Routing, Orchestrator-Workers, Evaluator-Optimizer)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No catálogo de padrões composicionais da Anthropic ('Building Effective Agents'), como funciona o padrão 'Prompt Chaining' (Encadeamento de Prompts)?",
+      "options": [
+        "Decompõe uma tarefa em uma sequência fixa de chamadas de LLM, onde cada chamada processa a saída da etapa anterior, intercalada por verificações programáticas determinísticas (programmatic gates) para validar invariantes intermediárias.",
+        "Executa 100 modelos diferentes ao mesmo tempo com o mesmo prompt e escolhe a resposta mais curta.",
+        "Mantém um único prompt gigante sem nenhuma validação intermediária.",
+        "Delega ao usuário humano a escrita manual de todas as respostas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O Prompt Chaining divide uma tarefa bem definida em subtarefas sequenciais mais simples e insere 'gates' programáticos entre elas (ex.: gerar schema JSON -> validar em código -> gerar código TypeScript), trocando um pequeno aumento de latência por maior precisão em cada etapa.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#padroes-composicionais-workflows-vs-agentes-autonomos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflow: Prompt Chaining"
+    },
+    {
+      "id": "m01-s11-q15",
+      "sessionId": "1.11",
+      "subtopicTag": "Padrões Composicionais da Anthropic (Chaining, Routing, Orchestrator-Workers, Evaluator-Optimizer)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Uma plataforma de suporte técnico para desenvolvedores recebe desde dúvidas triviais de sintaxe até pedidos complexos de depuração de concorrência. Qual padrão composicional da Anthropic permite classificar a entrada inicial e direcionar dúvidas simples para um modelo rápido/barato (ou local via Ollama) e casos complexos para um modelo de raciocínio profundo com prompts especializados?",
+      "options": [
+        "Padrão Routing (Roteamento).",
+        "Padrão Voting (Votação Cega).",
+        "Padrão Monolithic Prompting.",
+        "Padrão Zero-Context Loop."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O padrão 'Routing' classifica uma entrada e a direciona para uma tarefa ou modelo especializado a jusante. Isso permite separar preocupações (prompts distintos para cada categoria) e otimizar a relação custo/latência enviando tarefas fáceis para modelos menores.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#padroes-composicionais-workflows-vs-agentes-autonomos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflow: Routing"
+    },
+    {
+      "id": "m01-s11-q16",
+      "sessionId": "1.11",
+      "subtopicTag": "Padrões Composicionais da Anthropic (Chaining, Routing, Orchestrator-Workers, Evaluator-Optimizer)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "O padrão de 'Parallelization' (Paralelização) documentado pela Anthropic divide-se em duas variações principais: 'Sectioning' e 'Voting'. Qual é a diferença entre elas?",
+      "options": [
+        "Sectioning divide uma tarefa em subtarefas independentes executadas concorrentemente (ex.: um LLM avalia segurança enquanto outro avalia performance); já Voting executa a mesma tarefa múltiplas vezes em paralelo para obter consenso ou múltiplos ângulos de revisão.",
+        "Sectioning roda em CPU single-thread e Voting apaga os resultados divergentes sem analisá-los.",
+        "Ambos exigem que cada chamada aguarde o término da anterior de forma estritamente sequencial.",
+        "Voting só pode ser utilizado para eleições políticas e não se aplica a engenharia de software."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Conforme 'Building Effective Agents', a paralelização (`Promise.all`) manifesta-se como Sectioning (quebrar uma tarefa em partes independentes paralelas para velocidade ou separação de foco) ou Voting (rodar a mesma verificação crítica várias vezes e agregar os votos para reduzir falsos positivos/negativos).",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#padroes-composicionais-workflows-vs-agentes-autonomos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflow: Parallelization"
+    },
+    {
+      "id": "m01-s11-q17",
+      "sessionId": "1.11",
+      "subtopicTag": "Padrões Composicionais da Anthropic (Chaining, Routing, Orchestrator-Workers, Evaluator-Optimizer)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Qual é a diferença fundamental entre o padrão 'Parallelization (Sectioning)' e o padrão 'Orchestrator-Workers' (Orquestrador-Trabalhadores)?",
+      "options": [
+        "No Sectioning, as subtarefas paralelas são fixas e pré-definidas no código; no Orchestrator-Workers, as subtarefas NÃO são conhecidas a priori: um LLM Orquestrador analisa a entrada e decide dinamicamente em tempo de execução como dividir o problema e quantos Workers instanciar (ex.: descobrir quais arquivos de um monorepo precisam ser editados).",
+        "No Orchestrator-Workers não existe nenhum LLM, apenas scripts Bash estáticos.",
+        "No Sectioning um único worker executa tudo sequencialmente.",
+        "Não há nenhuma diferença; são dois nomes para o comando `console.log`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. A Anthropic ressalta que a diferença chave do padrão Orchestrator-Workers para a paralelização simples é a flexibilidade dinâmica: as subtarefas não são codificadas estaticamente, mas determinadas pelo LLM Orquestrador com base no contexto específico de cada requisição.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#padroes-composicionais-workflows-vs-agentes-autonomos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflow: Orchestrator-Workers"
+    },
+    {
+      "id": "m01-s11-q18",
+      "sessionId": "1.11",
+      "subtopicTag": "Padrões Composicionais da Anthropic (Chaining, Routing, Orchestrator-Workers, Evaluator-Optimizer)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Como opera o padrão 'Evaluator-Optimizer' (Avaliador-Otimizador) descrito pela Anthropic?",
+      "options": [
+        "Um LLM Gerador produz uma solução candidata, enquanto um segundo componente Avaliador (outro LLM especializado em crítica ou uma suíte de verificação) avalia a resposta contra critérios claros e devolve feedback acionável em um loop iterativo até a aprovação.",
+        "O modelo avalia o hardware do servidor e faz overclock automático na GPU.",
+        "O modelo apaga metade dos pesos da rede neural a cada resposta.",
+        "O usuário precisa reiniciar o servidor a cada pergunta."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No padrão Evaluator-Optimizer, temos um ciclo de refinamento explícito: um modelo gera uma proposta e um avaliador fornece críticas estruturadas e rubricas de correção até que o artefato atinja o limiar de qualidade exigido.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#padroes-composicionais-workflows-vs-agentes-autonomos",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Workflow: Evaluator-Optimizer"
+    },
+    {
+      "id": "m01-s11-q19",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que a Engenharia de Software (Coding Agents) é destacada pela Anthropic como o caso de uso mais bem-sucedido para Agentes Autônomos?",
+      "options": [
+        "Porque código-fonte não possui regras sintáticas e qualquer texto aleatório funciona em produção.",
+        "Porque o desenvolvimento de software oferece verdade factual determinística e verificável automaticamente (compiladores, linters e suítes de testes automatizados) em um ambiente reversível versionado por Git, permitindo que o agente valide objetivamente cada iteração.",
+        "Porque agentes de código nunca precisam ler arquivos existentes antes de editar.",
+        "Porque testes unitários sempre retornam sucesso independente do código escrito."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Em engenharia de software, os resultados são determinísticos e verificáveis por testes automatizados e compiladores (`tsc`, `vitest`, `eslint`), fornecendo ao agente um sinal de feedback (ground truth) cristalino em cada ciclo do loop, além de fácil reversão e inspeção via `git diff`.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#agentes-autonomos-na-engenharia-de-software",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Appendix 1: Agents in Coding"
+    },
+    {
+      "id": "m01-s11-q20",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é o risco operacional de executar um Agent Loop (`while (true)`) sem um limite rígido de passos (`maxIterations`) e como esse guardrail deve ser implementado?",
+      "options": [
+        "Não há risco algum, pois LLMs sempre convergem na primeira tentativa.",
+        "Caso o agente encontre um erro persistente que não saiba resolver, ele pode entrar em um loop infinito de chamadas de ferramentas repetidas, causando explosão de custos de API e travamento do worker; por isso, todo Agent Loop deve impor um contador máximo (`step <= maxIterations`) e orçamento de tokens.",
+        "O único risco é o modelo ficar rápido demais.",
+        "O guardrail deve ser implementado desligando o cabo de rede do servidor a cada 2 segundos."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Loops agênticos sem condição de parada máxima (`maxIterations`) e timeout de execução estão sujeitos a ciclos degenerados onde o agente tenta a mesma edição falha repetidamente, consumindo milhares de tokens por minuto.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#agentes-autonomos-na-engenharia-de-software",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Stopping Conditions & Guardrails"
+    },
+    {
+      "id": "m01-s11-q21",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise o método `#resolveSafePath` implementado no laboratório do `AutonomousCodingAgent`. Qual vulnerabilidade crítica de segurança ele previne quando o LLM solicita a leitura ou escrita de um arquivo?",
+      "codeSnippet": "#resolveSafePath(relativePath) {\n  const resolved = path.resolve(this.workspaceRoot, relativePath);\n  if (!resolved.startsWith(this.workspaceRoot + path.sep)) {\n    throw new Error('VIOLAÇÃO DE SANDBOX: O caminho escapa do workspace permitido.');\n  }\n  if (path.basename(resolved).startsWith('.env')) {\n    throw new Error('ACESSO NEGADO: Arquivos .env são bloqueados.');\n  }\n  return resolved;\n}",
+      "options": [
+        "Previne ataques de Path Traversal (como `../../etc/passwd` ou `../outro-projeto/segredo.js`) e exfiltração de credenciais (`.env`), garantindo que o agente fique estritamente confinado (sandboxed) dentro do diretório do repositório autorizado.",
+        "Previne apenas erros de digitação de letras maiúsculas no Windows.",
+        "Aumenta a velocidade de leitura do SSD em 500%.",
+        "Converte arquivos JavaScript em bancos de dados SQLite."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Se um agente sofrer Prompt Injection (por exemplo, ao ler uma issue maliciosa) ou alucinar um caminho relativo contendo `../`, ele poderia ler ou sobrescrever arquivos sensíveis do sistema operacional fora do projeto. Validar `path.resolve()` contra o prefixo `workspaceRoot` e bloquear `.env` é um guardrail indispensável.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#laboratorio-pratico-construindo-um-coding-agent-com-loop-autonomo-em-nodejs",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Tool Sandboxing & Guardrails"
+    },
+    {
+      "id": "m01-s11-q22",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "No laboratório do `AutonomousCodingAgent`, quando a ferramenta `run_project_tests` executa `npx vitest run` e um teste unitário falha (retornando código de saída diferente de zero no `execFileAsync`), por que o bloco `catch (testError)` captura o `stdout`/`stderr` e o retorna normalmente como string em vez de encerrar a execução do agente?",
+      "options": [
+        "Porque uma falha de teste unitário NÃO é um erro fatal do motor do agente, e sim a Observação crucial (stack trace da falha) que o LLM precisa ler na mensagem `role: 'tool'` para diagnosticar o bug e aplicar o patch de auto-correção na iteração seguinte.",
+        "Porque o Node.js ignora qualquer bloco `catch` em funções assíncronas.",
+        "Porque o Vitest só retorna código de saída diferente de zero quando todos os testes passam.",
+        "Para ocultar o erro do modelo e fingir que o teste não foi executado."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Quando um teste falha no child_process, o Node.js rejeita a Promise com o código de saída 1 e anexa `stdout` e `stderr` ao objeto de erro. Para o agente, esse `stderr` contendo a linha exata da asserção que quebrou é o feedback de que ele precisa para realizar o Self-Healing na próxima iteração.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#laboratorio-pratico-construindo-um-coding-agent-com-loop-autonomo-em-nodejs",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Automated Test Feedback Loops"
+    },
+    {
+      "id": "m01-s11-q23",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que o loop do agente no laboratório aplica truncamento defensivo (`observation.length > 8000`) antes de empilhar a saída de uma ferramenta no histórico `messages`?",
+      "options": [
+        "Para proteger a janela de contexto contra Context Bloat (estouro de contexto e degradação de atenção caso um comando gere dezenas de milhares de linhas de log), preservando o início e o final relevantes do output.",
+        "Porque o JavaScript não suporta strings com mais de 8000 caracteres na memória RAM.",
+        "Porque o protocolo HTTP corta automaticamente qualquer JSON maior que 8 KB.",
+        "Para apagar o nome da função que foi chamada."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Ferramentas de terminal ou busca podem facilmente produzir megabytes de saída. Se esse volume bruto for injetado em `messages`, ele esgotará rapidamente a janela de contexto do LLM, inflará o custo de todas as iterações subsequentes e prejudicará a capacidade de atenção do modelo.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#agentes-autonomos-na-engenharia-de-software",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/tool-use",
+      "officialDocLabel": "Anthropic Docs – Managing Context in Tool Use"
+    },
+    {
+      "id": "m01-s11-q24",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "O que significa o guardrail de 'Human-in-the-Loop (HITL) / Approval Gate' no projeto de agentes autônomos?",
+      "options": [
+        "Pausar o loop do agente e exigir confirmação humana explícita antes de executar ferramentas com efeitos colaterais de alto risco, destrutivos ou irreversíveis no mundo externo (como `DROP TABLE`, deploy em produção, exclusão de recursos ou `git push` em branch protegida).",
+        "Exigir que um humano digite manualmente cada token da resposta do LLM.",
+        "Impedir que o agente leia arquivos de código sem pedir autorização a cada linha.",
+        "Substituir o banco de dados por planilhas impressas em papel."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Enquanto ações somente-leitura (`read_file`) ou reversíveis em sandbox (`run_tests`) podem rodar com autonomia total, ações com alto impacto externo ou irreversíveis devem acionar um checkpoint de aprovação humana (Human-in-the-Loop) antes da execução.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#agentes-autonomos-na-engenharia-de-software",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Human-in-the-Loop & Safety"
+    },
+    {
+      "id": "m01-s11-q25",
+      "sessionId": "1.11",
+      "subtopicTag": "Agentes Autônomos na Engenharia de Software e Guardrails de Execução",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Integrando os conhecimentos adquiridos ao longo de todo o Módulo 01 (Sessões 1.1 a 1.11), como se conectam RAG (`pgvector`), MCP (Model Context Protocol), Roteamento Híbrido (OpenRouter/Ollama) e o Agent Loop na arquitetura de um Agente de Engenharia de Software de nível industrial?",
+      "options": [
+        "São tecnologias mutuamente exclusivas que não podem coexistir no mesmo projeto Node.js.",
+        "O Agent Loop governa o ciclo de raciocínio e decisão; o OpenRouter/Ollama provê a camada de inferência resiliente e soberana; o RAG com pgvector atua como ferramenta de memória semântica de longo prazo para recuperar contexto relevante; e os servidores MCP padronizam o acesso plug-and-play às ferramentas externas (Git, Browser, Banco de Dados, Docs) acionadas via Tool Calling.",
+        "O MCP substitui o Transformer e o pgvector substitui o Node.js.",
+        "O Ollama serve apenas para renderizar páginas HTML e o RAG serve apenas para estilizar CSS."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Esta síntese fecha o Módulo 01: o LLM (orquestrado via OpenRouter na nuvem ou Ollama localmente) opera como o motor cognitivo dentro de um Agent Loop ReAct, utilizando RAG (`pgvector`) para busca semântica de conhecimento e o protocolo MCP para invocar ferramentas determinísticas no mundo real com segurança.",
+      "chapterAnchor": "cap-11-introducao-agents-automacao#laboratorio-pratico-construindo-um-coding-agent-com-loop-autonomo-em-nodejs",
+      "officialDocUrl": "https://www.anthropic.com/engineering/building-effective-agents",
+      "officialDocLabel": "Anthropic Engineering – Building Effective Agents (Synthesis)"
+    }
+  ]
+}

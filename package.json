@@ -1,0 +1,40 @@
+{
+  "name": "engenharia-software-ia-kurs",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "compile:content": "node scripts/compile-content.mjs",
+    "validate:content": "node scripts/validate-content.mjs",
+    "build:kindle": "node scripts/build-epub.mjs",
+    "dev": "node scripts/compile-content.mjs && vite",
+    "build": "node scripts/compile-content.mjs && vite build",
+    "preview": "vite preview",
+    "android:sync": "npm run build && npx cap sync android",
+    "android:apk": "npm run android:sync && cd android && .\\gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/cli": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/filesystem": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
+    "firebase": "^13.4.0",
+    "jszip": "^3.10.1",
+    "katex": "^0.19.1",
+    "lucide-react": "^0.475.0",
+    "marked": "^15.0.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "yaml": "^2.7.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.6",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.0.6",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0"
+  }
+}

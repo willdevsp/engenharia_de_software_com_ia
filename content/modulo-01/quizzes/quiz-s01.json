@@ -1,0 +1,489 @@
+{
+  "sessionId": "1.1",
+  "moduleId": 1,
+  "title": "1.1 História e Contexto da Inteligência Artificial",
+  "questions": [
+    {
+      "id": "m01-s01-q01",
+      "sessionId": "1.1",
+      "subtopicTag": "Origens da Máquina Inteligente",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No artigo seminal de 1936 ('On Computable Numbers'), Alan Turing formalizou a Máquina de Turing como uma 7-tupla matemática. Qual é a principal implicação da Tese de Church-Turing para os fundamentos da Inteligência Artificial?",
+      "options": [
+        "Apenas sistemas baseados em lógica contínua analógica podem simular o raciocínio humano, sendo impossível instanciar algoritmos de aprendizado em arquiteturas binárias discretas.",
+        "Qualquer processo cognitivo ou tomada de decisão que possa ser descrito por um conjunto finito de regras algorítmicas bem definidas sobre símbolos ou números pode ser simulado por uma Máquina de Turing Universal.",
+        "Toda função matemática existente é decidível em tempo polinomial por uma Máquina de Turing determinística, eliminando o Problema da Parada (Halting Problem).",
+        "A Máquina de Turing requer hardware neuromórfico dedicado para processar árvores de decisão simbólicas."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: a Tese de Church-Turing estabelece que qualquer função efetivamente computável por um algoritmo passo a passo pode ser executada por uma Máquina de Turing Universal (e, portanto, por computadores modernos). A alternativa B está errada porque redes neurais contínuas são simuladas com precisão arbitrária em hardware binário; a C contradiz o próprio teorema de Turing sobre a indecidibilidade do Problema da Parada; e a D é falsa pois a Máquina de Turing é um modelo abstrato de computação geral.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#origens-da-maquina-inteligente",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Foundations of Computation & AI Architecture"
+    },
+    {
+      "id": "m01-s01-q02",
+      "sessionId": "1.1",
+      "subtopicTag": "Origens da Máquina Inteligente",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Em 1950, no artigo 'Computing Machinery and Intelligence', por que Alan Turing propôs o 'Jogo da Imitação' (Teste de Turing) realizado estritamente via terminal de texto (teleimpressora)?",
+      "options": [
+        "Para substituir a questão filosófica subjetiva 'as máquinas podem pensar?' por um critério operacional empírico baseado na capacidade de comunicação indistinguível da humana, isolando vieses físicos como voz ou aparência.",
+        "Porque em 1950 já existiam redes Transformer pré-treinadas que operavam exclusivamente sobre tokens BPE via linha de comando.",
+        "Para provar matematicamente que nenhuma máquina jamais poderia processar linguagem natural devido à limitação do XOR.",
+        "Para avaliar a velocidade de renderização gráfica de autômatos mecânicos em telas de tubos de raios catódicos."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: Turing percebeu que definir 'pensar' gerava discussões semânticas infindáveis; o Jogo da Imitação via teleimpressora criou um benchmark comportamental objetivo e livre de julgamentos estéticos ou físicos. As alternativas B, C e D contêm anacronismos históricos ou afirmações opostas à tese de Turing (que defendia a possibilidade de máquinas passarem no teste).",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#origens-da-maquina-inteligente",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Language Models Context"
+    },
+    {
+      "id": "m01-s01-q03",
+      "sessionId": "1.1",
+      "subtopicTag": "Origens da Máquina Inteligente",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual marco histórico ocorreu no Workshop de Dartmouth no verão de 1956, organizado por John McCarthy, Marvin Minsky, Claude Shannon e Nathaniel Rochester?",
+      "options": [
+        "O lançamento do banco de dados vetorial pgvector para busca semântica em PostgreSQL.",
+        "A publicação do algoritmo de Backpropagation para redes neurais profundas em GPUs CUDA.",
+        "A criação da arquitetura Transformer baseada exclusivamente em mecanismos de Self-Attention sem recorrência.",
+        "A cunhagem oficial do termo 'Inteligência Artificial' como disciplina científica e a apresentação do Logic Theorist (de Newell e Simon), capaz de demonstrar teoremas matemáticos formais."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: o Workshop de Dartmouth (1956) batizou formalmente a área de Inteligência Artificial e teve como destaque o programa simbólico Logic Theorist. Backpropagation popularizou-se em 1986 (e GPUs CUDA nos anos 2000/2012), o Transformer surgiu em 2017 e bancos vetoriais modernos na década de 2020.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#origens-da-maquina-inteligente",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "AI Historical Foundations & Dartmouth Context"
+    },
+    {
+      "id": "m01-s01-q04",
+      "sessionId": "1.1",
+      "subtopicTag": "IA Simbólica vs Conexionismo",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao comparar a arquitetura de Engenharia de Software da IA Simbólica (GOFAI / Sistemas Especialistas) com o paradigma Conexionista (Machine Learning / Redes Neurais), qual das afirmações abaixo descreve corretamente a inversão do fluxo de processamento?",
+      "options": [
+        "A IA Simbólica exige treinamento iterativo por Descida do Gradiente em GPUs, enquanto o Conexionismo dispensa dados de treinamento.",
+        "Na IA Simbólica o conhecimento é armazenado em tensores de ponto flutuante opacos, enquanto no Conexionismo o conhecimento é representado exclusivamente por árvores IF-THEN auditáveis.",
+        "Na IA Simbólica fornecemos Regras Explícitas + Dados para produzir Respostas; no Machine Learning fornecemos Dados + Respostas Esperadas para que o algoritmo aprenda os Pesos/Regras.",
+        "O Conexionismo utiliza apenas encadeamento lógico para trás (Backward Chaining), enquanto a IA Simbólica utiliza multiplicação matricial Q, K, V."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C resume com precisão a diferença de paradigma: Sistemas Especialistas (GOFAI) aplicam um motor de inferência sobre regras codificadas por humanos e dados de entrada para gerar a saída; já o Machine Learning recebe os dados e os rótulos/saídas esperadas para otimizar os parâmetros (pesos) que mapeiam a entrada à saída. As demais alternativas invertem completamente as propriedades de ambos os paradigmas.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#ia-simbolica-vs-conexionismo",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js – Models and Layers Paradigm"
+    },
+    {
+      "id": "m01-s01-q05",
+      "sessionId": "1.1",
+      "subtopicTag": "IA Simbólica vs Conexionismo",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "O que afirma o 'Paradoxo de Moravec', que expôs a fragilidade (brittleness) dos Sistemas Especialistas baseados exclusivamente em regras simbólicas?",
+      "options": [
+        "Quanto maior o número de GPUs conectadas em paralelo, menor é a capacidade de uma rede neural aprender portas lógicas simples como AND e OR.",
+        "Tarefas de raciocínio lógico formal e álgebra de alto nível exigem relativamente pouca computação simbólica, enquanto habilidades sensório-motoras e perceptivas triviais para uma criança (como visão e linguagem natural ruidosa) exigem imensa capacidade computacional e falham com regras IF-THEN.",
+        "Sistemas simbólicos aprendem automaticamente a partir de imagens brutas, mas são incapazes de avaliar expressões booleanas determinísticas.",
+        "Redes neurais com uma única camada possuem maior capacidade de generalização do que redes profundas com múltiplas camadas ocultas."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: formulado por Hans Moravec e outros pesquisadores nos anos 1980, o paradoxo explica por que programas simbólicos jogavam xadrez ou resolviam teoremas em computadores com poucos kilobytes de RAM, mas fracassavam ao tentar reconhecer um objeto sob sombras variáveis ou interpretar linguagem coloquial ambígua.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#ia-simbolica-vs-conexionismo",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Evolution of ML"
+    },
+    {
+      "id": "m01-s01-q06",
+      "sessionId": "1.1",
+      "subtopicTag": "IA Simbólica vs Conexionismo",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a implementação em TypeScript da regra de atualização de pesos do Perceptron de Frank Rosenblatt (1958) abaixo. Se `x = [1, 0]`, os pesos atuais são `w = [0.2, -0.4]`, `bias = 0.1`, a taxa de aprendizado é `lr = 0.5` e o rótulo verdadeiro esperado é `y = 0`, quais serão os novos valores de `w` e `bias` após um passo de treinamento?",
+      "codeSnippet": "const z = x[0] * w[0] + x[1] * w[1] + bias;\nconst yHat = z >= 0 ? 1 : 0;\nconst error = y - yHat;\nw[0] = w[0] + lr * error * x[0];\nw[1] = w[1] + lr * error * x[1];\nbias = bias + lr * error;",
+      "options": [
+        "w = [-0.3, -0.4] e bias = -0.4",
+        "w = [0.7, 0.1] e bias = 0.6",
+        "w = [0.2, -0.4] e bias = 0.1 (sem alteração, pois o erro é zero)",
+        "w = [-0.3, -0.9] e bias = 0.1"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Calculando passo a passo: 1) z = (1 * 0.2) + (0 * -0.4) + 0.1 = 0.3. 2) Como z >= 0, yHat = 1. 3) O erro é error = y - yHat = 0 - 1 = -1. 4) Atualizando w[0]: 0.2 + 0.5 * (-1) * 1 = -0.3. 5) Atualizando w[1]: -0.4 + 0.5 * (-1) * 0 = -0.4 (não muda porque x[1] = 0). 6) Atualizando bias: 0.1 + 0.5 * (-1) = -0.4. Portanto, a alternativa A é a única exata.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#ia-simbolica-vs-conexionismo",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js – Weights and Linear Layers"
+    },
+    {
+      "id": "m01-s01-q07",
+      "sessionId": "1.1",
+      "subtopicTag": "Os Invernos da IA e o Problema do XOR",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "No livro 'Perceptrons' (1969), Marvin Minsky e Seymour Papert demonstraram matematicamente uma limitação estrutural do Perceptron de camada única que precipitou o Primeiro Inverno do Conexionismo. Qual foi essa limitação?",
+      "options": [
+        "O Perceptron só funcionava quando a taxa de aprendizado era negativa, causando explosão exponencial dos pesos.",
+        "O Perceptron de camada única não converge mesmo quando os dados são linearmente separáveis, como nas portas AND e OR.",
+        "A soma ponderada de entradas reais exige números complexos imaginários que não podiam ser representados em processadores de 32 bits.",
+        "Um Perceptron de camada única define apenas um hiperplano linear (w1*x1 + w2*x2 + b = 0) e, portanto, é incapaz de resolver problemas não-linearmente separáveis como a porta lógica OU-Exclusivo (XOR)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: o Perceptron de camada única traça apenas uma única fronteira linear. Na porta XOR, os pontos positivos (0,1) e (1,0) e os pontos negativos (0,0) e (1,1) ficam em diagonais opostas do plano cartesiano, sendo impossível separá-los com uma única reta. A alternativa B é falsa pois o Teorema de Convergência de Rosenblatt garante convergência para dados linearmente separáveis.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#os-invernos-da-ia-e-o-problema-do-xor",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js – Non-linear Activations & Multi-Layer Models"
+    },
+    {
+      "id": "m01-s01-q08",
+      "sessionId": "1.1",
+      "subtopicTag": "Os Invernos da IA e o Problema do XOR",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Por que a introdução do algoritmo de Backpropagation (Rumelhart, Hinton & Williams, 1986) exigiu substituir a função de ativação degrau (Heaviside) por funções contínuas e diferenciáveis como a Sigmoide ou ReLU nas camadas ocultas?",
+      "options": [
+        "Porque funções diferenciáveis transformam qualquer rede multicamadas em uma regressão linear simples de camada única.",
+        "Porque a função degrau consome 64 bits de memória por neurônio, enquanto a função Sigmoide opera com apenas 1 bit booleano.",
+        "Porque o Backpropagation aplica a Regra da Cadeia do cálculo diferencial para propagar o erro da saída até as camadas ocultas; como a função degrau possui derivada zero em quase todo o domínio (e indefinida em zero), ela anularia o gradiente e impediria o ajuste dos pesos internos.",
+        "Porque a função degrau só permite saídas negativas, incompatíveis com probabilidades."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: para atualizar um peso oculto w_ij na camada l, calculamos dL/dw_ij = (dL/da_j) * (da_j/dz_j) * (dz_j/dw_ij). O termo da_j/dz_j é a derivada da função de ativação. Na função degrau, essa derivada é 0 para todo z != 0, zerando toda a cadeia de atualização das camadas ocultas. A alternativa C é um erro clássico: se as ativações fossem lineares (e não não-lineares diferenciáveis), a rede colapsaria em uma transformação linear única.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#os-invernos-da-ia-e-o-problema-do-xor",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js – Training Models & Gradients"
+    },
+    {
+      "id": "m01-s01-q09",
+      "sessionId": "1.1",
+      "subtopicTag": "Os Invernos da IA e o Problema do XOR",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "No laboratório prático de Backpropagation em TypeScript, utilizamos a função de ativação Sigmoide `sigmoid(z) = 1 / (1 + Math.exp(-z))`. Sabendo que `output = sigmoid(z)` já foi calculado no Forward Pass, qual expressão em código calcula a derivada `d(sigmoid)/dz` e o termo de erro `deltaOut` na camada de saída?",
+      "codeSnippet": "// Forward Pass já calculou:\nconst output = 1 / (1 + Math.exp(-z));\nconst errorOut = y - output;\n// Como calcular a derivada da sigmoide em função de 'output' e o deltaOut?",
+      "options": [
+        "const sigmoidDeriv = output > 0 ? 1 : 0; const deltaOut = errorOut + sigmoidDeriv;",
+        "const sigmoidDeriv = output * (1 - output); const deltaOut = errorOut * sigmoidDeriv;",
+        "const sigmoidDeriv = Math.exp(output); const deltaOut = errorOut / sigmoidDeriv;",
+        "const sigmoidDeriv = 1 - output * output; const deltaOut = errorOut * output;"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A propriedade algébrica fundamental da função sigmoide s(z) = 1/(1+e^-z) é que sua derivada em relação a z pode ser expressa diretamente em termos de sua própria saída ativada: s'(z) = s(z) * (1 - s(z)) = output * (1 - output). Multiplicando pelo gradiente do erro (errorOut), obtemos deltaOut. Na alternativa B temos a derivada da ReLU; na D, 1 - output^2 é a derivada da tanh(z).",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#laboratorio-pratico-do-sistema-especialista-ao-neuronio-e-atencao-em-typescript",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js – Backpropagation & Activation Derivatives"
+    },
+    {
+      "id": "m01-s01-q10",
+      "sessionId": "1.1",
+      "subtopicTag": "Os Invernos da IA e o Problema do XOR",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "O que causou o 'Segundo Inverno da IA' no final da década de 1980, afetando diretamente a indústria de Sistemas Especialistas corporativos (como XCON e máquinas LISP)?",
+      "options": [
+        "O alto custo de manutenção e fragilidade de bases com dezenas de milhares de regras conflitantes (Knowledge Acquisition Bottleneck), aliado ao colapso do mercado de hardware especializado (Lisp Machines) frente a computadores desktop e workstations de propósito geral.",
+        "A proibição governamental do uso de algoritmos de lógica booleana em servidores comerciais.",
+        "A descoberta de que árvores de busca simbólicas não podiam ser programadas em linguagens compiladas como C.",
+        "O esgotamento da memória de vídeo (VRAM) em clusters de treinamento de modelos Transformer de 175 bilhões de parâmetros em 1988."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: quando os Sistemas Especialistas cresciam para além de milhares de regras, a interação entre regras gerava efeitos colaterais imprevisíveis e custos proibitivos de atualização manual, enquanto workstations Unix/x86 tornaram obsoletas as caras Lisp Machines. As demais alternativas são historicamente falsas.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#os-invernos-da-ia-e-o-problema-do-xor",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Rule-Based vs Learned Systems"
+    },
+    {
+      "id": "m01-s01-q11",
+      "sessionId": "1.1",
+      "subtopicTag": "Machine Learning Clássico e a Revolução das GPUs",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Durante os anos 1990 e 2000, algoritmos de Machine Learning Clássico como Support Vector Machines (SVMs) e Random Forests dominaram a indústria. Como uma SVM consegue classificar conjuntos de dados que não são linearmente separáveis no espaço original das variáveis?",
+      "options": [
+        "Executando 150 camadas convolucionais 3D em placas de vídeo WebGPU.",
+        "Através de mecanismos de Multi-Head Self-Attention que geram tokens auto-regressivos.",
+        "Descartando todas as variáveis numéricas e convertendo o problema em regras IF-THEN manuais.",
+        "Através do Truque do Kernel (Kernel Trick), que projeta implicitamente os dados para um espaço de dimensão superior onde as classes se tornam separáveis por um hiperplano de margem máxima."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: proposta por Vapnik e Cortes (1995), a SVM maximiza a margem geométrica entre os vetores de suporte das classes e utiliza funções de Kernel (como RBF ou Polinomial) para calcular produtos internos em espaços de alta dimensão onde a separação linear é possível.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#machine-learning-classico-e-a-revolucao-das-gpus",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Classical ML vs Deep Learning"
+    },
+    {
+      "id": "m01-s01-q12",
+      "sessionId": "1.1",
+      "subtopicTag": "Machine Learning Clássico e a Revolução das GPUs",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a principal diferença metodológica entre o Machine Learning Clássico dos anos 2000 e o Deep Learning inaugurado em 2012 no que tange à extração de características (Feature Engineering) de imagens ou áudio?",
+      "options": [
+        "O ML Clássico não utiliza dados históricos de treinamento, enquanto o Deep Learning utiliza apenas regras escritas em Prolog.",
+        "No Deep Learning é obrigatório extrair manualmente bordas e histogramas em SQL antes de passar a imagem para a rede neural convolucional.",
+        "No ML Clássico, especialistas humanos precisavam programar extratores manuais de features (como SIFT, HOG ou TF-IDF) antes do classificador; no Deep Learning, as camadas ocultas aprendem representações hierárquicas diretamente dos dados brutos (pixels/áudio).",
+        "O Deep Learning funciona exclusivamente em CPUs single-thread, enquanto o ML Clássico exige clusters de TPUs."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: o diferencial central do Deep Learning (Representation Learning) é aprender automaticamente a hierarquia de features (bordas -> texturas -> partes -> objetos) ponta a ponta via Backpropagation, eliminando o gargalo da engenharia manual de descritores visuais ou acústicos.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#machine-learning-classico-e-a-revolucao-das-gpus",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js – Deep Learning Representation Layers"
+    },
+    {
+      "id": "m01-s01-q13",
+      "sessionId": "1.1",
+      "subtopicTag": "Machine Learning Clássico e a Revolução das GPUs",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Em 2012, a rede AlexNet (Krizhevsky, Sutskever & Hinton) venceu o desafio ImageNet reduzindo a taxa de erro Top-5 de ~26% para 15,3%. Quais três inovações técnicas de arquitetura e hardware viabilizaram esse salto?",
+      "options": [
+        "Uso de Perceptrons de camada única com função degrau, processamento serial em CPU Pentium e armazenamento em fita magnética.",
+        "Uso de Redes Neurais Convolucionais Profundas (CNNs), função de ativação ReLU (mitigando o desvanecimento do gradiente) com regularização Dropout, e treinamento massivamente paralelo em GPUs via CUDA.",
+        "Substituição de convoluções por árvores Random Forest, uso exclusivo de ativação Sigmoide e execução em WebAssembly.",
+        "Treinamento sem supervisão via RLHF sobre 10 trilhões de tokens de código JavaScript."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B descreve os três pilares históricos da AlexNet (2012): 1) Arquitetura CNN profunda (60M de parâmetros); 2) Uso de ReLU f(x) = max(0, x), que possui derivada 1 para x > 0 e acelerou o treino em 6x evitando a saturação da sigmoide/tanh, combinada com Dropout contra overfitting; e 3) Paralelização das convoluções em duas GPUs NVIDIA GTX 580 com CUDA.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#machine-learning-classico-e-a-revolucao-das-gpus",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js – Convolutional & ReLU Layers"
+    },
+    {
+      "id": "m01-s01-q14",
+      "sessionId": "1.1",
+      "subtopicTag": "Machine Learning Clássico e a Revolução das GPUs",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Por que redes neurais profundas com muitas camadas utilizando ativação Sigmoide sofriam com o problema do Desvanecimento do Gradiente (Vanishing Gradient), e como a função ReLU implementada abaixo resolve esse problema para entradas positivas?",
+      "codeSnippet": "function relu(z: number): number {\n  return Math.max(0, z);\n}\nfunction reluDerivative(z: number): number {\n  return z > 0 ? 1 : 0;\n}",
+      "options": [
+        "A derivada máxima da função Sigmoide é 0.25 (em z = 0); ao multiplicar derivadas <= 0.25 ao longo de muitas camadas na Regra da Cadeia, o gradiente colapsa para zero. Já a ReLU possui derivada constante igual a 1 para todo z > 0, preservando a magnitude do gradiente.",
+        "A função ReLU eleva o gradiente ao quadrado em cada camada, garantindo que a derivada seja sempre igual a +Infinito.",
+        "A função Sigmoide não possui derivada em z = 0, lançando uma exceção NaN em tempo de compilação TypeScript.",
+        "A função ReLU converte automaticamente matrizes 2D em escalares 0D, eliminando a necessidade de Backpropagation."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está matematicamente perfeita: como sigmoid'(z) = sigmoid(z)*(1 - sigmoid(z)), seu valor máximo absoluto é 0.5 * 0.5 = 0.25. Em uma rede de 10 camadas, 0.25^10 = 0.00000095, fazendo com que as camadas iniciais quase não recebam sinal de atualização. A ReLU tem derivada constante 1 para z > 0, permitindo que o gradiente flua sem atenuação exponencial.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#machine-learning-classico-e-a-revolucao-das-gpus",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js – Activation Functions & Gradient Flow"
+    },
+    {
+      "id": "m01-s01-q15",
+      "sessionId": "1.1",
+      "subtopicTag": "A Revolução Transformer e Attention Is All You Need",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Antes de 2017, modelos de linguagem e tradução baseavam-se em Redes Neurais Recorrentes (RNNs, LSTMs e GRUs). Segundo a Seção 3 do artigo 'Attention Is All You Need' (Vaswani et al., 2017), qual era o gargalo arquitetural fundamental das RNNs?",
+      "options": [
+        "As LSTMs só conseguiam processar sequências de exatamente 2 tokens por vez.",
+        "As RNNs não possuíam pesos treináveis e dependiam exclusivamente de expressões regulares pré-compiladas.",
+        "As RNNs processavam todos os tokens em paralelo com O(1) operações sequenciais, mas não aceitavam vetores de números reais.",
+        "O estado oculto h_t dependia sequencialmente do estado anterior h_{t-1}, exigindo O(n) operações sequenciais que impediam a paralelização do treinamento nos tokens de uma sequência e dificultavam capturar dependências de longo alcance."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: conforme documentado na Seção 3 e Tabela 1 de Vaswani et al. (2017), a recorrência h_t = f(h_{t-1}, x_t) cria uma dependência temporal estrita de O(n) passos sequenciais e um comprimento de caminho O(n) entre tokens distantes, subutilizando GPUs e degradando a memória de longo prazo.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#a-revolucao-transformer-e-attention-is-all-you-need",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Section 3 & Table 1"
+    },
+    {
+      "id": "m01-s01-q16",
+      "sessionId": "1.1",
+      "subtopicTag": "A Revolução Transformer e Attention Is All You Need",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "De acordo com a Tabela 1 da Seção 4 do artigo 'Attention Is All You Need' (Vaswani et al., 2017), quais são, respectivamente, o Número Mínimo de Operações Sequenciais e o Comprimento Máximo de Caminho (Maximum Path Length) entre quaisquer dois tokens em uma camada de Self-Attention para uma sequência de comprimento n?",
+      "options": [
+        "Operações Sequenciais: O(log n) | Comprimento Máximo de Caminho: O(n²), com complexidade O(1) por camada.",
+        "Operações Sequenciais: O(n) | Comprimento Máximo de Caminho: O(n), com complexidade computacional O(n · d²) por camada.",
+        "Operações Sequenciais: O(1) | Comprimento Máximo de Caminho: O(1), com complexidade computacional O(n² · d) por camada.",
+        "Operações Sequenciais: O(n²) | Comprimento Máximo de Caminho: O(n!), sem paralelismo em GPU."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C reproduz exatamente a Tabela 1 de Vaswani et al. (2017): uma camada de Self-Attention conecta todas as posições com O(1) operações sequenciais (tudo em uma multiplicação matricial paralelizável) e O(1) de distância máxima entre qualquer par de tokens, pagando o custo de complexidade quadrática O(n² · d) no comprimento da sequência n.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#a-revolucao-transformer-e-attention-is-all-you-need",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Table 1: Complexity & Path Length"
+    },
+    {
+      "id": "m01-s01-q17",
+      "sessionId": "1.1",
+      "subtopicTag": "A Revolução Transformer e Attention Is All You Need",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na Equação (1) da Seção 3.2.1 de 'Attention Is All You Need', o Scaled Dot-Product Attention é definido como `Attention(Q, K, V) = softmax((Q * K^T) / sqrt(d_k)) * V`. Qual é a justificativa matemática explicada pelos autores para dividir o produto escalar `Q * K^T` por `sqrt(d_k)`?",
+      "options": [
+        "Para converter a matriz de saída de ponto flutuante para números inteiros compatíveis com o tokenizador BPE.",
+        "Para grandes valores da dimensão d_k, os produtos escalares crescem em magnitude, empurrando a função softmax para regiões de saturação onde os gradientes são extremamente pequenos; dividir por sqrt(d_k) mantém a variância controlada.",
+        "Para reduzir o número de linhas da matriz V pela metade a cada camada do Transformer.",
+        "Para garantir que a soma das probabilidades da função softmax seja igual a d_k em vez de 1.0."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: conforme explicado na Seção 3.2.1 de Vaswani et al. (2017), se os componentes de q e k são variáveis aleatórias independentes com média 0 e variância 1, seu produto escalar tem média 0 e variância d_k. Dividir por sqrt(d_k) restaura a variância para 1, evitando que o softmax sature e mate os gradientes.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#a-revolucao-transformer-e-attention-is-all-you-need",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Section 3.2.1 Scaled Dot-Product Attention"
+    },
+    {
+      "id": "m01-s01-q18",
+      "sessionId": "1.1",
+      "subtopicTag": "A Revolução Transformer e Attention Is All You Need",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Observe a implementação da função `softmaxRow` utilizada no cálculo de Self-Attention do nosso laboratório. Por que subtraímos `maxLogit` de cada valor antes de aplicar `Math.exp(val - maxLogit)`?",
+      "codeSnippet": "function softmaxRow(logits: number[]): number[] {\n  const maxLogit = Math.max(...logits);\n  const exps = logits.map((val) => Math.exp(val - maxLogit));\n  const sumExps = exps.reduce((a, b) => a + b, 0);\n  return exps.map((val) => val / sumExps);\n}",
+      "options": [
+        "Para garantir estabilidade numérica contra overflow de ponto flutuante (IEEE 754), mantendo a identidade matemática do softmax intacta já que exp(x - c) / sum(exp(x_i - c)) = exp(x) / sum(exp(x_i)).",
+        "Para zerar a probabilidade do token que obteve o maior escore de atenção na sequência.",
+        "Para transformar a função softmax em uma função linear sem exponenciação.",
+        "Porque Math.exp() em JavaScript só aceita argumentos estritamente negativos por especificação da linguagem."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: em ponto flutuante de 64 bits (ou FP16/BF16 em GPUs), exponenciar valores altos (ex.: exp(800)) gera +Infinity e resulta em NaN na divisão. Subtrair o máximo da linha faz com que o maior expoente seja exp(0) = 1, eliminando o risco de overflow sem alterar em nada o resultado matemático pois a constante exp(-maxLogit) se cancela no numerador e denominador.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#laboratorio-pratico-do-sistema-especialista-ao-neuronio-e-atencao-em-typescript",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Attention Computation & Numerical Stability"
+    },
+    {
+      "id": "m01-s01-q19",
+      "sessionId": "1.1",
+      "subtopicTag": "A Revolução Transformer e Attention Is All You Need",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Considere uma operação de Scaled Dot-Product Attention em que a matriz `Q` tem shape `[4, 64]` (4 tokens, dimensão `d_k = 64`), `K` tem shape `[4, 64]` e `V` tem shape `[4, 128]` (`d_v = 128`). Quais serão as dimensões (shapes) da matriz de pesos de atenção `attentionWeights = softmax(Q * K^T / sqrt(64))` e da matriz final `contextVectors = attentionWeights * V`?",
+      "codeSnippet": "// Q: [4, 64], K: [4, 64], V: [4, 128]\nconst { attentionWeights, contextVectors } = scaledDotProductAttention(Q, K, V);",
+      "options": [
+        "attentionWeights terá shape [128, 4] e contextVectors terá shape [4, 4].",
+        "attentionWeights terá shape [64, 64] e contextVectors terá shape [64, 128].",
+        "attentionWeights terá shape [4, 64] e contextVectors terá shape [4, 64].",
+        "attentionWeights terá shape [4, 4] e contextVectors terá shape [4, 128]."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "Pela álgebra matricial: Q [4, 64] multiplicado por K^T [64, 4] produz uma matriz de afinidade token-a-token de shape [4, 4] (4 tokens atendendo a 4 tokens). Multiplicando essa matriz [4, 4] pela matriz V [4, 128], obtemos os vetores contextualizados finais de shape [4, 128]. Portanto, a alternativa D está correta.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#laboratorio-pratico-do-sistema-especialista-ao-neuronio-e-atencao-em-typescript",
+      "officialDocUrl": "https://arxiv.org/abs/1706.03762",
+      "officialDocLabel": "Vaswani et al. (2017) – Section 3.2 Matrix Dimensions"
+    },
+    {
+      "id": "m01-s01-q20",
+      "sessionId": "1.1",
+      "subtopicTag": "Era dos Foundation Models e Agentes Autônomos",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual mudança de paradigma foi demonstrada em 2020 com o surgimento de Foundation Models em larga escala (como o GPT-3) através da capacidade conhecida como 'In-Context Learning' (Few-Shot / Zero-Shot Prompting)?",
+      "options": [
+        "Eliminou-se o uso da arquitetura Transformer em favor de Sistemas Especialistas baseados em regras XML.",
+        "O modelo passou a recompilar seu próprio kernel C++ a cada requisição HTTP para reduzir o número de camadas.",
+        "Um único modelo pré-treinado em escala massiva passou a conseguir realizar múltiplas tarefas distintas (tradução, geração de código, classificação) apenas recebendo instruções e exemplos na janela de contexto em tempo de inferência, sem exigir atualização de seus pesos (fine-tuning) para cada nova tarefa.",
+        "O treinamento passou a exigir apenas 100 exemplos rotulados manualmente sem uso de GPUs."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: antes dos Foundation Models, cada tarefa de NLP exigia coletar um dataset específico e fazer fine-tuning de um modelo separado. O In-Context Learning permitiu adaptar o comportamento do modelo dinamicamente via prompt, sem alterar os pesos sinápticos.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#era-dos-foundation-models-e-agentes-autonomos",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Foundation Models & LLMs"
+    },
+    {
+      "id": "m01-s01-q21",
+      "sessionId": "1.1",
+      "subtopicTag": "Era dos Foundation Models e Agentes Autônomos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na evolução pós-2018 derivada do Transformer original, surgiram variantes arquiteturais como o BERT (Encoder-only) e a família GPT/Claude/Llama (Decoder-only). Qual é a diferença técnica principal entre essas duas abordagens?",
+      "options": [
+        "Modelos Encoder-only geram código longo token por token sem ver o contexto, enquanto modelos Decoder-only não possuem mecanismo de Self-Attention.",
+        "Modelos Encoder-only (como BERT) utilizam atenção bidirecional para construir representações densas de toda a frase (ideais para classificação e embeddings), enquanto modelos Decoder-only utilizam atenção causal unidirecional (mascarada) para geração auto-regressiva de próximo token.",
+        "Modelos Decoder-only são baseados em LSTMs recorrentes, enquanto apenas o BERT utiliza a equação Q, K, V.",
+        "Modelos Encoder-only não utilizam vetores de embedding na camada de entrada."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: o Encoder analisa todo o texto bidirecionalmente ao mesmo tempo (excelente para extração de features, busca e embeddings), enquanto o Decoder aplica máscara causal para prever o token t com base apenas nos tokens <= t-1, tornando-o a arquitetura padrão dos LLMs generativos modernos.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#era-dos-foundation-models-e-agentes-autonomos",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Google ML Crash Course – Encoder vs Decoder Transformers"
+    },
+    {
+      "id": "m01-s01-q22",
+      "sessionId": "1.1",
+      "subtopicTag": "Era dos Foundation Models e Agentes Autônomos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "A partir de 2024–2025, consolidaram-se os chamados 'Reasoning Models' (como OpenAI o1/o3, DeepSeek-R1, Claude 3.7 Extended Thinking e Gemini 2.5 Thinking). Qual mecanismo arquitetural diferencia esses modelos durante a inferência?",
+      "options": [
+        "Eles alocam computação adicional em tempo de inferência (Test-Time Compute) para gerar cadeias internas de pensamento (Chain-of-Thought treinadas via Aprendizado por Reforço), decompondo problemas, testando hipóteses e fazendo backtracking antes de emitir a resposta final.",
+        "Eles desativam o mecanismo de Self-Attention e consultam apenas tabelas hash estáticas pré-calculadas.",
+        "Eles respondem instantaneamente com um único token sem gerar passos intermediários para economizar memória RAM.",
+        "Eles substituem a geração de texto por árvores de decisão Random Forest executadas no navegador do cliente."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa A está correta: os Reasoning Models escalam a performance não apenas pelo tamanho do pré-treinamento, mas pelo Test-Time Compute — gerando tokens de raciocínio estruturado (otimizados por RL sobre recompensas verificáveis em código e matemática) para planejar e revisar a solução antes de responder.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#era-dos-foundation-models-e-agentes-autonomos",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "Modern LLM Architectures & Reasoning"
+    },
+    {
+      "id": "m01-s01-q23",
+      "sessionId": "1.1",
+      "subtopicTag": "Era dos Foundation Models e Agentes Autônomos",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "O que caracteriza a transição histórica de 'Chatbots Passivos de LLMs' (2022) para 'Agentes Autônomos de Engenharia de Software' (2024–Presente)?",
+      "options": [
+        "O uso exclusivo de modelos com menos de 1 milhão de parâmetros rodando sem contexto.",
+        "A remoção completa de qualquer modelo de linguagem em favor de scripts Bash estáticos sem tomada de decisão.",
+        "A restrição do modelo para responder apenas perguntas de múltipla escolha sem acesso a arquivos ou APIs.",
+        "A capacidade de operar em um loop de percepção-raciocínio-ação: decompor um objetivo complexo, invocar ferramentas externas (Tool Calling / MCP), executar comandos ou testes, observar os erros retornados pelo ambiente e iterar autonomamente até concluir a tarefa."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa D está correta: enquanto um chatbot passivo apenas recebe um prompt e devolve texto estático em um único turno, um Agente Autônomo interage ativamente com o ambiente externo (arquivos, terminal, banco de dados, browser via MCP) em um ciclo fechado de feedback.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#era-dos-foundation-models-e-agentes-autonomos",
+      "officialDocUrl": "https://developers.google.com/machine-learning/crash-course/llm",
+      "officialDocLabel": "LLM Applications & Autonomous Agents"
+    },
+    {
+      "id": "m01-s01-q24",
+      "sessionId": "1.1",
+      "subtopicTag": "IA Simbólica vs Conexionismo",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Um engenheiro está projetando um sistema financeiro e precisa decidir qual paradigma da história da IA aplicar em cada módulo. Analise o código abaixo que combina validação determinística com um classificador probabilístico. Por que essa arquitetura híbrida (Neuro-Simbólica / Guardrails) é considerada uma boa prática moderna?",
+      "codeSnippet": "function processTransaction(tx: Transaction, fraudProbabilityFromNeuralNet: number) {\n  // Camada 1: Regra Simbólica Determinística (Hard Constraint Regulatória)\n  if (tx.amount <= 0 || !tx.hasValidKycSignature) {\n    return { approved: false, reason: \"REGULATORY_RULE_VIOLATION\" };\n  }\n  // Camada 2: Inferência Conexionista (Padrão Estatístico Latente)\n  if (fraudProbabilityFromNeuralNet > 0.82) {\n    return { approved: false, reason: \"ML_ANOMALY_DETECTED\" };\n  }\n  return { approved: true };\n}",
+      "options": [
+        "Porque redes neurais não conseguem receber números decimais como entrada sem antes passar por um operador booleano.",
+        "Porque o primeiro bloco if/else treina os pesos da rede neural em tempo de compilação.",
+        "Porque utiliza regras simbólicas determinísticas onde há invariantes de negócio/compliance exatos (100% auditáveis e sem tolerância a alucinação) e delega ao modelo conexionista a detecção de padrões complexos não-lineares de fraude onde regras fixas falhariam.",
+        "Porque essa função elimina a necessidade de testar o software em produção."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa C está correta: a melhor Engenharia de Software com IA não descarta a lógica determinística; ela aplica regras formais para políticas invariantes (limites legais, validação de schema, permissões) e modelos estatísticos/neurais para tarefas ambíguas ou de alta dimensionalidade (detecção de anomalias, NLP, visão).",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#ia-simbolica-vs-conexionismo",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide",
+      "officialDocLabel": "Engineering ML Systems in Production"
+    },
+    {
+      "id": "m01-s01-q25",
+      "sessionId": "1.1",
+      "subtopicTag": "Machine Learning Clássico e a Revolução das GPUs",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Por que uma GPU moderna (ou WebGPU no navegador) executa o treinamento de redes neurais profundas e a camada de Self-Attention ordens de grandeza mais rápido do que um loop `for` tradicional em uma única thread de CPU?",
+      "codeSnippet": "// Operação dominante em Deep Learning e Transformers:\n// Multiplicação Matricial C[i][j] = sum_k(A[i][k] * B[k][j])\n// Milhões de produtos escalares independentes entre si!",
+      "options": [
+        "Porque a GPU possui frequência de clock individual por núcleo 1.000 vezes maior do que qualquer CPU moderna e é otimizada para desvios condicionais if/else profundos.",
+        "Porque a operação dominante em redes neurais é a multiplicação matricial densa (GEMM), cujos milhares de produtos escalares são independentes entre si e podem ser distribuídos simultaneamente pelos milhares de núcleos aritméticos (ALUs/Tensor Cores) da GPU.",
+        "Porque a GPU ignora os cálculos de ponto flutuante e sorteia os resultados aleatoriamente.",
+        "Porque a CPU não suporta arrays bidimensionais na memória RAM."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa B está correta: CPUs possuem poucos núcleos com clock alto e grande cache/predição de desvio para código serial complexo; GPUs possuem milhares de núcleos otimizados para paralelismo de dados (SIMD/SIMT), calculando milhares de elementos de uma multiplicação de matrizes no mesmo ciclo.",
+      "chapterAnchor": "cap-01-historia-e-contexto-da-ia#machine-learning-classico-e-a-revolucao-das-gpus",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js – Tensors & Hardware Accelerated Operations"
+    }
+  ]
+}

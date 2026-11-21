@@ -1,0 +1,487 @@
+{
+  "sessionId": "1.4",
+  "moduleId": 1,
+  "title": "Prova da Sessão 1.4: Criando sua Primeira IA do Zero em JavaScript",
+  "questions": [
+    {
+      "id": "m01-s04-q01",
+      "sessionId": "1.4",
+      "subtopicTag": "Preparação de Dados: Coleta, Shuffling e Normalização Min-Max",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a consequência matemática direta de permitir que um único registro com valor `NaN` ou `undefined` (convertido para `NaN` no tensor) entre no tensor de treinamento de uma rede neural no TensorFlow.js?",
+      "options": [
+        "O TensorFlow.js substitui automaticamente qualquer `NaN` pela mediana da coluna sem interromper o treino.",
+        "Pela aritmética de ponto flutuante IEEE 754 na GPU, qualquer multiplicação ou soma envolvendo `NaN` resulta em `NaN`, contaminando toda a matriz de saída, o cálculo da Loss e corrompendo os pesos de toda a rede no Backpropagation.",
+        "O backend WebGPU converte valores `NaN` em strings vazias.",
+        "O valor `NaN` afeta apenas a métrica visual no console, mas os pesos permanecem intactos."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Em ponto flutuante (`float32`), `NaN` é absorvente (`NaN * w + b = NaN`). Basta uma única amostra com `NaN` no batch para tornar a perda escalar `loss = NaN`, o que gera gradientes `NaN` e destrói todos os pesos da rede na primeira atualização do otimizador.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#engenharia-de-dados-em-javascript-coleta-shuffling-e-normalizacao-min-max",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q02",
+      "sessionId": "1.4",
+      "subtopicTag": "Preparação de Dados: Coleta, Shuffling e Normalização Min-Max",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que embaralhar o conjunto de dados com `tf.util.shuffle(data)` ANTES de converter para tensores e aplicar `validationSplit: 0.2` no `model.fit()` é uma etapa crítica de engenharia?",
+      "options": [
+        "Porque `tf.util.shuffle` comprime o tamanho do array JSON pela metade na memória RAM.",
+        "Porque `validationSplit` recorta a fração final do tensor ANTES do shuffle por época; se o dataset original estiver ordenado por classe ou faixa de valor, o conjunto de validação ficará enviesado apenas com a última classe/faixa e os mini-batches terão gradientes instáveis.",
+        "Porque o método `tf.tensor2d` lança um erro de sintaxe se os números estiverem em ordem crescente.",
+        "Porque o embaralhamento remove a necessidade de normalizar os dados."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "No TensorFlow.js, `validationSplit` separa os últimos X% dos tensores de entrada de forma estática no início de `model.fit()`. Se os dados originais estiverem ordenados (ex: por preço ou classe), os últimos 20% não representarão a distribuição geral, invalidando a métrica `val_loss`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#engenharia-de-dados-em-javascript-coleta-shuffling-e-normalizacao-min-max",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.fit",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.fit"
+    },
+    {
+      "id": "m01-s04-q03",
+      "sessionId": "1.4",
+      "subtopicTag": "Preparação de Dados: Coleta, Shuffling e Normalização Min-Max",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a fórmula matemática da Normalização Min-Max (Min-Max Scaling) utilizada para reescalar um tensor `X` para o intervalo `[0, 1]`?",
+      "options": [
+        "`X_norm = (X + X_max) / X_min`",
+        "`X_norm = (X - X_min) / (X_max - X_min)`",
+        "`X_norm = X * (X_max - X_min)`",
+        "`X_norm = (X_max - X) / X_min`"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Ao subtrair o valor mínimo (`X - X_min`), o menor elemento passa a ser `0`. Ao dividir pela amplitude total (`X_max - X_min`), o maior elemento passa a ser `1`, mapeando linearmente todos os valores intermediários para o intervalo `[0, 1]`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#engenharia-de-dados-em-javascript-coleta-shuffling-e-normalizacao-min-max",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q04",
+      "sessionId": "1.4",
+      "subtopicTag": "Preparação de Dados: Coleta, Shuffling e Normalização Min-Max",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o código de normalização abaixo para um dataset tabular com `N` amostras e `3` colunas (features) de escalas muito distintas. Por que passamos o argumento `0` para `.min(0)` e `.max(0)`?",
+      "codeSnippet": "const inputTensor = tf.tensor2d(rows); // shape: [N, 3]\nconst inputMin = inputTensor.min(0);   // shape: [3]\nconst inputMax = inputTensor.max(0);   // shape: [3]\nconst normalized = inputTensor.sub(inputMin).div(inputMax.sub(inputMin));",
+      "options": [
+        "Para calcular o mínimo e o máximo reduzindo ao longo do eixo 0 (linhas), obtendo um mínimo e um máximo independente para cada uma das 3 colunas (features).",
+        "Para forçar que o valor mínimo seja sempre igual ao número zero.",
+        "Para selecionar apenas a primeira linha do dataset e ignorar as demais.",
+        "Para converter o tensor de `float32` para booleano."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Em um tensor 2D `[Linhas, Colunas]`, o eixo `0` percorre as linhas. Portanto, `inputTensor.min(0)` calcula o valor mínimo de cada coluna individualmente, retornando um tensor 1D de shape `[3]` que permite normalizar cada feature em sua própria escala via Broadcasting.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#engenharia-de-dados-em-javascript-coleta-shuffling-e-normalizacao-min-max",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/tensors_operations",
+      "officialDocLabel": "TensorFlow.js Guide – Tensors and Operations"
+    },
+    {
+      "id": "m01-s04-q05",
+      "sessionId": "1.4",
+      "subtopicTag": "Preparação de Dados: Coleta, Shuffling e Normalização Min-Max",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Durante a inferência em produção (`model.predict`), um usuário envia uma única amostra inédita `[140, 3100]` para o modelo treinado com Min-Max Scaling. Qual é o procedimento arquiteturalmente correto para normalizar essa amostra?",
+      "options": [
+        "Calcular o mínimo e o máximo da própria amostra `[140, 3100]` (onde 140 vira 0 e 3100 vira 1).",
+        "Utilizar estritamente os mesmos tensores/constantes `inputMin` e `inputMax` que foram extraídos e salvos durante a etapa de preparação do conjunto de treinamento.",
+        "Pular a normalização na inferência, pois redes neurais só precisam de dados normalizados durante o `model.fit()`.",
+        "Multiplicar a entrada pela taxa de aprendizado (`learningRate`) do otimizador."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Os pesos da rede neural foram ajustados com base no sistema de coordenadas definido pelo `inputMin` e `inputMax` do conjunto de treinamento. Na inferência, qualquer nova entrada deve ser projetada na mesma escala usando as constantes do treino, e a saída deve ser desnormalizada com `labelMin` e `labelMax` do treino.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#engenharia-de-dados-em-javascript-coleta-shuffling-e-normalizacao-min-max",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q06",
+      "sessionId": "1.4",
+      "subtopicTag": "Topologia do Modelo com Layers API (tf.sequential e tf.layers.dense)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "O que caracteriza um modelo construído com `tf.sequential()` na Layers API do TensorFlow.js?",
+      "options": [
+        "É uma topologia em pilha linear onde a saída de cada camada é conectada exclusivamente como entrada da camada imediatamente seguinte, sem ramificações paralelas ou múltiplas entradas/saídas.",
+        "É um modelo que só pode conter exatamente uma única camada oculta.",
+        "É um modelo que processa dados apenas na CPU de forma sequencial, sem usar GPU.",
+        "É uma arquitetura exclusiva para processamento de áudio que não aceita camadas `dense`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Conforme a documentação oficial, `tf.sequential()` cria um modelo onde as camadas formam uma pilha linear simples (a saída da camada `i` é a entrada da camada `i+1`). Para grafos com ramificações ou múltiplas entradas, usa-se a Functional API (`tf.model()`).",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#definicao-da-topologia-com-a-layers-api-tf-sequential-e-camadas-densas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s04-q07",
+      "sessionId": "1.4",
+      "subtopicTag": "Topologia do Modelo com Layers API (tf.sequential e tf.layers.dense)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Ao configurar a primeira camada de um `tf.sequential()` que receberá lotes de 32 exemplos com 8 atributos (features) cada (tensor de treino com shape `[32, 8]`), como devemos declarar a propriedade `inputShape`?",
+      "codeSnippet": "const model = tf.sequential();\nmodel.add(tf.layers.dense({\n  inputShape: /* ??? */,\n  units: 16,\n  activation: 'relu'\n}));",
+      "options": [
+        "`inputShape: [32, 8]`",
+        "`inputShape: [8]`",
+        "`inputShape: [16]`",
+        "`inputShape: 32`"
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Na Layers API do TensorFlow.js, `inputShape` define apenas o formato de UMA amostra individual (`[8]`), omitindo a dimensão de lote (batch size), para que o modelo possa aceitar qualquer tamanho de lote (ex: 32 no treino e 1 na inferência em tempo real).",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#definicao-da-topologia-com-a-layers-api-tf-sequential-e-camadas-densas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s04-q08",
+      "sessionId": "1.4",
+      "subtopicTag": "Topologia do Modelo com Layers API (tf.sequential e tf.layers.dense)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Por que a segunda camada adicionada a um modelo `tf.sequential()` NÃO precisa declarar a propriedade `inputShape`?",
+      "options": [
+        "Porque a segunda camada sempre recebe entradas de dimensão `[1]`.",
+        "Porque o `tf.sequential()` realiza inferência automática de formato (shape inference), conectando a dimensão de saída (`units`) da primeira camada como `inputShape` da segunda camada.",
+        "Porque o TensorFlow.js ignora o formato das camadas intermediárias.",
+        "Porque apenas a última camada de saída define formatos no TensorFlow.js."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Uma vez que a primeira camada define `inputShape`, todas as camadas subsequentes em um modelo `tf.sequential()` calculam automaticamente seu formato de entrada a partir do formato de saída da camada anterior.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#definicao-da-topologia-com-a-layers-api-tf-sequential-e-camadas-densas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s04-q09",
+      "sessionId": "1.4",
+      "subtopicTag": "Topologia do Modelo com Layers API (tf.sequential e tf.layers.dense)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Considere a topologia abaixo para regressão contínua. Qual é a função do método `model.summary()` e qual o número total de parâmetros treináveis dessa rede?",
+      "codeSnippet": "const model = tf.sequential();\nmodel.add(tf.layers.dense({ inputShape: [2], units: 10, activation: 'relu' }));\nmodel.add(tf.layers.dense({ units: 1, activation: 'linear' }));\nmodel.summary();",
+      "options": [
+        "`model.summary()` inicia o treinamento na GPU; a rede possui 11 parâmetros.",
+        "`model.summary()` imprime uma tabela com nomes das camadas, shapes de saída e contagem de parâmetros; a rede possui 41 parâmetros treináveis (30 na primeira camada + 11 na camada de saída).",
+        "`model.summary()` salva o modelo no disco; a rede possui 20 parâmetros.",
+        "`model.summary()` normaliza os dados; a rede possui 22 parâmetros."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A 1ª camada tem `(2 entradas * 10 neurônios) + 10 vieses = 30` parâmetros. A 2ª camada recebe as 10 saídas da primeira e tem `(10 entradas * 1 neurônio) + 1 viés = 11` parâmetros. Total: `30 + 11 = 41` parâmetros treináveis, exibidos na tabela gerada por `model.summary()`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#definicao-da-topologia-com-a-layers-api-tf-sequential-e-camadas-densas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/models_and_layers",
+      "officialDocLabel": "TensorFlow.js Guide – Models and Layers"
+    },
+    {
+      "id": "m01-s04-q10",
+      "sessionId": "1.4",
+      "subtopicTag": "Compilação do Modelo: Otimizador Adam, Loss Functions e Métricas",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Quais são as três configurações principais configuradas no método `model.compile({ optimizer, loss, metrics })` antes de iniciar o treinamento?",
+      "options": [
+        "O endereço IP do servidor, a chave de API e o banco de dados SQL.",
+        "O algoritmo de otimização de pesos (`optimizer`), a função de perda diferenciável a ser minimizada (`loss`) e a lista de métricas de avaliação monitoradas a cada época (`metrics`).",
+        "O tamanho da tela do navegador, a taxa de atualização do monitor e o codec de vídeo.",
+        "O número de épocas, o tamanho do batch e o conjunto de dados JSON."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "`model.compile()` prepara o modelo para o treinamento definindo o `optimizer` (ex: Adam), a função objetivo `loss` (ex: `meanSquaredError` ou `categoricalCrossentropy`) e as `metrics` de acompanhamento (ex: `['mse']` ou `['accuracy']`).",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#compilacao-do-modelo-otimizadores-funcoes-de-perda-e-metricas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q11",
+      "sessionId": "1.4",
+      "subtopicTag": "Compilação do Modelo: Otimizador Adam, Loss Functions e Métricas",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual combinação de função de ativação na camada de saída e função de perda (`loss`) no `model.compile()` deve ser escolhida para um problema de Classificação Binária (ex: detectar se uma transação é fraudulenta ou legítima)?",
+      "options": [
+        "Ativação `'linear'` na saída e loss `'categoricalCrossentropy'`.",
+        "Ativação `'sigmoid'` na saída (1 unidade) e loss `'binaryCrossentropy'`.",
+        "Ativação `'relu'` na saída e loss `'meanAbsoluteError'`.",
+        "Ativação `'softmax'` com 1 unidade e loss `'meanSquaredError'`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Para classificação binária com saída de probabilidade única entre `0` e `1`, utiliza-se 1 neurônio com ativação `'sigmoid'` acoplado à função de perda de entropia cruzada binária (`'binaryCrossentropy'`).",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#compilacao-do-modelo-otimizadores-funcoes-de-perda-e-metricas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q12",
+      "sessionId": "1.4",
+      "subtopicTag": "Compilação do Modelo: Otimizador Adam, Loss Functions e Métricas",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Qual é a diferença prática entre passar `optimizer: 'adam'` (como string) versus `optimizer: tf.train.adam(0.005)` no `model.compile()`?",
+      "options": [
+        "Passar `'adam'` como string usa a CPU, enquanto `tf.train.adam()` usa a GPU.",
+        "Passar `'adam'` instancia o otimizador com a taxa de aprendizado padrão (default learning rate = 0.001), enquanto `tf.train.adam(0.005)` permite controlar explicitamente hiperparâmetros como o `learningRate`, `beta1` e `beta2`.",
+        "Passar `'adam'` como string lança um erro de compilação no TensorFlow.js.",
+        "Não é possível passar uma instância de `tf.Optimizer` para `model.compile()`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A API do TensorFlow.js aceita tanto o identificador string (`'adam'`) com hiperparâmetros padrão quanto uma instância construída via `tf.train.adam(learningRate, beta1, beta2, epsilon)`, que é recomendada quando precisamos ajustar a taxa de aprendizado.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#compilacao-do-modelo-otimizadores-funcoes-de-perda-e-metricas",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q13",
+      "sessionId": "1.4",
+      "subtopicTag": "Treinamento Assíncrono (model.fit), Batch Size, Épocas e Overfitting",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Se um conjunto de treinamento possui exatamente 1.000 amostras e configuramos `model.fit(xs, ys, { batchSize: 50, epochs: 10 })`, quantas atualizações de pesos (passos de gradiente) o otimizador realizará ao longo de TODO o treinamento?",
+      "options": [
+        "10 atualizações de pesos.",
+        "50 atualizações de pesos.",
+        "200 atualizações de pesos (20 batches por época x 10 épocas).",
+        "50.000 atualizações de pesos."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "Com 1.000 amostras e `batchSize: 50`, cada época é dividida em `1000 / 50 = 20` mini-lotes (steps). Como cada mini-lote realiza 1 atualização de pesos e o treinamento roda por 10 épocas, ocorrem `20 * 10 = 200` atualizações de gradiente.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#o-ciclo-de-treinamento-assincrono-model-fit-e-prevencao-de-overfitting",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.fit",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.fit"
+    },
+    {
+      "id": "m01-s04-q14",
+      "sessionId": "1.4",
+      "subtopicTag": "Treinamento Assíncrono (model.fit), Batch Size, Épocas e Overfitting",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Durante o monitoramento de `model.fit()` via callback `onEpochEnd(epoch, logs)`, você observa que `logs.loss` (erro de treino) caiu de `0.25` para `0.001`, mas a partir da época 40 `logs.val_loss` (erro de validação) parou de cair em `0.04` e subiu continuamente até `0.19`. Qual fenômeno está ocorrendo?",
+      "options": [
+        "Underfitting (subajuste por falta de capacidade da rede).",
+        "Overfitting (sobreajuste): a rede parou de generalizar e passou a memorizar ruídos específicos das amostras de treinamento.",
+        "Convergência ideal: quanto maior a `val_loss`, melhor o modelo generaliza.",
+        "Vazamento de memória de GPU (VRAM leak)."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A assinatura clássica do Overfitting é a divergência entre as curvas de perda: o erro de treino (`loss`) continua caindo enquanto o erro em dados não vistos no treino (`val_loss`) começa a subir.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#o-ciclo-de-treinamento-assincrono-model-fit-e-prevencao-de-overfitting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Monitoring Training"
+    },
+    {
+      "id": "m01-s04-q15",
+      "sessionId": "1.4",
+      "subtopicTag": "Treinamento Assíncrono (model.fit), Batch Size, Épocas e Overfitting",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "No TensorFlow.js, como interrompemos programaticamente a execução de `model.fit()` dentro do callback `onEpochEnd` quando nosso critério de Early Stopping detecta início de overfitting?",
+      "codeSnippet": "callbacks: {\n  onEpochEnd: async (epoch, logs) => {\n    if (patienceExceeded) {\n      // Como sinalizar a parada limpa do treinamento?\n    }\n  }\n}",
+      "options": [
+        "Definindo `model.stopTraining = true;` na instância do modelo.",
+        "Chamando `window.close()` para fechar a aba do navegador.",
+        "Invocando `model.dispose()` dentro do callback enquanto a época ainda está em trânsito.",
+        "Definindo `logs.loss = 0;`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A propriedade oficial `model.stopTraining = true` sinaliza ao loop interno do `tf.LayersModel.fit` que o treinamento deve ser encerrado de forma limpa após a conclusão da época atual, resolvendo a Promise `model.fit()` com o histórico acumulado até aquele momento.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#laboratorio-pratico-completo-preditor-nao-linear-de-eficiencia-automotiva",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.fit",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.fit"
+    },
+    {
+      "id": "m01-s04-q16",
+      "sessionId": "1.4",
+      "subtopicTag": "Treinamento Assíncrono (model.fit), Batch Size, Épocas e Overfitting",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Quais técnicas arquiteturais são utilizadas diretamente na topologia do modelo para reduzir o Overfitting em redes neurais densas no TensorFlow.js?",
+      "options": [
+        "Remover o conjunto de validação e aumentar a taxa de aprendizado para `10.0`.",
+        "Adicionar camadas de Dropout (`tf.layers.dropout({ rate: 0.2 })`) e/ou regularização de pesos L1/L2 (`kernelRegularizer: tf.regularizers.l2()`), além de Early Stopping.",
+        "Substituir todas as ativações ReLU por ativações lineares.",
+        "Desativar o parâmetro `shuffle` no `model.fit()`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O Dropout desativa aleatoriamente uma fração dos neurônios durante o treinamento (evitando co-adaptação frágil) e a regularização L2 penaliza pesos de magnitude excessiva na função de custo, ambos combatendo diretamente o overfitting.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#o-ciclo-de-treinamento-assincrono-model-fit-e-prevencao-de-overfitting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q17",
+      "sessionId": "1.4",
+      "subtopicTag": "Treinamento Assíncrono (model.fit), Batch Size, Épocas e Overfitting",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "O que acontece se um desenvolvedor tentar iniciar um segundo `model.fit()` na mesma instância de `tf.LayersModel` enquanto uma chamada anterior a `model.fit()` ainda está em execução (sem usar `await`)?",
+      "options": [
+        "O modelo treina duas vezes mais rápido dividindo os batches entre dois núcleos da GPU.",
+        "O TensorFlow.js lança uma exceção informando que um treinamento já está em andamento naquela instância (`Cannot start training because another fit() call is ongoing`).",
+        "A primeira chamada é silenciosamente cancelada e os pesos são zerados.",
+        "O navegador cria automaticamente uma nova aba em segundo plano."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Uma instância de `tf.LayersModel` mantém estado mutável de gradientes e otimizador durante o treinamento. Por isso, `model.fit()` deve sempre ser aguardado com `await` antes de iniciar outra rotina de treino ou salvar o modelo.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#o-ciclo-de-treinamento-assincrono-model-fit-e-prevencao-de-overfitting",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.fit",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.fit"
+    },
+    {
+      "id": "m01-s04-q18",
+      "sessionId": "1.4",
+      "subtopicTag": "Validação com Dados Inéditos e Avaliação de Generalização",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que os exemplos separados para o conjunto de Validação (via `validationSplit` ou `validationData`) NUNCA são utilizados para calcular gradientes no Backpropagation?",
+      "options": [
+        "Porque o conjunto de validação não possui rótulos (`ys`).",
+        "Porque a finalidade da validação é medir de forma isenta a capacidade de generalização do modelo em dados inéditos; se o otimizador atualizasse os pesos usando o erro de validação, o modelo estaria treinando sobre o próprio teste (Data Leakage).",
+        "Porque a GPU não suporta calcular derivadas para mais de 80% de um tensor.",
+        "Porque os dados de validação são sempre números inteiros e o Backpropagation exige números complexos."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Para que a métrica `val_loss` reflita fielmente como o modelo se comportará em produção diante de dados nunca vistos, os dados de validação passam apenas pelo Forward Pass ao final de cada época, sem jamás influenciar a atualização dos pesos.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#o-ciclo-de-treinamento-assincrono-model-fit-e-prevencao-de-overfitting",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q19",
+      "sessionId": "1.4",
+      "subtopicTag": "Validação com Dados Inéditos e Avaliação de Generalização",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Após a conclusão do treinamento, qual método oficial de `tf.LayersModel` permite calcular diretamente o valor da Loss e das métricas compiladas sobre um tensor de teste separado (`testXs`, `testYs`), sem modificar os pesos?",
+      "options": [
+        "`model.evaluate(testXs, testYs)`",
+        "`model.compile(testXs, testYs)`",
+        "`model.summary(testXs, testYs)`",
+        "`model.fit(testXs, testYs, { epochs: 0 })`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "O método `model.evaluate(x, y, config)` executa o Forward Pass em lotes sobre o conjunto de teste e retorna o escalar (ou array de escalares) correspondente à `loss` e às `metrics` definidas no `model.compile()`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#validacao-persistencia-indexeddb-e-localstorage-e-inferencia-em-producao",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.evaluate",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.evaluate"
+    },
+    {
+      "id": "m01-s04-q20",
+      "sessionId": "1.4",
+      "subtopicTag": "Persistência Client-Side/Node.js (IndexedDB, LocalStorage) e Inferência (model.predict)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Ao persistir um modelo treinado no navegador para funcionamento 100% offline (inclusive dentro de um WebView Android Capacitor), por que o esquema `indexeddb://` é arquiteturalmente superior ao esquema `localstorage://` para a maioria dos modelos?",
+      "options": [
+        "Porque o `localstorage://` apaga os dados sempre que o usuário move o mouse.",
+        "Porque o `LocalStorage` dos navegadores possui um limite rígido de armazenamento muito baixo (~5 MB) e opera de forma síncrona com strings, enquanto o `IndexedDB` armazena blobs binários de pesos (`ArrayBuffer`) de dezenas ou centenas de megabytes de forma assíncrona.",
+        "Porque o `indexeddb://` envia os pesos automaticamente para a nuvem da AWS.",
+        "Porque o `localstorage://` não salva a topologia JSON do modelo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Conforme a documentação oficial de Save & Load do TensorFlow.js, o `LocalStorage` é restrito a cerca de 5 MB (frequentemente insuficiente para buffers de pesos em `float32`), enquanto o `IndexedDB` suporta cotas amplas de armazenamento binário assíncrono no cliente.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#validacao-persistencia-indexeddb-e-localstorage-e-inferencia-em-producao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/save_load",
+      "officialDocLabel": "TensorFlow.js Guide – Save and Load Models"
+    },
+    {
+      "id": "m01-s04-q21",
+      "sessionId": "1.4",
+      "subtopicTag": "Persistência Client-Side/Node.js (IndexedDB, LocalStorage) e Inferência (model.predict)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Quais são os dois arquivos gerados e baixados pelo navegador quando executamos `await model.save('downloads://meu-preditor')`?",
+      "options": [
+        "Um arquivo `meu-preditor.exe` e um arquivo `meu-preditor.dll`.",
+        "Um arquivo `meu-preditor.json` (contendo a topologia das camadas e manifesto dos pesos) e um arquivo binário `meu-preditor.weights.bin` (contendo os valores contíguos dos tensores de pesos).",
+        "Apenas um arquivo de texto `meu-preditor.csv`.",
+        "Um arquivo compactado `meu-preditor.epub`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "O formato de serialização Layers do TensorFlow.js divide o modelo em um arquivo JSON leve (`modelTopology` + `weightsManifest`) e um ou mais arquivos binários `.weights.bin` com os buffers brutos dos parâmetros.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#validacao-persistencia-indexeddb-e-localstorage-e-inferencia-em-producao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/save_load",
+      "officialDocLabel": "TensorFlow.js Guide – Save and Load Models"
+    },
+    {
+      "id": "m01-s04-q22",
+      "sessionId": "1.4",
+      "subtopicTag": "Persistência Client-Side/Node.js (IndexedDB, LocalStorage) e Inferência (model.predict)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Qual método estático oficial do TensorFlow.js deve ser utilizado para recarregar um modelo previamente salvo com `await model.save('indexeddb://preditor-v1')`?",
+      "options": [
+        "`await tf.loadLayersModel('indexeddb://preditor-v1')`",
+        "`tf.sequential('indexeddb://preditor-v1')`",
+        "`await tf.restore('indexeddb://preditor-v1')`",
+        "`JSON.parse(localStorage.getItem('preditor-v1'))`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "`tf.loadLayersModel(pathOrIOHandler)` é a API oficial para reconstruir a topologia e restaurar os pesos na GPU a partir de `indexeddb://`, `localstorage://`, `http(s)://` ou `file://`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#validacao-persistencia-indexeddb-e-localstorage-e-inferencia-em-producao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/save_load",
+      "officialDocLabel": "TensorFlow.js Guide – Save and Load Models"
+    },
+    {
+      "id": "m01-s04-q23",
+      "sessionId": "1.4",
+      "subtopicTag": "Persistência Client-Side/Node.js (IndexedDB, LocalStorage) e Inferência (model.predict)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função de inferência abaixo. Qual é a finalidade da linha `normPrediction.mul(labelMax.sub(labelMin)).add(labelMin)`?",
+      "codeSnippet": "const predictRealValue = (rawFeature: number): number => {\n  return tf.tidy(() => {\n    const input = tf.tensor2d([[rawFeature]], [1, 1]);\n    const normInput = input.sub(inputMin).div(inputMax.sub(inputMin));\n    const normPrediction = model.predict(normInput) as tf.Tensor;\n    const realPrediction = normPrediction.mul(labelMax.sub(labelMin)).add(labelMin);\n    return realPrediction.dataSync()[0];\n  });\n};",
+      "options": [
+        "Calcular a derivada parcial da predição para atualizar os pesos durante a inferência.",
+        "Inverter a transformação Min-Max Scaling (Desnormalização), convertendo a saída da rede do intervalo normalizado `[0, 1]` de volta para a unidade original do problema de negócio.",
+        "Converter o resultado de graus Fahrenheit para Kelvin.",
+        "Limpar a memória do IndexedDB após cada predição."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "Como o modelo foi treinado com rótulos (`labels`) normalizados entre `0` e `1` via `(Y - Y_min) / (Y_max - Y_min)`, sua saída `normPrediction` também está em `[0, 1]`. A operação algébrica inversa `Y_norm * (Y_max - Y_min) + Y_min` restaura a escala original.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#laboratorio-pratico-completo-preditor-nao-linear-de-eficiencia-automotiva",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/train_models",
+      "officialDocLabel": "TensorFlow.js Guide – Train Models"
+    },
+    {
+      "id": "m01-s04-q24",
+      "sessionId": "1.4",
+      "subtopicTag": "Persistência Client-Side/Node.js (IndexedDB, LocalStorage) e Inferência (model.predict)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Um modelo foi criado com a primeira camada tendo `inputShape: [2]` (esperando 2 atributos: `horsepower` e `weight`). Ao chamar `model.predict(inputTensor)` para prever 1 único veículo, qual deve ser o `shape` exato de `inputTensor`?",
+      "options": [
+        "`[2]` (Tensor 1D com 2 elementos).",
+        "`[1, 2]` (Tensor 2D onde a primeira dimensão `1` é o tamanho do lote/batch e a segunda dimensão `2` são as features).",
+        "`[2, 1, 1]` (Tensor 3D).",
+        "`[]` (Escalar 0D)."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "`model.predict()` sempre exige a dimensão de lote (`batch`) no primeiro eixo. Como `inputShape` é `[2]`, o tensor passado para `predict` deve ter shape `[batchSize, 2]`. Para 1 amostra única, o shape obrigatório é `[1, 2]`.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#laboratorio-pratico-completo-preditor-nao-linear-de-eficiencia-automotiva",
+      "officialDocUrl": "https://js.tensorflow.org/api/latest/#tf.LayersModel.predict",
+      "officialDocLabel": "TensorFlow.js API Reference – tf.LayersModel.predict"
+    },
+    {
+      "id": "m01-s04-q25",
+      "sessionId": "1.4",
+      "subtopicTag": "Validação com Dados Inéditos e Avaliação de Generalização",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Você carregou um modelo pré-treinado via `await tf.loadLayersModel('indexeddb://meu-modelo')` apenas para executar inferências com `model.predict()` em produção. Caso você deseje continuar treinando esse modelo carregado com novos dados (`loadedModel.fit(...)` — Fine-Tuning incremental), qual etapa é obrigatória antes de chamar `.fit()`?",
+      "options": [
+        "É obrigatório chamar `loadedModel.compile({ optimizer, loss, metrics })` novamente, pois `tf.loadLayersModel` restaura a topologia e os pesos, mas requer a compilação do otimizador e função de perda para habilitar o treinamento.",
+        "É obrigatório apagar todos os pesos com `loadedModel.dispose()` antes de chamar `.fit()`.",
+        "Não é possível treinar um modelo carregado do IndexedDB; apenas modelos criados no mesmo milissegundo podem ser treinados.",
+        "É necessário converter o modelo para uma imagem PNG antes do fine-tuning."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "Quando um modelo é carregado via `tf.loadLayersModel()`, ele está imediatamente pronto para inferência (`loadedModel.predict()`), mas para executar um novo ciclo de treinamento (`loadedModel.fit()`) ou avaliação (`loadedModel.evaluate()`), é necessário invocar `loadedModel.compile()` definindo otimizador e função de perda.",
+      "chapterAnchor": "cap-04-primeira-ia-do-zero-js#validacao-persistencia-indexeddb-e-localstorage-e-inferencia-em-producao",
+      "officialDocUrl": "https://www.tensorflow.org/js/guide/save_load",
+      "officialDocLabel": "TensorFlow.js Guide – Save and Load Models"
+    }
+  ]
+}
