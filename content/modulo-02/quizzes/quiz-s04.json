@@ -1,0 +1,491 @@
+{
+  "sessionId": "2.4",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.4 — Boas Práticas de Consistência e Custo-Eficiência",
+  "questions": [
+    {
+      "id": "m02-s04-q01",
+      "sessionId": "2.4",
+      "subtopicTag": "Tokenomics na Prática: Assimetria Input vs Output e Batch APIs (50% OFF)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Sob a perspectiva de arquitetura de hardware em GPUs, qual fenômeno explica por que 1 milhão de tokens de saída (output) custa tipicamente de 3x a 5x mais do que 1 milhão de tokens de entrada (input) nas APIs de LLMs?",
+      "options": [
+        "Tokens de entrada são processados exclusivamente em CPU comum sem uso de VRAM, enquanto tokens de saída exigem GPUs dedicadas.",
+        "O custo maior da saída é apenas uma taxa contratual fixa aplicada a respostas com mais de 100 palavras, sem relação com o custo computacional do servidor.",
+        "A fase de Prefill (entrada) é compute-bound e paralelizada em uma única passada GEMM nos Tensor Cores, ao passo que a fase de Decode (saída) é autorregressiva e memory-bandwidth-bound, exigindo recarregar pesos e KV Cache da HBM para cada token gerado.",
+        "Durante a fase de Decode, o modelo precisa re-tokenizar e re-treinar seus pesos sinápticos a cada palavra produzida, multiplicando o consumo de disco."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na fase de Prefill, todos os tokens do prompt já estão disponíveis e são processados em paralelo via multiplicações matriz-matriz (GEMM), saturando os Tensor Cores em um único forward pass. Já na fase de Decode, cada token $y_t$ depende de $y_{t-1}$, forçando o acelerador a ler todos os pesos e todo o KV Cache da memória HBM repetidamente (KV-cache bandwidth bottleneck) com baixa intensidade aritmética, prendendo VRAM por segundos inteiros. A alternativa A é falsa porque toda a inferência (Prefill e Decode) roda na GPU; a B ignora a física real do gargalo de largura de banda de memória; a D é incorreta porque pesos não são re-treinados durante a inferência.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#tokenomics-input-output-e-batch-api",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/prompt-caching",
+      "officialDocLabel": "OpenAI Prompt Caching Guide"
+    },
+    {
+      "id": "m02-s04-q02",
+      "sessionId": "2.4",
+      "subtopicTag": "Tokenomics na Prática: Assimetria Input vs Output e Batch APIs (50% OFF)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao projetar um pipeline de classificação e extração JSON em alto volume com LLMs, qual combinação de práticas arquiteturais ataca diretamente o custo dominante dos tokens de saída e a latência de ponta a ponta?",
+      "options": [
+        "Proibir o eco do texto de entrada no JSON retornado, usar chaves curtas e reason codes tipados no schema e eliminar preâmbulos conversacionais por meio de Structured Outputs.",
+        "Solicitar que o modelo escreva primeiro uma justificativa de três parágrafos em prosa e repita integralmente o documento original antes do JSON para aumentar a confiabilidade.",
+        "Substituir todas as chaves de 3 caracteres por descrições longas em português extenso e pedir respostas formatadas em tabelas Markdown verbosas.",
+        "Dividir a resposta de um único objeto JSON em 10 chamadas síncronas separadas enviando o mesmo histórico completo em cada requisição."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como tokens de saída custam de $3\\times$ a $5\\times$ mais e adicionam latência linear na fase autorregressiva, proibir a repetição do payload original, mapear códigos curtos (como `reason_code: \"MISMATCH_BIN\"`) e usar Structured Outputs para eliminar saudações (15 a 40 tokens inúteis por chamada) reduz drasticamente o gasto e o tempo de resposta. As alternativas B e C inflam exatamente os tokens de saída mais caros; a D multiplica tanto o Prefill quanto o overhead de rede sem reduzir o output útil.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#tokenomics-input-output-e-batch-api",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/structured-outputs",
+      "officialDocLabel": "OpenAI Structured Outputs Guide"
+    },
+    {
+      "id": "m02-s04-q03",
+      "sessionId": "2.4",
+      "subtopicTag": "Tokenomics na Prática: Assimetria Input vs Output e Batch APIs (50% OFF)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função TypeScript abaixo que calcula o custo mensal de um pipeline usando os preços referenciais do Claude 3.7 Sonnet (`USD 3,00` / 1M input e `USD 15,00` / 1M output) para `50.000` requisições mensais com `1.200` tokens de entrada e `400` tokens de saída por chamada. Qual será o custo total mensal e a porcentagem da fatura consumida exclusivamente pelos tokens de saída?",
+      "codeSnippet": "function computeMonthlyCost(\n  requests: number,\n  avgInputTokens: number,\n  avgOutputTokens: number,\n  inputPer1MUsd: number,\n  outputPer1MUsd: number\n) {\n  const inputCostUsd = requests * avgInputTokens * (inputPer1MUsd / 1_000_000);\n  const outputCostUsd = requests * avgOutputTokens * (outputPer1MUsd / 1_000_000);\n  const totalUsd = inputCostUsd + outputCostUsd;\n  return { inputCostUsd, outputCostUsd, totalUsd, outputSharePct: (outputCostUsd / totalUsd) * 100 };\n}\n\nconst result = computeMonthlyCost(50_000, 1_200, 400, 3.0, 15.0);",
+      "options": [
+        "Total de USD 240,00, com a saída respondendo por 25,0% da fatura.",
+        "Total de USD 480,00, com a saída respondendo por 50,0% da fatura.",
+        "Total de USD 360,00, com a saída respondendo por 83,3% da fatura.",
+        "Total de USD 480,00, com a saída respondendo por 62,5% da fatura."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. O volume mensal de entrada é $50.000 \\times 1.200 = 60\\text{M}$ tokens, custando $60 \\times \\text{USD } 3{,}00 = \\text{USD } 180{,}00$. O volume mensal de saída é $50.000 \\times 400 = 20\\text{M}$ tokens, custando $20 \\times \\text{USD } 15{,}00 = \\text{USD } 300{,}00$. Portanto, `totalUsd = USD 480,00` e `outputSharePct = (300 / 480) * 100 = 62,5%` — mesmo os tokens de saída representando apenas $25\\%$ do total de tokens ($400 / 1.600$). A alternativa A confunde a participação volumétrica de tokens ($25\\%$) com a participação financeira e subestima a soma; a B acerta o total, mas erra a razão financeira ($300/480$ não é $50\\%$); a C calcula incorretamente os dois custos.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#tokenomics-input-output-e-batch-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "officialDocLabel": "Anthropic Pricing & Token Economics"
+    },
+    {
+      "id": "m02-s04-q04",
+      "sessionId": "2.4",
+      "subtopicTag": "Tokenomics na Prática: Assimetria Input vs Output e Batch APIs (50% OFF)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Qual vantagem operacional e financeira diferencia o uso de Batch APIs (como OpenAI Batch API, Anthropic Message Batches e Gemini Batch API) das chamadas HTTP síncronas padrão?",
+      "options": [
+        "Garantem resposta em menos de 50 milissegundos por requisição para chats interativos em tempo real.",
+        "Aplicam desconto de 50% tanto em tokens de entrada quanto em tokens de saída para janelas assíncronas de até 24 horas e rodam em pools de rate limit separados da cota síncrona.",
+        "Eliminam completamente a cobrança pelos tokens de saída gerados, cobrando apenas o upload do arquivo JSONL.",
+        "Permitem executar código arbitrário no servidor do provedor sem precisar definir modelo ou mensagens."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Batch APIs foram projetadas para cargas que toleram conclusão assíncrona em até 24h (catalogação noturna, classificação retroativa, tradução em massa e suítes de evals), oferecendo 50% de desconto em input e output e usando cotas de rate limit isoladas para não degradar usuários ativos em tempo real. A alternativa A confunde batch assíncrono com inferência interativa de baixa latência; a C é falsa pois tokens de saída continuam sendo cobrados (com 50% de desconto); a D não tem relação com APIs de inferência em lote.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#tokenomics-input-output-e-batch-api",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/batch",
+      "officialDocLabel": "OpenAI Batch API Guide"
+    },
+    {
+      "id": "m02-s04-q05",
+      "sessionId": "2.4",
+      "subtopicTag": "Tokenomics na Prática: Assimetria Input vs Output e Batch APIs (50% OFF)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise o código TypeScript abaixo de submissão para a OpenAI Batch API. Qual é o papel crítico da propriedade `custom_id` em cada linha do arquivo `.jsonl` e como os resultados devem ser reconciliados após `status === 'completed'`?",
+      "codeSnippet": "const lines = items.map((item) =>\n  JSON.stringify({\n    custom_id: `sku-${item.sku}`,\n    method: 'POST',\n    url: '/v1/chat/completions',\n    body: {\n      model: 'gpt-4o-mini',\n      temperature: 0.0,\n      max_tokens: 120,\n      response_format: { type: 'json_object' },\n      messages: [\n        { role: 'system', content: 'Extraia categoria e cor em JSON compacto.' },\n        { role: 'user', content: item.rawDescription }\n      ]\n    }\n  })\n);\nconst uploadedFile = await client.files.create({ file: fs.createReadStream(jsonlPath), purpose: 'batch' });\nconst batchJob = await client.batches.create({\n  input_file_id: uploadedFile.id,\n  endpoint: '/v1/chat/completions',\n  completion_window: '24h'\n});",
+      "options": [
+        "O campo `custom_id` serve apenas como metadado de faturamento na fatura mensal, pois a OpenAI garante retorno estritamente na mesma ordem das linhas de entrada.",
+        "O campo `custom_id` define o nome do modelo de linguagem utilizado na inferência daquela linha específica, substituindo `body.model`.",
+        "O campo `custom_id` é a chave de correlação obrigatória definida pela aplicação para indexar e reconciliar cada linha de `output_file_id`, pois o processamento paralelo em lote pode devolver as respostas fora da ordem original.",
+        "O campo `custom_id` ativa o cache no Redis do cliente automaticamente antes do envio do arquivo via `client.files.create`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na execução assíncrona em lote da OpenAI Batch API, dezenas de milhares de requisições são processadas em paralelo e as linhas gravadas em `batch.output_file_id` não têm garantia de seguir a ordenação do `.jsonl` de entrada. Por isso, `custom_id` é obrigatório e único no lote para correlacionar cada resposta ao registro `item.sku` original. A alternativa A erra ao assumir ordenação garantida; a B confunde `custom_id` com `body.model`; a D atribui ao JSONL uma integração inexistente com Redis local.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#tokenomics-input-output-e-batch-api",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/batch",
+      "officialDocLabel": "OpenAI Batch API Guide"
+    },
+    {
+      "id": "m02-s04-q06",
+      "sessionId": "2.4",
+      "subtopicTag": "Prompt Caching Nativo: OpenAI, Anthropic (cache_control) e Gemini Context Caching",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Internamente no cluster de GPU do provedor, o que acontece quando uma requisição atinge um cache hit no Prompt Caching nativo?",
+      "options": [
+        "O motor de inferência localiza os blocos paginados de KV Cache pré-computados pelo hash criptográfico do prefixo idêntico token a token, ignora o recálculo matricial de Prefill desses tokens e reduz drasticamente o Time to First Token (TTFT) e o custo de entrada.",
+        "O provedor retorna uma resposta antiga inteira sem executar a fase de Decode, gerando exatamente os mesmos tokens de saída gratuitamente.",
+        "O modelo realiza fine-tuning em tempo real dos pesos da camada de saída usando apenas os tokens do prompt de sistema.",
+        "A requisição é convertida automaticamente para a Batch API com janela de espera de 24 horas antes de começar a gerar."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O Prompt Caching nativo reutiliza os tensores de Chave ($K$) e Valor ($V$) das camadas de atenção armazenados em blocos paginados para o prefixo idêntico. Isso elimina a computação de Prefill do prefixo repetido, derrubando o TTFT (de vários segundos para centenas de milissegundos em prompts longos) e aplicando descontos de $50\\%$ a $90\\%$ nos tokens de entrada em cache. A alternativa B descreve caching completo de resposta na camada de aplicação (não Prompt Caching de KV); a C confunde inferência com fine-tuning; a D confunde caching com Batch API.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#prompt-caching-nativo-provedores",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/prompt-caching",
+      "officialDocLabel": "OpenAI Prompt Caching Guide"
+    },
+    {
+      "id": "m02-s04-q07",
+      "sessionId": "2.4",
+      "subtopicTag": "Prompt Caching Nativo: OpenAI, Anthropic (cache_control) e Gemini Context Caching",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que inserir `Data/Hora atual: ${new Date().toISOString()}` ou o `requestId` no início do `system` prompt destrói completamente a taxa de acerto do Prompt Caching nativo, mesmo que os 8.000 tokens seguintes de manuais e definições de tools permaneçam inalterados?",
+      "options": [
+        "Porque o formato ISO-8601 contém caracteres inválidos que causam erro HTTP 400 na API quando o cache está habilitado.",
+        "Porque os provedores desativam o caching automaticamente sempre que detectam a palavra `Data` no texto de sistema.",
+        "Porque os embeddings semânticos de datas mudam de dimensão entre chamadas consecutivas no mesmo minuto.",
+        "Porque na atenção causal de um Transformer cada token depende de todos os tokens anteriores da esquerda para a direita; um único token divergente no índice inicial quebra o hash de prefixo e invalida 100% dos tokens subsequentes."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A causal self-attention calcula representações e matrizes KV sequencialmente a partir da esquerda ($1, 2, \\dots, t-1$). Como a chave do cache é um hash criptográfico da sequência contígua de tokens desde o início do prompt, qualquer alteração precoce (como um timestamp ou UUID no topo) invalida o matching de todo o bloco seguinte. Por isso a regra de ouro é `[Prefixo Estático -> Variável Dinâmica]`, mantendo timestamps, contexto RAG e entrada do usuário sempre ao final, além de ordem determinística em `tools`. As alternativas A, B e C inventam restrições sintáticas ou dimensionais inexistentes.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#prompt-caching-nativo-provedores",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/prompt-caching",
+      "officialDocLabel": "OpenAI Prompt Caching Guide"
+    },
+    {
+      "id": "m02-s04-q08",
+      "sessionId": "2.4",
+      "subtopicTag": "Prompt Caching Nativo: OpenAI, Anthropic (cache_control) e Gemini Context Caching",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Comparando os contratos nativos de Prompt Caching entre OpenAI, Anthropic e Google Gemini, qual afirmação descreve corretamente seus mecanismos de ativação, limiares mínimos e campos de telemetria?",
+      "options": [
+        "Na OpenAI o cache exige declarar explicitamente `cache_control: { type: 'ephemeral' }` em cada mensagem; na Anthropic é 100% automático sem parâmetros.",
+        "Na OpenAI a ativação é automática a partir de 1.024 tokens (em incrementos de 128) reportada em `cached_tokens`; na Anthropic é explícita via `cache_control: { type: 'ephemeral' }` em até 4 breakpoints; e no Gemini há modo implícito (2.5+) e explícito via `ai.caches.create` reportado em `cachedContentTokenCount`.",
+        "Todos os três provedores exigem prefixo mínimo idêntico de 32.768 tokens e não retornam nenhuma métrica de cache hit no objeto de resposta.",
+        "No Google Gemini o cache explícito tem duração infinita e nunca gera custos adicionais de armazenamento pelo tempo de retenção."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A OpenAI ativa o Prompt Caching automaticamente para prefixos $\\ge 1.024$ tokens (incrementos de $128$) e expõe `usage.prompt_tokens_details.cached_tokens`. A Anthropic usa marcação explícita `cache_control: { type: 'ephemeral' }` (até 4 breakpoints, limiar de $1.024$ tokens no Sonnet/Opus a $2.048\\text{–}4.096$ no Haiku) e expõe `cache_creation_input_tokens` / `cache_read_input_tokens`. O Gemini oferece Implicit Caching automático no 2.5+ e Explicit Context Caching via `ai.caches.create` (limiar típico $\\ge 2.048$ tokens) com telemetria em `usageMetadata.cachedContentTokenCount`. A alternativa A inverte OpenAI e Anthropic; a C erra o limiar e ignora a telemetria oficial; a D erra ao negar o TTL configurável e a taxa horária de armazenamento do Gemini.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#prompt-caching-nativo-provedores",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "officialDocLabel": "Anthropic Prompt Caching"
+    },
+    {
+      "id": "m02-s04-q09",
+      "sessionId": "2.4",
+      "subtopicTag": "Prompt Caching Nativo: OpenAI, Anthropic (cache_control) e Gemini Context Caching",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a implementação abaixo com `@anthropic-ai/sdk` utilizando `cache_control: { type: 'ephemeral' }`. Considerando a precificação padrão de TTL de 5 minutos (gravação a $1{,}25\\times$ e leitura a $0{,}10\\times$ do preço base de entrada), qual é o comportamento financeiro e estrutural correto desse código?",
+      "codeSnippet": "const response = await anthropic.messages.create({\n  model: 'claude-3-7-sonnet-20250219',\n  max_tokens: 512,\n  temperature: 0.0,\n  system: [\n    { type: 'text', text: 'Você é um SRE analisando runbooks internos.' },\n    {\n      type: 'text',\n      text: `<runbook>\\n${largeReferenceDoc}\\n</runbook>`,\n      cache_control: { type: 'ephemeral' }\n    }\n  ],\n  messages: [{ role: 'user', content: question }]\n});",
+      "options": [
+        "O bloco `messages` contendo `question` é gravado no cache antes de `system`, permitindo que perguntas diferentes compartilhem o mesmo cache de saída.",
+        "O cache só atinge o ponto de equilíbrio financeiro após pelo menos 10 requisições idênticas dentro da janela de 5 minutos, pois a leitura custa $0{,}80\\times$.",
+        "O `cache_control` marca o fim do prefixo estático cacheável (`system`); a gravação inicial custa $1{,}25\\times$ (`cache_creation_input_tokens`), mas a partir da 2ª requisição dentro do TTL de 5 minutos ($n \\ge 2$) as leituras a $0{,}10\\times$ (`cache_read_input_tokens`) já tornam o custo acumulado menor que sem cache.",
+        "Se `largeReferenceDoc` tiver apenas 150 tokens, a Anthropic ainda aplicará 90% de desconto imediatamente sem exigir limiar mínimo."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na Anthropic, `cache_control: { type: 'ephemeral' }` no último bloco estático do `system` cria um breakpoint de cache (com `question` dinâmico ficando depois, em `messages`). Como $1{,}25 \\cdot c_{\\text{in}} + (n - 1) \\cdot 0{,}10 \\cdot c_{\\text{in}} < n \\cdot c_{\\text{in}}$ já para $n = 2$ ($1{,}35 < 2{,}00$), o investimento de escrita se paga logo na segunda chamada dentro do TTL de 5 minutos (renovado a cada hit). A alternativa A inverte a ordem do prefixo; a B erra a matemática do break-even e o multiplicador de leitura; a D ignora o limiar mínimo de $1.024$ tokens no Sonnet.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#prompt-caching-nativo-provedores",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "officialDocLabel": "Anthropic Prompt Caching"
+    },
+    {
+      "id": "m02-s04-q10",
+      "sessionId": "2.4",
+      "subtopicTag": "Prompt Caching Nativo: OpenAI, Anthropic (cache_control) e Gemini Context Caching",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine o fluxo com `@google/genai` usando `ai.caches.create`. Sob a ótica de FinOps e ciclo de vida de recursos, por que o código define `ttl: '3600s'` com moderação e chama `ai.caches.delete` no bloco `finally`?",
+      "codeSnippet": "const cache = await ai.caches.create({\n  model: 'gemini-2.5-flash',\n  config: {\n    displayName: 'monorepo-architecture-v4',\n    systemInstruction: 'Responda apenas com base nos arquivos fornecidos.',\n    contents: [{ role: 'user', parts: [{ text: codebaseDump }] }],\n    ttl: '3600s'\n  }\n});\ntry {\n  for (const q of questions) {\n    await ai.models.generateContent({\n      model: 'gemini-2.5-flash',\n      contents: q,\n      config: { cachedContent: cache.name, temperature: 0.0, maxOutputTokens: 400 }\n    });\n  }\n} finally {\n  if (cache.name) await ai.caches.delete({ name: cache.name });\n}",
+      "options": [
+        "Porque o Explicit Context Caching do Gemini cobra uma taxa horária de armazenamento proporcional ao volume de tokens durante todo o `ttl`; encerrar o cache no `finally` evita pagar por armazenamento ocioso quando o lote de perguntas termina, e fluxos esporádicos devem preferir o Implicit Caching.",
+        "Porque a API do Gemini bloqueia permanentemente a chave de API do projeto se existirem caches explícitos ativos após o término do processo Node.js.",
+        "Porque `ai.caches.delete` é o método que aplica o desconto de 90% na fatura; sem chamá-lo, todas as perguntas anteriores são cobradas pelo preço cheio.",
+        "Porque `ttl: '3600s'` representa um timeout máximo de 3,6 segundos para cada chamada `generateContent`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Ao contrário de OpenAI e Anthropic, o Explicit Context Caching do Google Gemini cobra uma taxa de armazenamento por hora proporcional ao total de tokens mantidos em cache ao longo do `ttl`. Portanto, `ttl` longos só se justificam se a frequência de consultas compensar o custo de retenção, e liberar o recurso com `ai.caches.delete` no `finally` evita custos ociosos após o processamento (enquanto cargas esporádicas devem usar Implicit Caching). As alternativas B, C e D são incorretas sobre bloqueio de chave, funcionamento de desconto e unidade do `ttl` (`3600s` = 1 hora).",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#prompt-caching-nativo-provedores",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/caching",
+      "officialDocLabel": "Google Gemini Context Caching"
+    },
+    {
+      "id": "m02-s04-q11",
+      "sessionId": "2.4",
+      "subtopicTag": "Application-Level Caching: Hash SHA-256 em Redis e Cache Semântico",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Mesmo com Prompt Caching nativo ativado no provedor (OpenAI, Anthropic ou Gemini), por que sistemas de produção ainda implementam Application-Level Caching (como Redis na camada do back-end)?",
+      "options": [
+        "Porque o Prompt Caching nativo não funciona quando `temperature` é igual a `0.0`.",
+        "Porque o Prompt Caching nativo ainda exige viagem de rede até o provedor, adiciona centenas de milissegundos de latência e executa a inferência de saída (3x a 5x mais cara), enquanto um hit em Redis no back-end entrega latência sub-5ms e custo USD 0,00.",
+        "Porque o Prompt Caching nativo do provedor não armazena mensagens do papel `system`, apenas o histórico do usuário.",
+        "Porque o Redis substitui o modelo de linguagem, gerando respostas inéditas para perguntas nunca vistas antes sem usar LLMs."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Prompt Caching nativo otimiza apenas o Prefill da entrada dentro do cluster do provedor: a aplicação continua pagando ida e volta HTTP, latência de rede e, principalmente, o custo total da decodificação autorregressiva dos tokens de saída ($3\\times\\text{–}5\\times$). O cache em camada de aplicação intercepta requisições equivalentes antes de chamar qualquer SDK de IA, zerando o custo daquela requisição (`USD 0,00`) e respondendo em menos de 5 ms. A alternativa A é falsa (determinismo até combina com cache); a C é falsa pois o `system` é exatamente a base típica do prefixo estático; a D confunde cache de leitura com inferência generativa.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#application-level-caching-exato-e-semantico",
+      "officialDocUrl": "https://redis.io/docs/latest/",
+      "officialDocLabel": "Redis Official Documentation"
+    },
+    {
+      "id": "m02-s04-q12",
+      "sessionId": "2.4",
+      "subtopicTag": "Application-Level Caching: Hash SHA-256 em Redis e Cache Semântico",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a função TypeScript abaixo para geração de chave exata em Redis. Quais duas falhas clássicas de implementação em produção esse padrão resolve explicitamente?",
+      "codeSnippet": "function canonicalizeValue(value: unknown): unknown {\n  if (Array.isArray(value)) return value.map(canonicalizeValue);\n  if (value !== null && typeof value === 'object') {\n    return Object.fromEntries(\n      Object.entries(value as Record<string, unknown>)\n        .sort(([a], [b]) => a.localeCompare(b))\n        .map(([k, v]) => [k, canonicalizeValue(v)])\n    );\n  }\n  return typeof value === 'string' ? value.trim() : value;\n}\n\nexport function buildExactRedisCacheKey(input: CanonicalCacheInput): string {\n  const canonicalJson = JSON.stringify(canonicalizeValue(input));\n  const digest = createHash('sha256').update(canonicalJson, 'utf-8').digest('hex');\n  return `llm:exact:${input.tenantId}:${input.promptVersion}:${digest}`;\n}",
+      "options": [
+        "Resolve a compressão binária de imagens JPEG e a criptografia simétrica AES-GCM exigida pelo protocolo HTTP/3.",
+        "Garante que objetos semanticamente idênticos nunca colidam no hash ao alterar o `model`, permitindo compartilhar respostas entre locatários diferentes sem prefixo.",
+        "Evita a geração de digests determinísticos para que cada chamada ignore o Redis e atinja o LLM diretamente em produção.",
+        "Evita cache misses espúrios causados por ordem diferente de chaves ou espaços extras (`JSON.stringify` direto) via serialização canônica + `trim()`, e evita vazamento cross-tenant ou respostas obsoletas pós-deploy ao incluir `tenantId`, `promptVersion`, `model`, `temperature`, `topP` e `messages` no escopo."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Fazer `sha256(JSON.stringify(obj))` sem ordenação recursiva faz `{ model: 'gpt-4o', temperature: 0 }` gerar um hash distinto de `{ temperature: 0, model: 'gpt-4o' }`, derrubando a taxa de hit; e omitir `tenantId`, `promptVersion`, `model` ou hiperparâmetros da chave mistura dados entre clientes ou serve saídas antigas após atualizar o prompt. A função `canonicalizeValue` ordena chaves recursivamente e faz `trim()`, enquanto a chave final inclui `tenantId` e `promptVersion`. As alternativas A, B e C descrevem comportamentos falsos ou opostos ao objetivo do código.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#application-level-caching-exato-e-semantico",
+      "officialDocUrl": "https://nodejs.org/api/crypto.html",
+      "officialDocLabel": "Node.js Crypto API — SHA-256 Hashing"
+    },
+    {
+      "id": "m02-s04-q13",
+      "sessionId": "2.4",
+      "subtopicTag": "Application-Level Caching: Hash SHA-256 em Redis e Cache Semântico",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual problema do cache exato baseado em SHA-256 o Cache Semântico resolve, e qual mecanismo matemático ele emprega para decidir se houve um cache hit?",
+      "options": [
+        "Resolve falhas de rede TCP repetidas comparando o endereço IP de origem do cliente via distância euclidiana.",
+        "Resolve colisões criptográficas do algoritmo SHA-256 substituindo o Redis por um arquivo CSV local ordenado alfabeticamente.",
+        "Resolve variações sintáticas de perguntas com a mesma intenção (ex.: '2ª via do boleto' vs. 'gerar boleto atrasado') convertendo a consulta em um vetor de embedding $\\vec{q}$ e verificando se um par armazenado $\\vec{k}$ atinge similaridade de cosseno $\\text{sim}(\\vec{q}, \\vec{k}) \\ge \\tau$.",
+        "Resolve a latência de tokenização substituindo todos os verbos da frase por sinônimos antes de enviar ao modelo principal."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Usuários reais raramente repetem a mesma frase caractere por caractere, tornando o hash SHA-256 insuficiente para consultas em linguagem natural livre. O Cache Semântico gera um embedding denso $\\vec{q} \\in \\mathbb{R}^d$ (com modelo barato como `text-embedding-3-small`), busca em índice vetorial (Redis Vector Search ou `pgvector`) e retorna a resposta em cache quando $\\text{sim}(\\vec{q}, \\vec{k}) = \\frac{\\vec{q} \\cdot \\vec{k}}{\\|\\vec{q}\\|\\|\\vec{k}\\|} \\ge \\tau$. As alternativas A, B e D descrevem mecanismos fictícios sem relação com busca vetorial por similaridade de cosseno.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#application-level-caching-exato-e-semantico",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/embeddings",
+      "officialDocLabel": "OpenAI Embeddings Guide"
+    },
+    {
+      "id": "m02-s04-q14",
+      "sessionId": "2.4",
+      "subtopicTag": "Application-Level Caching: Hash SHA-256 em Redis e Cache Semântico",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "As frases 'Qual a taxa de cancelamento para o plano Basic?' e 'Qual a taxa de cancelamento para o plano Enterprise?' frequentemente apresentam similaridade de cosseno superior a 0,94. Como um arquiteto deve mitigar esse risco de Semantic Drift em um Cache Semântico?",
+      "options": [
+        "Manter limiar $\\tau$ rigoroso ($\\tau \\in [0{,}95, 0{,}98]$), extrair entidades críticas (plano, moeda, região) como filtros de metadados exatos antes da busca vetorial e jamais aplicar cache semântico em operações transacionais ou financeiras com valores numéricos.",
+        "Reduzir o limiar $\\tau$ para $0{,}60$ para aumentar a tolerância do índice vetorial e aceitar respostas aproximadas em estornos bancários.",
+        "Remover os substantivos próprios da frase antes de gerar o embedding para aumentar a chance de cache hit global.",
+        "Confiar apenas no algoritmo SHA-256 de 64 bits sobre o vetor float32 sem configurar filtros ou limiar."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Quando duas perguntas diferem apenas em uma entidade crítica ('Basic' vs 'Enterprise', ou 'Estornar USD 50' vs 'Estornar USD 5.000'), o vetor global permanece muito próximo, causando falsos positivos graves (Semantic Drift). A mitigação arquitetural exige limiar alto ($\\tau \\in [0{,}95, 0{,}98]$), pré-filtragem exata por metadados de entidades extraídas e exclusão total de operações transacionais/financeiras sensíveis. A alternativa B agrava os falsos positivos; a C destrói a distinção entre entidades; a D não resolve equivalência semântica.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#application-level-caching-exato-e-semantico",
+      "officialDocUrl": "https://redis.io/docs/latest/",
+      "officialDocLabel": "Redis Vector Similarity & Metadata Filtering"
+    },
+    {
+      "id": "m02-s04-q15",
+      "sessionId": "2.4",
+      "subtopicTag": "Application-Level Caching: Hash SHA-256 em Redis e Cache Semântico",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Quais salvaguardas de governança e ciclo de vida são obrigatórias ao operar um Cache Semântico compartilhado em aplicações SaaS multi-tenant com RAG?",
+      "options": [
+        "Manter um índice vetorial único sem filtros de cliente e com TTL infinito para maximizar o reaproveitamento de respostas entre todas as empresas.",
+        "Aplicar pré-filtragem obrigatória por `tenant_id` (e nível RBAC do usuário) em toda consulta vetorial para evitar vazamento entre locatários (LGPD), além de incluir `kbVersion`/`promptVersion` como filtros e definir TTL finito.",
+        "Armazenar apenas respostas antigas de versões anteriores de `promptVersion` para garantir compatibilidade retroativa com documentos excluídos.",
+        "Executar a busca vetorial somente depois de receber a resposta completa do LLM principal para validar se ela já existia."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Sem pré-filtragem rígida por `tenant_id` e permissões RBAC, a pergunta de um usuário da empresa A pode recuperar uma resposta gerada com dados confidenciais da empresa B (violação crítica de segurança e LGPD). Além disso, atualizações nos documentos RAG (`kbVersion`) ou no prompt (`promptVersion`) tornam entradas anteriores obsoletas (*stale*), exigindo filtros de versão e TTL finito (ex.: 24h). A alternativa A causa vazamento de dados e obsolescência; a C serve respostas desatualizadas; a D anula a economia do cache ao chamar o LLM antes.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#application-level-caching-exato-e-semantico",
+      "officialDocUrl": "https://redis.io/docs/latest/",
+      "officialDocLabel": "Redis Multi-Tenant Vector Caching"
+    },
+    {
+      "id": "m02-s04-q16",
+      "sessionId": "2.4",
+      "subtopicTag": "Determinismo e Amostragem: Temperature, Top-p, Seed, Max Tokens e Stop Sequences",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na fórmula da função Softmax parametrizada pela Temperatura ($T > 0$), $P_i = \\frac{\\exp(z_i / T)}{\\sum_{j=1}^{|V|} \\exp(z_j / T)}$, o que ocorre matematicamente com a distribuição de probabilidade dos tokens quando configuramos `temperature: 0.0` ($T \\to 0$) vs. `temperature: 1.5` ($T > 1{,}0$)?",
+      "options": [
+        "Com $T \\to 0$ todos os tokens recebem probabilidade uniforme $1/|V|$; com $T > 1{,}0$ apenas o token mais provável sobrevive.",
+        "A temperatura altera apenas o número de tokens permitidos no campo `system`, sem efeito sobre os logits $z_i$ do vocabulário.",
+        "Com $T = 0{,}0$ o modelo ignora a janela de contexto de entrada e passa a gerar números aleatórios de ponto flutuante.",
+        "Com $T \\to 0$ a divisão amplifica exponencialmente a vantagem do maior logit, colapsando para Greedy Decoding ($\\arg\\max_i z_i$); já com $T > 1{,}0$ a distribuição achata, elevando a chance de tokens raros da cauda longa e aumentando o risco de alucinações ou quebras de sintaxe JSON."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Dividir os logits $z_i$ por um $T$ próximo de zero acentua diferenças positivas no expoente $\\exp(z_i/T)$, concentrando praticamente $100\\%$ da massa de probabilidade no token de maior logit (Greedy Decoding), ideal para SQL, classificação e extração estruturada. Já $T > 1{,}0$ reduz a diferença relativa entre os logits, achatando a curva e elevando tokens improváveis da cauda longa — útil em ideação criativa, mas perigoso para sintaxe estrita. A alternativa A inverte os extremos; as alternativas B e C atribuem efeitos falsos ao parâmetro $T$.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#hiperparametros-de-amostragem-e-determinismo",
+      "officialDocUrl": "https://platform.openai.com/docs/api-reference/chat/create",
+      "officialDocLabel": "OpenAI Chat Completions API Reference"
+    },
+    {
+      "id": "m02-s04-q17",
+      "sessionId": "2.4",
+      "subtopicTag": "Determinismo e Amostragem: Temperature, Top-p, Seed, Max Tokens e Stop Sequences",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Como funciona o parâmetro `top_p` (Nucleus Sampling) em comparação ao `top_k`, e qual é a recomendação oficial de calibração conjunta com `temperature` nas documentações da OpenAI e Anthropic?",
+      "options": [
+        "`top_p` seleciona dinamicamente o menor subconjunto de tokens cuja soma de probabilidades acumuladas atinja o limiar $p$, adaptando-se à incerteza do contexto; recomenda-se ajustar `temperature` OU `top_p`, mas não reduzir ambos drasticamente ao mesmo tempo.",
+        "`top_p` fixa exatamente um número constante de tokens candidatos (como 50 palavras) em todas as etapas; recomenda-se sempre configurar `temperature: 0.1` junto com `top_p: 0.1`.",
+        "`top_p` define o percentual máximo de tokens do prompt que podem ser lidos pelo cache do Redis antes da chamada.",
+        "`top_p` é um parâmetro booleano que ativa ou desativa a geração paralela de múltiplas respostas no mesmo payload."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Diferente do `top_k` (que corta sempre um número fixo $k$ de candidatos), o Nucleus Sampling (`top_p`) ordena os tokens por probabilidade decrescente e mantém o menor núcleo $V^{(p)}$ tal que $\\sum_{w \\in V^{(p)}} P(w) \\ge p$ — contendo 1 ou 2 tokens quando o modelo está confiante (ex.: fechar `}`) e expandindo em frases abertas. Como `temperature` e `top_p` atuam em cascata sobre a mesma distribuição, a documentação oficial recomenda alterar apenas um mantendo o outro no padrão (`1.0`). A alternativa B descreve `top_k` e contraria a regra oficial; C e D atribuem funções inexistentes a `top_p`.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#hiperparametros-de-amostragem-e-determinismo",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/messages",
+      "officialDocLabel": "Anthropic Messages API Reference"
+    },
+    {
+      "id": "m02-s04-q18",
+      "sessionId": "2.4",
+      "subtopicTag": "Determinismo e Amostragem: Temperature, Top-p, Seed, Max Tokens e Stop Sequences",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Mesmo fixando `temperature: 0.0` e passando um inteiro em `seed: 42`, por que um pipeline de auditoria em CI ainda pode observar pequenas divergências ocasionais de tokens ao longo das semanas, e como o campo `system_fingerprint` auxilia no diagnóstico?",
+      "options": [
+        "Porque o parâmetro `seed` só funciona quando `temperature` é igual a `2.0`, sendo ignorado quando `temperature` é `0.0`.",
+        "Porque a OpenAI e o Google inserem intencionalmente erros ortográficos aleatórios para impedir cache no cliente.",
+        "Porque o roteamento dinâmico em arquiteturas Mixture-of-Experts (MoE) sob continuous batching e a não-associatividade de ponto flutuante em GPUs (`(a + b) + c !== a + (b + c)`) podem alterar desempates de logits próximos; comparar `system_fingerprint` nos logs revela se o provedor atualizou hardware, kernels ou pesos no backend.",
+        "Porque `system_fingerprint` é a chave privada TLS do cliente usada para descriptografar o JSONL da Batch API."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em clusters distribuídos de inferência, o tamanho do lote dinâmico (*continuous batching*) afeta a capacidade/roteamento de especialistas em modelos MoE e a ordem de somas em ponto flutuante nas GPUs, quebrando a igualdade bit-a-bit absoluta em empates de probabilidade. O campo `system_fingerprint` devolvido pela API da OpenAI identifica criptograficamente a configuração de servidor e pesos ativos; se uma suíte de regressão falhar com o mesmo `seed`, a mudança de `system_fingerprint` confirma atualização de infraestrutura do provedor. As alternativas A, B e D são incorretas.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#hiperparametros-de-amostragem-e-determinismo",
+      "officialDocUrl": "https://platform.openai.com/docs/api-reference/chat/create",
+      "officialDocLabel": "OpenAI Chat Completions API — seed & system_fingerprint"
+    },
+    {
+      "id": "m02-s04-q19",
+      "sessionId": "2.4",
+      "subtopicTag": "Determinismo e Amostragem: Temperature, Top-p, Seed, Max Tokens e Stop Sequences",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o snippet TypeScript abaixo que configura parâmetros de determinismo e teto de saída (`max_tokens`). Qual erro crítico de resiliência ocorreria em produção se o código executasse `JSON.parse()` diretamente sem a guarda de `finishReason`?",
+      "codeSnippet": "const completion = await openai.chat.completions.create({\n  model: 'gpt-4o-mini',\n  temperature: 0.0,\n  top_p: 1.0,\n  seed: 42,\n  max_tokens: 180,\n  messages: [{ role: 'user', content: invoiceExtractionPrompt }]\n});\n\nconst choice = completion.choices[0];\nif (choice?.finish_reason === 'length') {\n  throw new Error('Saída truncada pelo teto de max_tokens antes de concluir o JSON.');\n}\nconst parsed = JSON.parse(choice?.message.content ?? '{}');",
+      "options": [
+        "Se `max_tokens: 180` for atingido no meio da geração, a API retorna sucesso HTTP 200 com `finish_reason: 'stop'`, obrigando o cliente a reiniciar a conexão TCP.",
+        "Se o JSON extraído exigir mais de 180 tokens, a decodificação é interrompida no meio com `finish_reason === 'length'` (ou `stop_reason === 'max_tokens'` na Anthropic), e chamar `JSON.parse()` sem essa verificação lançaria `SyntaxError` inesperado por JSON truncado.",
+        "Configurar `temperature: 0.0` junto com `top_p: 1.0` faz o servidor cobrar o dobro pelo parâmetro `seed: 42`.",
+        "O campo `max_tokens` limita exclusivamente o tamanho do array `messages` na entrada, nunca os tokens gerados na resposta."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Embora `max_tokens` (ou `max_completion_tokens` na OpenAI e `maxOutputTokens` no Gemini) funcione como disjuntor financeiro contra loops de 16k tokens e evite reserva excessiva da cota TPM, um teto baixo demais corta a resposta no meio da estrutura JSON. Inspecionar `finish_reason === 'length'` (OpenAI) ou `stop_reason === 'max_tokens'` (Anthropic) antes de `JSON.parse()` permite tratar explicitamente o truncamento em vez de falhar silenciosamente ou quebrar no parser. A alternativa A erra o valor de `finish_reason` (`'length'`, não `'stop'`); a C inventa cobrança por `seed`; a D inverte entrada e saída.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#hiperparametros-de-amostragem-e-determinismo",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/text-generation",
+      "officialDocLabel": "Google Gemini Text Generation & Configuration"
+    },
+    {
+      "id": "m02-s04-q20",
+      "sessionId": "2.4",
+      "subtopicTag": "Determinismo e Amostragem: Temperature, Top-p, Seed, Max Tokens e Stop Sequences",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Observe a configuração da chamada de agente ReAct abaixo usando `stop_sequences` no SDK da Anthropic (equivalente a `stop` na OpenAI e `stopSequences` no Gemini). Qual benefício estrutural e financeiro a sequência sentinela `'\\nObservation:'` proporciona?",
+      "codeSnippet": "const message = await anthropic.messages.create({\n  model: 'claude-3-7-sonnet-20250219',\n  max_tokens: 400,\n  temperature: 0.0,\n  stop_sequences: ['\\nObservation:'],\n  messages: [{ role: 'user', content: reactAgentPrompt }]\n});",
+      "options": [
+        "Garante que o modelo nunca gere blocos de pensamento nem chamadas de ação, retornando uma string vazia em todas as iterações.",
+        "Força a Anthropic a gravar toda a sessão do agente ReAct no Redis do servidor por 30 dias sem custo adicional.",
+        "Converte automaticamente o campo `stop_sequences` em um regex de validação SQL executado após a geração completa de 400 tokens.",
+        "No instante em que o modelo emite `\\nObservation:`, a decodificação é abortada no servidor sem gerar nem cobrar tokens posteriores, impedindo que o LLM alucine sozinho o retorno da ferramenta antes de o código executá-la."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Em loops ReAct (`Thought -> Action -> Action Input -> Observation`), sem uma sequência de parada, o modelo tende a continuar escrevendo e inventar uma `Observation:` fictícia em vez de parar e aguardar a ferramenta real. Ao passar `stop_sequences: ['\\nObservation:']`, o servidor interrompe a decodificação imediatamente ao detectar a sentinela, evitando alucinação de retorno de tool e poupando todos os tokens de saída que seriam gerados depois. As alternativas A, B e C descrevem comportamentos incorretos.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#hiperparametros-de-amostragem-e-determinismo",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/messages",
+      "officialDocLabel": "Anthropic Messages API — stop_sequences"
+    },
+    {
+      "id": "m02-s04-q21",
+      "sessionId": "2.4",
+      "subtopicTag": "Laboratório Prático: Calculadora de Tokenomics, Cache Prefixado e Batch Job",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "No laboratório `lab-s04-tokenomics-suite.ts`, considere a execução da função `calculateTokenomics` para 300.000 requisições/mês (`staticPrefixTokens: 4.500`, `dynamicInputTokens: 250`, `cacheHitRate: 0.90`, `inputPer1MUsd: 3.00`, `outputPer1MUsd: 15.00`, `cachedInputMultiplier: 0.10`, `cacheWriteMultiplier: 1.25`, `batchMultiplier: 0.50`). O que acontece financeiramente quando `avgOutputTokens` sobe de `220` para `1.100` tokens?",
+      "codeSnippet": "function calculateTokenomics(pricing: PricingProfile, load: WorkloadScenario) {\n  const inRate = pricing.inputPer1MUsd / 1_000_000;\n  const outRate = pricing.outputPer1MUsd / 1_000_000;\n  const totalIn = load.staticPrefixTokens + load.dynamicInputTokens;\n  const baselineSyncUsd = load.monthlyRequests * (totalIn * inRate + load.avgOutputTokens * outRate);\n  const hitReqs = load.monthlyRequests * load.cacheHitRate;\n  const missReqs = load.monthlyRequests * (1 - load.cacheHitRate);\n  const cachedPrefixUsd =\n    hitReqs * load.staticPrefixTokens * inRate * pricing.cachedInputMultiplier +\n    missReqs * load.staticPrefixTokens * inRate * pricing.cacheWriteMultiplier;\n  const withPromptCacheUsd =\n    cachedPrefixUsd + load.monthlyRequests * (load.dynamicInputTokens * inRate + load.avgOutputTokens * outRate);\n  const withBatchApiUsd = baselineSyncUsd * pricing.batchMultiplier;\n  return { baselineSyncUsd, withPromptCacheUsd, withBatchApiUsd };\n}",
+      "options": [
+        "O Prompt Caching passa a gerar mais de 85% de economia percentual total porque o cache também armazena gratuitamente todos os 1.100 tokens de saída.",
+        "A economia absoluta do Prompt Caching no prefixo mantém-se em USD 3.179,25, mas o custo da saída sobe de USD 990,00 para USD 4.950,00: a economia percentual do Prompt Caching cai de ~60,4% para ~34,5%, tornando a Batch API (50% OFF = USD 4.612,50) mais barata que usar apenas Prompt Caching (USD 6.045,75).",
+        "O custo `withBatchApiUsd` permanece inalterado em USD 2.632,50 porque a Batch API não contabiliza aumento de `avgOutputTokens`.",
+        "A variável `cachedPrefixUsd` multiplica por 5, pois `avgOutputTokens` entra diretamente no cálculo do prefixo estático em cache."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Com `avgOutputTokens = 220`, o baseline é `USD 5.265,00`, o Prompt Caching (90% hit) cai para `USD 2.085,75` (-60,4%) e supera a Batch API (`USD 2.632,50`, -50%). Ao subir `avgOutputTokens` para `1.100`, a saída salta para `USD 4.950,00` (`300.000 * 1.100 * 15 / 1M`): o baseline vai a `USD 9.225,00` e o Prompt Caching vai a `USD 6.045,75` (-34,5%, economia absoluta constante de `USD 3.179,25`), sendo superado pela Batch API (`USD 4.612,50`) porque esta reduz também em 50% o custo de output. As alternativas A, C e D atribuem incorretamente impacto de output no prefixo em cache ou isenção de output no Batch.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#laboratorio-tokenomics-caching-batch",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/batch",
+      "officialDocLabel": "OpenAI Batch API & Tokenomics"
+    },
+    {
+      "id": "m02-s04-q22",
+      "sessionId": "2.4",
+      "subtopicTag": "Laboratório Prático: Calculadora de Tokenomics, Cache Prefixado e Batch Job",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "No Exercício 3 do laboratório (`cacheWriteMultiplier: 1.25` e `cachedInputMultiplier: 0.10`), a partir de qual taxa mínima de acerto `cacheHitRate` ($h$) o caching explícito passa a gerar economia líquida positiva no custo do prefixo estático em relação ao envio sem cache ($1{,}00\\times$), e qual o desconto líquido obtido quando $h = 0{,}30$?",
+      "options": [
+        "Exige $h > 50{,}0\\%$ para empatar; portanto, com $h = 0{,}30$ o caching gera prejuízo líquido de $15\\%$ sobre o prefixo.",
+        "Gera economia positiva para qualquer $h > 0\\%$, alcançando $70\\%$ de desconto líquido quando $h = 0{,}30$.",
+        "Exige $h > 21{,}74\\%$ ($0{,}25 / 1{,}15$) para gerar economia líquida positiva; com $h = 0{,}30$, o multiplicador efetivo do prefixo é $0{,}905\\times$, resultando em apenas $9{,}5\\%$ de economia líquida no prefixo.",
+        "Exige $h > 80{,}0\\%$ para pagar a taxa de gravação; com $h = 0{,}30$, o multiplicador efetivo é $1{,}25\\times$."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O multiplicador efetivo sobre o prefixo estático em função de $h$ é $M(h) = h \\cdot 0{,}10 + (1 - h) \\cdot 1{,}25 = 1{,}25 - 1{,}15h$. Para haver economia líquida ($M(h) < 1{,}00$), temos $1{,}15h > 0{,}25 \\implies h > 0{,}25 / 1{,}15 \\approx 21{,}74\\%$. Substituindo $h = 0{,}30$, obtemos $M(0{,}30) = 0{,}30 \\cdot 0{,}10 + 0{,}70 \\cdot 1{,}25 = 0{,}03 + 0{,}875 = 0{,}905\\times$, ou seja, apenas $9{,}5\\%$ de desconto no prefixo (contra $78{,}5\\%$ com $h = 0{,}90$). As alternativas A, B e D erram a equação linear de break-even.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#laboratorio-tokenomics-caching-batch",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+      "officialDocLabel": "Anthropic Prompt Caching — Pricing & Break-even"
+    },
+    {
+      "id": "m02-s04-q23",
+      "sessionId": "2.4",
+      "subtopicTag": "Laboratório Prático: Calculadora de Tokenomics, Cache Prefixado e Batch Job",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a função `buildCacheOptimizedRequest` do laboratório abaixo. Por que `requestTimestampIso` é incluído no final de `dynamicUserContent` dentro de `apiPayload.messages`, mas propositalmente OMITIDO do objeto passado para `canonicalSort` no cálculo do hash SHA-256 (`redisKey`)?",
+      "codeSnippet": "function buildCacheOptimizedRequest(opts: {\n  tenantId: string; promptVersion: string; model: string;\n  staticSystemPolicy: string; staticFewShotBlock: string;\n  dynamicTicketText: string; requestTimestampIso: string;\n}) {\n  const staticPrefix = `${opts.staticSystemPolicy}\\n\\n${opts.staticFewShotBlock}`;\n  const dynamicUserContent = `Ticket:\\n${opts.dynamicTicketText}\\n[Recebido em: ${opts.requestTimestampIso}]`;\n  const digest = createHash('sha256')\n    .update(JSON.stringify(canonicalSort({\n      tenantId: opts.tenantId, promptVersion: opts.promptVersion, model: opts.model,\n      temperature: 0.0, topP: 1.0, staticPrefix, ticket: opts.dynamicTicketText\n    })), 'utf-8').digest('hex');\n  return {\n    redisKey: `llm:v1:${opts.tenantId}:${opts.promptVersion}:${digest}`,\n    apiPayload: {\n      model: opts.model, temperature: 0.0, top_p: 1.0, max_tokens: 150, seed: 42, stop: ['</json>'],\n      messages: [{ role: 'system' as const, content: staticPrefix }, { role: 'user' as const, content: dynamicUserContent }]\n    }\n  };\n}",
+      "options": [
+        "Para garantir os dois níveis de cache simultaneamente: no Redis, excluir o timestamp efêmero permite cache hit exato para tickets de texto idêntico (após `trim()`); já no provedor (cache miss do Redis), colocar o timestamp ao final da última mensagem preserva 100% do `staticPrefix` elegível ao Prompt Caching nativo.",
+        "Porque o algoritmo SHA-256 do módulo `node:crypto` gera erro fatal se receber datas no formato ISO-8601 com caractere `:`.",
+        "Porque o campo `messages[0]` com `role: 'system'` nunca é tokenizado pela OpenAI quando há uma segunda mensagem `user`.",
+        "Porque omitir `requestTimestampIso` do hash faz com que todos os tenants diferentes compartilhem automaticamente a mesma `redisKey`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Essa decisão resolve as duas camadas de cache ao mesmo tempo: (1) se `requestTimestampIso` entrasse no objeto do SHA-256, cada milissegundo geraria um digest único e o cache exato do Redis teria $0\\%$ de acertos; (2) quando há cache miss no Redis e o `apiPayload` vai para a rede, posicionar `dynamicUserContent` após `staticPrefix` garante que o prefixo de sistema + few-shot permaneça bit-a-bit intacto para acertar o KV Cache do provedor. A alternativa B é falsa (SHA-256 aceita qualquer string UTF-8); a C é absurda; a D é falsa pois `tenantId` está explicitamente tanto no objeto do hash quanto no prefixo da `redisKey`.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#laboratorio-tokenomics-caching-batch",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/prompt-caching",
+      "officialDocLabel": "OpenAI Prompt Caching Guide"
+    },
+    {
+      "id": "m02-s04-q24",
+      "sessionId": "2.4",
+      "subtopicTag": "Laboratório Prático: Calculadora de Tokenomics, Cache Prefixado e Batch Job",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Considerando as três alavancas de otimização implementadas no laboratório — (1) Redis SHA-256 exato, (2) Prompt Caching nativo por prefixo e (3) Batch API 50% OFF — qual escolha arquitetural é mais adequada para um serviço noturno de enriquecimento de 500.000 descrições únicas de produtos sem exigência de resposta em tempo real?",
+      "options": [
+        "Usar exclusivamente Redis SHA-256 em chamadas síncronas esperando 95% de cache hits exatos, mesmo todas as descrições de produtos sendo inéditas.",
+        "Executar o fluxo via Batch API assíncrona (`.jsonl`, 50% OFF em entrada e saída) mantendo ordenação estática no `system` para preservar também eventuais ganhos de processamento em lote e usando `seed: 42` + `temperature: 0.0`.",
+        "Aumentar `temperature` para `1.8` e remover `max_tokens` para que o servidor processe o lote síncrono mais depressa.",
+        "Criar um cache explícito no Gemini com `ttl: '86400s'` e disparar 500.000 requisições síncronas sequenciais de 1 em 1 sem usar Batch."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Como o workload não exige latência em tempo real (execução noturna) e as 500.000 descrições são únicas, o Redis exato terá taxa de acerto desprezível. A Batch API aplica 50% de desconto inclusive sobre os caros tokens de saída e opera em pool de rate limit separado, evitando estrangular a cota síncrona. A alternativa A falha porque entradas inéditas dão miss no SHA-256 exato; a C corrompe a consistência do JSON e remove a proteção contra loop de tokens; a D ignora o desconto de 50% no output e encarece/lentifica a carga sem necessidade.",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#laboratorio-tokenomics-caching-batch",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/batch",
+      "officialDocLabel": "OpenAI Batch API Guide"
+    },
+    {
+      "id": "m02-s04-q25",
+      "sessionId": "2.4",
+      "subtopicTag": "Laboratório Prático: Calculadora de Tokenomics, Cache Prefixado e Batch Job",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "No módulo `generateAndOptionallySubmitBatch` do laboratório (`lab-s04-tokenomics-suite.ts`), qual conjunto de proteções garante simultaneamente previsibilidade estrutural, teto financeiro por ticket e rastreabilidade de reconciliação no arquivo `.jsonl`?",
+      "options": [
+        "Uso de `temperature: 1.2`, ausência de `response_format` e geração de linhas separadas por vírgula em um array JSON único.",
+        "Uso de `seed` aleatório por linha, `max_tokens: 16384` sem restrição e omissão do campo `custom_id`.",
+        "Configuração de `purpose: 'fine-tune'` em `client.files.create` e `completion_window: '10s'` em `client.batches.create`.",
+        "Uso de `temperature: 0.0`, `seed: 42`, `max_tokens: 100`, `response_format: { type: 'json_object' }`, prefixo `staticSystemPolicy` fixo e `custom_id: 'ticket-' + t.id` em cada objeto JSONL."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A combinação de `temperature: 0.0` + `seed: 42` minimiza a variância estocástica, `response_format: { type: 'json_object' }` impõe saída JSON sem preâmbulo, `max_tokens: 100` atua como disjuntor financeiro por ticket, `staticSystemPolicy` fixa o contexto de instrução e `custom_id` garante a reconciliação exata das respostas assíncronas. A alternativa A quebra o formato JSON Lines (que exige um objeto JSON por linha, não um array separado por vírgula) e aumenta aleatoriedade; a B remove limites e a chave de correlação; a C usa `purpose` e `completion_window` inválidos para a Batch API (`'batch'` e `'24h'`).",
+      "chapterAnchor": "cap-04-consistencia-e-custo-eficiencia#laboratorio-tokenomics-caching-batch",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/batch",
+      "officialDocLabel": "OpenAI Batch API Guide"
+    }
+  ]
+}

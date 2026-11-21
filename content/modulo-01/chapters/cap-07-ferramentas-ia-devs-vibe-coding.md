@@ -28,7 +28,14 @@ official_docs:
     section: ".github/copilot-instructions.md & Copilot Agent Mode"
 media:
   audio_notebooklm: null
-  video_url: null
+  video_url: "https://www.youtube.com/watch?v=-9ECOVgsf00"
+  videos:
+    - title: "Cursor: Tutorial Completo para Iniciantes"
+      channel: "Hashtag Programação"
+      url: "https://www.youtube.com/watch?v=-9ECOVgsf00"
+    - title: "Vibe Coding com Python - Usando o Cursor para Programar para mim"
+      channel: "Hashtag Programação"
+      url: "https://www.youtube.com/watch?v=fyugIQAYSkw"
 ---
 
 # Sessão 1.7: Ferramentas de IA para Acelerar sua Vida como Dev

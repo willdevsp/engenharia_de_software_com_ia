@@ -28,11 +28,17 @@ official_docs:
     section: "Generating Text Embeddings (text-embedding-004)"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=rhZgXNdhWDY"
+  video_url: "https://www.youtube.com/watch?v=1pFb0AOLpYo"
   videos:
-    - title: "Retrieval Augmented Generation (RAG) Explained: Embedding, Sentence BERT, Vector Database (HNSW)"
-      channel: "Umar Jamil"
-      url: "https://www.youtube.com/watch?v=rhZgXNdhWDY"
+    - title: "Busca semântica com IA (LangChain + Embeddings) | Aquecimento IA para devs"
+      channel: "Rocketseat"
+      url: "https://www.youtube.com/watch?v=1pFb0AOLpYo"
+    - title: "RAG Explicado: Como Dar Conhecimento aos Seus Agentes de IA"
+      channel: "Attekita Dev"
+      url: "https://www.youtube.com/watch?v=SWXa7z_64-g"
+    - title: "Como usar Postgres como VectorDB! Aprenda PgAI e PgVector - Video 3"
+      channel: "DataWay"
+      url: "https://www.youtube.com/watch?v=OrkiPqONi1s"
 ---
 
 # Sessão 1.9: RAG, Embeddings e Busca Semântica (Projeto com JS e Postgres)

@@ -1,0 +1,549 @@
+{
+  "sessionId": "2.6",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.6 — Mão na Massa: Integrando IA a um Back-End Existente",
+  "questions": [
+    {
+      "id": "m02-s06-q01",
+      "sessionId": "2.6",
+      "subtopicTag": "Padrão Adapter / Gateway para Desacoplar Controllers HTTP de SDKs de IA",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Ao integrar chamadas a LLMs diretamente em uma rota Express (`import OpenAI from 'openai'; new OpenAI(...)` dentro de `POST /api/chat`), qual conjunto de passivos arquiteturais emerge imediatamente em produção?",
+      "options": [
+        "O Node.js impede a execução de `async/await` dentro de rotas Express que importam SDKs externos, obrigando o uso de callbacks síncronos.",
+        "O protocolo HTTP/2 passa a rejeitar cabeçalhos `Authorization` enviados pelo cliente sempre que o controller instancia clientes de terceiros.",
+        "Violação do Princípio da Inversão de Dependência (DIP), causando migração traumática entre provedores, vazamento de contratos proprietários (`choices[0].delta.content`), duplicação de políticas transversais (timeouts, contagem de tokens, `promptVersion`) e testabilidade hostil dependente de interceptação de sockets HTTP.",
+        "Aumenta automaticamente a temperatura padrão dos modelos para `2.0`, pois controllers HTTP sobrescrevem os parâmetros do provedor."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Importar e instanciar o SDK concreto do fornecedor dentro do controller HTTP viola o Princípio da Inversão de Dependência (DIP): a camada de aplicação fica acoplada à infraestrutura externa. Isso gera quatro passivos diretos: troca traumática de provedor, vazamento de schemas proprietários (`choices[0].delta.content` ou `candidates[0].content.parts`), duplicação de timeouts/telemetria por endpoint e necessidade de mocks de rede de baixo nível (`nock`/`msw`) em testes. A alternativa A é falsa porque rotas Express suportam `async/await` normalmente. A B é falsa porque o transporte HTTP/2 não bloqueia `Authorization` por causa de dependências importadas. A D é falsa porque a instanciação no controller não altera a `temperature` do modelo.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#padrao-adapter-gateway-desacoplamento",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q02",
+      "sessionId": "2.6",
+      "subtopicTag": "Padrão Adapter / Gateway para Desacoplar Controllers HTTP de SDKs de IA",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na Arquitetura Hexagonal aplicada à porta `AiGateway` (`src/ai/gateway.ts`), por que o método `streamText` retorna `AsyncIterable<StreamChunk>` usando uma união discriminada agnóstica (`delta` | `usage` | `done`) em vez de repassar diretamente o stream bruto do SDK da OpenAI ou do Google GenAI?",
+      "options": [
+        "Para isolar o controller HTTP e as regras de negócio do formato proprietário de cada fornecedor, permitindo que o roteador SSE consuma eventos uniformes (`text`, `inputTokens`/`outputTokens`, `finishReason`) independentemente de qual adapter concreto esteja injetado.",
+        "Porque o TypeScript proíbe que funções assíncronas retornem objetos provenientes de pacotes instalados via `npm`.",
+        "Porque os SDKs `openai` e `@google/genai` não implementam o protocolo `AsyncIterable` em Node.js e retornam apenas strings XML estáticas.",
+        "Para converter o fluxo assíncrono em uma única resposta JSON síncrona, eliminando a necessidade de streaming HTTP."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. A porta `AiGateway` define uma fronteira estável no domínio: tanto `OpenAiGatewayAdapter` quanto `GeminiGatewayAdapter` traduzem seus formatos internos (`choices[0].delta.content` / `usage` vs. `chunk.text` / `usageMetadata`) para o contrato único `StreamChunk`. Assim, o controller SSE nunca conhece detalhes específicos de provedor. A alternativa B é falsa; TypeScript tipa normalmente objetos de pacotes `npm`. A C é falsa porque ambos os SDKs oficiais expõem streams compatíveis com `for await...of` (`AsyncIterable`). A D é falsa porque `AsyncIterable<StreamChunk>` preserva justamente o consumo incremental token a token em streaming.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#padrao-adapter-gateway-desacoplamento",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q03",
+      "sessionId": "2.6",
+      "subtopicTag": "Padrão Adapter / Gateway para Desacoplar Controllers HTTP de SDKs de IA",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a implementação de `OpenAiGatewayAdapter` abaixo. Quais são, respectivamente, o impacto de omitir `stream_options: { include_usage: true }` em `streamText` e o motivo técnico de passar `{ signal: req.signal }` no segundo argumento de `chat.completions.create()`?",
+      "codeSnippet": "export class OpenAiGatewayAdapter implements AiGateway {\n  readonly providerName = 'openai';\n  private readonly client: OpenAI;\n  constructor(apiKey: string) { this.client = new OpenAI({ apiKey, maxRetries: 2, timeout: 30_000 }); }\n\n  async *streamText(req: BaseGenerationRequest): AsyncIterable<StreamChunk> {\n    const stream = await this.client.chat.completions.create(\n      {\n        model: req.model, temperature: req.temperature, max_tokens: req.maxOutputTokens,\n        stream: true, stream_options: { include_usage: true },\n        messages: [{ role: 'system', content: req.systemPrompt }, ...req.messages]\n      },\n      { signal: req.signal }\n    );\n    for await (const chunk of stream) {\n      const delta = chunk.choices[0]?.delta?.content;\n      if (delta) yield { type: 'delta', text: delta };\n      if (chunk.usage) yield { type: 'usage', usage: { inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens } };\n      const finish = chunk.choices[0]?.finish_reason;\n      if (finish === 'stop' || finish === 'length') yield { type: 'done', finishReason: finish };\n    }\n  }\n}",
+      "options": [
+        "Omitir `stream_options` faz a API retornar erro HTTP 400 imediatamente; já `{ signal }` no segundo argumento serve apenas para definir o tempo de retry do SDK.",
+        "Omitir `stream_options` impede o envio de tokens de texto (`delta`); passar `{ signal }` no segundo argumento habilita o cache semântico de prompt.",
+        "Omitir `stream_options` desativa o formato SSE no servidor da OpenAI; passar `{ signal }` no segundo argumento configura o nome do provedor para logs.",
+        "Sem `stream_options: { include_usage: true }`, os chunks em streaming não trazem `chunk.usage` (impedindo a reconciliação real de tokens); e `{ signal: req.signal }` é passado no objeto de opções da requisição (`RequestOptions`, 2º parâmetro) porque faz parte do controle de transporte HTTP/fetch do SDK `openai`, e não do payload JSON enviado no corpo da API."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. No SDK `openai` para Node.js, o primeiro argumento de `chat.completions.create` é o corpo JSON enviado à API REST da OpenAI; sem `stream_options: { include_usage: true }`, a API omite o chunk final com `prompt_tokens` e `completion_tokens`, inviabilizando o accounting exato de `TokenUsage`. Já o segundo argumento representa as `RequestOptions` locais do cliente HTTP (incluindo `signal: AbortSignal`, headers extras e timeouts), permitindo cancelar a requisição subjacente imediatamente quando `AbortController` dispara. A alternativa A erra porque `stream_options` é opcional (não gera HTTP 400) e `signal` não controla retries. A B erra porque os `delta` continuam chegando sem `stream_options` e `signal` não tem relação com prompt caching. A C erra porque `stream: true` já ativa o stream e `signal` não é metadado de log.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#padrao-adapter-gateway-desacoplamento",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q04",
+      "sessionId": "2.6",
+      "subtopicTag": "Padrão Adapter / Gateway para Desacoplar Controllers HTTP de SDKs de IA",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Observe a classe `GeminiGatewayAdapter` que implementa a mesma porta `AiGateway` usando `@google/genai`. Por que o método `generateStructured` converte `assistant` para `model`, coloca `systemInstruction` e `abortSignal` dentro de `config` e ainda executa `req.schema.parse(JSON.parse(res.text ?? '{}'))` na volta?",
+      "codeSnippet": "export class GeminiGatewayAdapter implements AiGateway {\n  readonly providerName = 'gemini';\n  private readonly ai: GoogleGenAI;\n  constructor(apiKey: string) { this.ai = new GoogleGenAI({ apiKey }); }\n\n  private toContents(messages: BaseGenerationRequest['messages']) {\n    return messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }));\n  }\n\n  async generateStructured<T extends z.ZodTypeAny>(\n    req: StructuredGenerationRequest<T>\n  ): Promise<StructuredGenerationResult<z.infer<T>>> {\n    const start = performance.now();\n    const res = await this.ai.models.generateContent({\n      model: req.model, contents: this.toContents(req.messages),\n      config: {\n        systemInstruction: req.systemPrompt, temperature: req.temperature, maxOutputTokens: req.maxOutputTokens,\n        responseMimeType: 'application/json', responseJsonSchema: zodToJsonSchema(req.schema), abortSignal: req.signal\n      }\n    });\n    return {\n      data: req.schema.parse(JSON.parse(res.text ?? '{}')), provider: this.providerName, latencyMs: Math.round(performance.now() - start),\n      usage: { inputTokens: res.usageMetadata?.promptTokenCount ?? 0, outputTokens: res.usageMetadata?.candidatesTokenCount ?? 0 }\n    };\n  }\n}",
+      "options": [
+        "Porque o SDK `@google/genai` não aceita schemas Zod nativamente e ignora `responseJsonSchema` no servidor, tornando obrigatório descartar a configuração e validar apenas no cliente.",
+        "Porque o contrato da API Gemini usa `role: 'model'` para turnos do assistente e centraliza `systemInstruction` e `abortSignal` em `config` (diferente do SDK OpenAI); além disso, `req.schema.parse(...)` valida em runtime e refina a tipagem estática `z.infer<T>` sobre a string JSON retornada em `res.text`, protegendo contra truncamento ou payload vazio.",
+        "Porque `JSON.parse` no Node.js executa automaticamente a compilação JIT do esquema Zod em memória antes de enviar a requisição à API do Google.",
+        "Porque `systemInstruction` no Gemini não pode conter texto em português, sendo convertido para inglês pela função `toContents`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Este adapter ilustra exatamente o papel tradutor do Adapter Pattern: o Gemini espera `role: 'model'` (e não `'assistant'`) e recebe `systemInstruction` e `abortSignal` dentro do objeto `config` da chamada `generateContent`. Como `res.text` retorna uma string JSON (diferente de `chat.completions.parse()` da OpenAI, que já devolve `.parsed`), `JSON.parse` + `req.schema.parse(...)` garante validação estrita em tempo de execução (ex.: caso haja truncamento por `maxOutputTokens` ou resposta vazia) e entrega o tipo exato `z.infer<T>` para o chamador. A alternativa A erra ao dizer que a API ignora `responseJsonSchema` (ela usa constrained decoding com `responseJsonSchema`). A C é tecnicamente absurda, pois `JSON.parse` ocorre apenas no retorno. A D é falsa porque `toContents` apenas adapta a estrutura `{ role, parts }` sem traduzir idiomas.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#padrao-adapter-gateway-desacoplamento",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q05",
+      "sessionId": "2.6",
+      "subtopicTag": "Padrão Adapter / Gateway para Desacoplar Controllers HTTP de SDKs de IA",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Uma empresa opera 12 endpoints Express em produção integrados por meio da porta `AiGateway` e decide migrar o fluxo de revisão de código da OpenAI para o Google Gemini visando reduzir latência e custo. Considerando a separação hexagonal adotada no módulo, o que deve ser modificado?",
+      "options": [
+        "Todos os 12 controllers HTTP, o parser de eventos SSE no front-end e os testes unitários que usam `FakeAiGateway` precisam ser reescritos para ler `candidates[0].content.parts`.",
+        "O middleware JWT e o `UserTokenBucketLimiter` precisam ser reimplementados para calcular tokens em formato binário específico do Google.",
+        "Apenas a composição de dependências (injetando `GeminiGatewayAdapter` no lugar de `OpenAiGatewayAdapter`) e a entrada correspondente de modelo no registro de prompts (`prompts.registry.ts`); os controllers SSE, schemas Zod, Token Bucket e suíte de testes unitários permanecem intactos.",
+        "É obrigatório duplicar cada rota Express (`/api/openai/chat` e `/api/gemini/chat`) porque controllers Express não aceitam polimorfismo por interface TypeScript."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Esse é o benefício central de Ports & Adapters: ao injetar `AiGateway` em `createAiRouter`, toda a mecânica HTTP (JWT, Zod, Token Bucket, headers SSE, `AbortController`, eventos `meta`/`delta`/`usage`/`done`) é completamente agnóstica de provedor. Migrar para Gemini requer apenas instanciar `GeminiGatewayAdapter` na camada de composição e atualizar o identificador do `model` na especificação versionada de prompt. A alternativa A descreve o cenário acoplado sem `AiGateway`. A B é falsa porque o `UserTokenBucketLimiter` trabalha sobre contagens numéricas de `TokenUsage` já normalizadas pelo adapter. A D nega o polimorfismo básico de interfaces em TypeScript.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#padrao-adapter-gateway-desacoplamento",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q06",
+      "sessionId": "2.6",
+      "subtopicTag": "Streaming em Tempo Real com Server-Sent Events (SSE) e Cancelamento (AbortController)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que **Server-Sent Events (SSE)** supera WebSockets (`ws://`) em APIs de streaming de tokens de LLMs, e como o navegador deve consumir uma rota `POST` protegida por JWT?",
+      "options": [
+        "Porque o objeto nativo `new EventSource(url)` envia automaticamente requisições `POST` com corpo JSON e cabeçalho `Authorization: Bearer` sem qualquer código adicional.",
+        "Porque o fluxo de tokens é unidirecional (Servidor $\\rightarrow$ Cliente), tornando SSE stateless sobre HTTP/1.1 e HTTP/2 (sem sticky sessions, multiplexado e amigável a CDNs/ALBs); no front-end, rotas `POST` com JWT devem ser consumidas via `fetch()` + `response.body.getReader()` + `TextDecoder`, pois o `EventSource` nativo aceita apenas `GET` sem headers customizados.",
+        "Porque WebSockets não funcionam sobre conexões criptografadas TLS (`wss://`) em navegadores modernos.",
+        "Porque o SSE envia todos os tokens de uma única vez após o término da geração para economizar conexões TCP."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Como a geração de texto do LLM na requisição é unidirecional (Servidor $\\rightarrow$ Cliente), SSE aproveita HTTP/1.1 e HTTP/2 padrão com escalabilidade horizontal stateless, evitando o gerenciamento de estado e sticky sessions exigidos pelo upgrade `ws://`. Conforme observado no capítulo e na especificação MDN, `new EventSource(url)` nativo do browser só faz `GET` e não aceita headers customizados de autenticação (`Authorization`), razão pela qual APIs `POST` autenticadas consomem o stream `text/event-stream` via `fetch()` + `ReadableStream` (`getReader()`) + `TextDecoder`. A alternativa A inverte exatamente a limitação do `EventSource`. A C é falsa (`wss://` é amplamente suportado). A D descreve `res.json()` tradicional, o oposto de streaming.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#streaming-server-sent-events-sse",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    },
+    {
+      "id": "m02-s06-q07",
+      "sessionId": "2.6",
+      "subtopicTag": "Streaming em Tempo Real com Server-Sent Events (SSE) e Cancelamento (AbortController)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Em ambiente de produção atrás de um proxy reverso (Nginx, Cloudflare ou AWS ALB), uma API Node.js está emitindo tokens via `res.write()`, mas o usuário percebe a tela congelada por 12 segundos e todos os tokens chegam juntos ao final. Qual combinação arquitetural no servidor corrige esse *buffering* intermediário e evita queda por *idle timeout*?",
+      "options": [
+        "Enviar `Cache-Control: no-cache, no-transform` (desabilitando compressão gzip em streaming), `X-Accel-Buffering: no`, chamar `res.flushHeaders()` antes do primeiro `res.write()` e emitir comentários heartbeat `: ping\\n\\n` a cada 15 segundos.",
+        "Definir `Content-Type: application/json` e ativar `Content-Encoding: gzip` para compactar cada token individualmente em blocos de 64 KB.",
+        "Substituir `res.write()` por `console.log()` e reduzir o timeout do servidor HTTP para 1 segundo.",
+        "Retornar status HTTP `204 No Content` no início da conexão e só enviar `200 OK` quando o último token for gerado."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Proxies reversos e middlewares de compressão frequentemente retêm chunks em memória até atingir um limite de buffer (ex.: 4 KB ou 32 KB) ou o fim da resposta, destruindo a experiência em tempo real. Conforme a especificação MDN e a Seção 2.2, `Cache-Control: no-cache, no-transform` impede que proxies/compressão modifiquem ou retenham o stream, `X-Accel-Buffering: no` desliga explicitamente o buffer no Nginx/Ingress, `res.flushHeaders()` despacha imediatamente o status `200` e cabeçalhos ao cliente, e `: ping\\n\\n` a cada 15s mantém a conexão ativa durante pausas longas do modelo. A alternativa B agrava o buffering por usar gzip em JSON. A C é sem sentido operacional. A D viola o protocolo HTTP (não há múltiplas respostas finais nem corpo em `204`).",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#streaming-server-sent-events-sse",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    },
+    {
+      "id": "m02-s06-q08",
+      "sessionId": "2.6",
+      "subtopicTag": "Streaming em Tempo Real com Server-Sent Events (SSE) e Cancelamento (AbortController)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Examine as funções utilitárias `initSseStream` e `writeSseEvent` de `src/server/sse.ts`. Segundo a especificação `text/event-stream` da MDN, por que o *heartbeat* envia `: ping\\n\\n` com dois pontos iniciais em vez de `event: ping`, e qual a função de `\\n\\n` ao final de cada evento?",
+      "codeSnippet": "export function initSseStream(res: Response): NodeJS.Timeout {\n  res.status(200);\n  res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');\n  res.setHeader('Cache-Control', 'no-cache, no-transform');\n  res.setHeader('Connection', 'keep-alive');\n  res.setHeader('X-Accel-Buffering', 'no');\n  res.flushHeaders();\n\n  return setInterval(() => {\n    if (!res.writableEnded) res.write(': ping\\n\\n');\n  }, 15_000);\n}\n\nexport function writeSseEvent(res: Response, event: string, data: unknown): void {\n  if (res.writableEnded) return;\n  res.write(`event: ${event}\\ndata: ${JSON.stringify(data)}\\n\\n`);\n}",
+      "options": [
+        "Os dois pontos iniciais transformam a linha em um comando de fechamento imediato do socket TCP, enquanto `\\n\\n` reinicia a contagem de tokens do modelo.",
+        "Os dois pontos iniciais criptografam o payload com TLS 1.3 no Node.js, e `\\n\\n` converte o objeto JSON em binário.",
+        "Os dois pontos iniciais indicam ao proxy Nginx que ele deve armazenar aquela linha em cache por 24 horas; já `\\n\\n` separa cabeçalhos HTTP de cookies.",
+        "Na gramática SSE da MDN, linhas iniciadas por `:` são comentários ignorados pelos parsers de eventos no cliente (mantendo o socket ativo sem disparar handlers de UI), enquanto a linha em branco (`\\n\\n`) é o delimitador obrigatório que sinaliza o término de um quadro/evento para despacho imediato."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Na especificação MDN de Server-Sent Events (`text/event-stream`), uma linha começando com `:` é tratada como comentário — útil para manter proxies e conexões TCP ativas (`keep-alive`) sem poluir o fluxo de eventos tratados pela aplicação cliente. Já dois caracteres de quebra de linha consecutivos (`\\n\\n`) delimitam o fim de cada bloco de evento (`event: nome\\ndata: json\\n\\n`), instruindo o parser do cliente a despachar imediatamente os dados acumulados. As alternativas A, B e C atribuem comportamentos inexistentes à sintaxe de comentário e ao delimitador de quadro SSE.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#streaming-server-sent-events-sse",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    },
+    {
+      "id": "m02-s06-q09",
+      "sessionId": "2.6",
+      "subtopicTag": "Streaming em Tempo Real com Server-Sent Events (SSE) e Cancelamento (AbortController)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Em Node.js v16+, por que registrar `req.on('close', () => abortController.abort())` em uma rota `POST /api/chat/stream` é uma armadilha crítica de produção, e qual evento deve ser monitorado para cancelar o streaming junto ao provedor de IA quando o usuário fecha a aba?",
+      "options": [
+        "Porque `req.on('close')` nunca é disparado pelo Node.js em requisições HTTPS; deve-se usar `process.on('exit')` para abortar o stream do usuário.",
+        "Porque `req.on('close')` dispara apenas quando o provedor OpenAI ou Gemini encerra a resposta, e não quando o navegador desconecta.",
+        "Porque em Node.js v16+, `req.on('close')` é disparado assim que o corpo JSON da requisição `POST` termina de ser lido pelo servidor (mesmo com a resposta HTTP ainda aberta); o padrão seguro é monitorar `res.on('close', () => { if (!res.writableEnded) abortController.abort(); })`.",
+        "Porque `req.on('close')` apaga os cabeçalhos CORS da resposta; deve-se usar `req.on('pause')` para detectar o fechamento da aba."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em versões modernas do Node.js (v16+), o evento `'close'` do objeto `IncomingMessage` (`req`) ocorre quando o stream de entrada da requisição (leitura do body JSON do `POST`) é concluído, o que faria o `AbortController` cancelar a chamada à IA antes mesmo de ela começar. Monitorar `res.on('close')` verificando `!res.writableEnded` detecta exatamente quando o socket TCP subjacente foi fechado pelo cliente antes de o servidor finalizar o stream normalmente com `res.end()`, propagando o `AbortSignal` para fechar a conexão TLS com OpenAI/Gemini e interromper a geração de tokens. As alternativas A, B e D descrevem falsamente a semântica dos eventos de stream do Node.js.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#streaming-server-sent-events-sse",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q10",
+      "sessionId": "2.6",
+      "subtopicTag": "Streaming em Tempo Real com Server-Sent Events (SSE) e Cancelamento (AbortController)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise o trecho de controle SSE abaixo. Caso o cliente clique em *Parar* no navegador no meio da geração de tokens, qual é o papel da condição `if (!abortController.signal.aborted)` no bloco `catch` e por que `clearInterval(heartbeat)` deve estar obrigatoriamente no `finally`?",
+      "codeSnippet": "const heartbeat = initSseStream(res);\nconst abortController = new AbortController();\nres.on('close', () => { if (!res.writableEnded) abortController.abort(); });\n\ntry {\n  const stream = deps.gateway.streamText({ ...baseReq, signal: abortController.signal });\n  for await (const chunk of stream) {\n    if (abortController.signal.aborted) break;\n    if (chunk.type === 'delta') writeSseEvent(res, 'delta', { text: chunk.text });\n  }\n} catch (err) {\n  if (!abortController.signal.aborted) {\n    writeSseEvent(res, 'error', { message: err instanceof Error ? err.message : 'Erro interno de IA' });\n  }\n} finally {\n  clearInterval(heartbeat);\n  deps.limiter.reconcile(userId, estTotal, actualTokens);\n  if (!res.writableEnded) res.end();\n}",
+      "options": [
+        "Quando `abortController.abort()` cancela o SDK, a exceção de abortamento lançada no `for await` não deve ser emitida como `event: error` em um socket que o próprio cliente já fechou; e `clearInterval(heartbeat)` no `finally` evita vazamento de memória/timers órfãos (`setInterval`) disparando para sempre após o fim ou cancelamento da requisição.",
+        "A condição `if (!abortController.signal.aborted)` serve para reenviar automaticamente toda a conversa ao provedor de IA quando o usuário fecha a aba; e `clearInterval` no `finally` reinicia o timer para o próximo usuário.",
+        "Se `clearInterval(heartbeat)` ficasse fora do `finally`, o TypeScript não compilaria arquivos `.ts` em modo estrito.",
+        "A verificação no `catch` impede que `deps.limiter.reconcile` seja chamado quando ocorre um erro real do provedor."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Ao abortar um `AbortController`, os SDKs (como `openai` e `@google/genai`) lançam um `AbortError` que interrompe o loop `for await`. Como o cliente já encerrou a conexão intencionalmente, checar `!abortController.signal.aborted` evita tentar escrever um evento SSE `error` em um stream desconectado ou mascarar um cancelamento legítimo como falha do servidor. Colocar `clearInterval(heartbeat)` no bloco `finally` garante que o `NodeJS.Timeout` criado por `setInterval` seja destruído em todos os caminhos (sucesso, erro de API ou aborto pelo usuário), prevenindo *timer/memory leaks*. As alternativas B, C e D contradizem o fluxo real de execução do bloco `try/catch/finally`.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#streaming-server-sent-events-sse",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q11",
+      "sessionId": "2.6",
+      "subtopicTag": "Segurança em Rotas de IA: Gestão de Chaves, JWT, Rate Limiting por Usuário e Zod",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a arquitetura de segurança correta para proteger `OPENAI_API_KEY` e `GEMINI_API_KEY` em uma aplicação web ou mobile com autenticação de usuários?",
+      "options": [
+        "Armazenar a chave no arquivo `.env` prefixada com `VITE_OPENAI_API_KEY` ou `NEXT_PUBLIC_OPENAI_API_KEY` e ofuscar o bundle JavaScript com minificação.",
+        "Embutir a chave apenas em aplicativos móveis compilados (APK/IPA), pois binários móveis não podem ser inspecionados via proxy TLS ou engenharia reversa.",
+        "Enviar a `OPENAI_API_KEY` dentro do payload do JWT assinado para que o front-end faça chamadas diretas à API da OpenAI sem passar pelo back-end.",
+        "Adotar o padrão BFF (*Backend-for-Frontend*): manter as chaves de IA exclusivamente no servidor/cofre de segredos, exigindo do cliente um JWT válido (`Authorization: Bearer <token>`) com checagem de assinatura, expiração (`exp`) e identidade (`sub`) antes de liberar o `AiGateway`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Qualquer segredo enviado para o cliente (variáveis `VITE_*` / `NEXT_PUBLIC_*`, bundles web, APKs/IPAs ou payload JWT em base64url legível no cliente) é trivialmente extraído via DevTools, proxy interceptador ou descompilação, permitindo roubo irrestrito de cota financeira. No padrão BFF, somente o servidor detém as chaves dos provedores e autentica os usuários finais via JWT verificado criptograficamente. As alternativas A, B e C expõem a chave ao ambiente não confiável do cliente.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#seguranca-chaves-jwt-rate-limiting",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q12",
+      "sessionId": "2.6",
+      "subtopicTag": "Segurança em Rotas de IA: Gestão de Chaves, JWT, Rate Limiting por Usuário e Zod",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Por que um limitador genérico baseado apenas em requisições por minuto por IP (ex.: `100 req/min` por IP) é inadequado para rotas de IA em produção, e como o *Token Bucket* por `userId` resolve essa falha?",
+      "options": [
+        "Porque limitadores por IP bloqueiam o protocolo SSE na camada DNS; o Token Bucket por `userId` converte automaticamente HTTP em WebSocket.",
+        "Porque limitadores por IP punem múltiplos usuários legítimos atrás de um mesmo NAT corporativo/universitário e ignoram a assimetria brutal de custo entre um prompt de 150 tokens e outro de 80.000 tokens (*Denial of Wallet*); o Token Bucket por `userId` controla **tokens por minuto (TPM)** e rajadas vinculadas à identidade autenticada.",
+        "Porque o Express não consegue ler endereços IP em requisições `POST`, apenas em requisições `GET`.",
+        "Porque o Token Bucket por `userId` garante que todos os prompts consumam exatamente 1 token independentemente do tamanho da mensagem."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Redes corporativas, móveis (CGNAT) e universitárias compartilham poucos IPs públicos entre dezenas ou milhares de pessoas, gerando falsos positivos em limites por IP. Além disso, em APIs de IA o custo financeiro é proporcional a tokens processados, não apenas à contagem de requisições HTTP: um atacante autenticado pode enviar payloads enormes dentro de poucas requisições por minuto. O Token Bucket indexado por `userId` (`sub` do JWT) contabiliza orçamento em tokens (TPM + burst), protegendo o caixa contra *Denial of Wallet*. As alternativas A, C e D são tecnicamente falsas.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#seguranca-chaves-jwt-rate-limiting",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q13",
+      "sessionId": "2.6",
+      "subtopicTag": "Segurança em Rotas de IA: Gestão de Chaves, JWT, Rate Limiting por Usuário e Zod",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "No modelo matemático do *Token Bucket* com reserva e reconciliação ($B(t) = \\min(B_{\\max}, B(t_{\\text{prev}}) + r \\cdot (t - t_{\\text{prev}}))$), suponha que um usuário tenha $B_{\\max} = 5000$ tokens, saldo atual $B(t) = 3000$ tokens no instante da requisição, estimativa de entrada $T_{\\text{input}} = 400$ e teto de saída $T_{\\text{maxOutput}} = 800$. Se o stream encerrar tendo consumido apenas $c_{\\text{real}} = 550$ tokens totais (entrada + saída), qual será o saldo na admissão $B_{\\text{adm}}$ e o saldo após reconciliação $B_{\\text{final}}$ (desprezando reposição durante o stream)?",
+      "options": [
+        "$B_{\\text{adm}} = 2600$ tokens e $B_{\\text{final}} = 3000$ tokens, pois o teto $T_{\\text{maxOutput}}$ não entra na reserva inicial.",
+        "$B_{\\text{adm}} = 3000$ tokens e $B_{\\text{final}} = 2450$ tokens, pois o débito ocorre somente ao término da resposta.",
+        "$B_{\\text{adm}} = 1800$ tokens (após reservar $c_{\\text{est}} = 400 + 800 = 1200$) e $B_{\\text{final}} = 2450$ tokens (devolvendo $1200 - 550 = 650$ tokens não utilizados).",
+        "$B_{\\text{adm}} = 2200$ tokens e $B_{\\text{final}} = 5000$ tokens, porque qualquer reconciliação restaura o balde até $B_{\\max}$."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na admissão, reserva-se o pior caso estimado $c_{\\text{est}} = T_{\\text{input}} + T_{\\text{maxOutput}} = 400 + 800 = 1200$ tokens, levando o saldo imediato a $B_{\\text{adm}} = 3000 - 1200 = 1800 \\geq 0$ (impedindo que requisições simultâneas estourem a cota antes de o stream acabar). Ao encerrar ou abortar o stream com consumo real $c_{\\text{real}} = 550$, devolve-se a diferença $c_{\\text{est}} - c_{\\text{real}} = 1200 - 550 = 650$, resultando em $B_{\\text{final}} = \\min(5000, 1800 + 650) = 2450$ tokens. A alternativa A ignora $T_{\\text{maxOutput}}$ na reserva, abrindo brecha para concorrência sem controle de saída. A B adia a reserva para o fim, permitindo rajadas paralelas abusivas. A D confunde devolução da sobra com preenchimento integral até $B_{\\max}$.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#seguranca-chaves-jwt-rate-limiting",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q14",
+      "sessionId": "2.6",
+      "subtopicTag": "Segurança em Rotas de IA: Gestão de Chaves, JWT, Rate Limiting por Usuário e Zod",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a classe `UserTokenBucketLimiter` abaixo. Quando `tryReserve` retorna `{ allowed: false, retryAfterSec }`, qual resposta HTTP o router deve retornar, e qual distorção ocorreria se o router deixasse de invocar `reconcile(userId, estimatedTokens, actualTokens)` após uma resposta curta ou abortada?",
+      "codeSnippet": "export class UserTokenBucketLimiter {\n  private readonly buckets = new Map<string, BucketState>();\n  constructor(private readonly maxBurstTokens: number, private readonly refillTokensPerSec: number) {}\n\n  tryReserve(userId: string, estimatedTokens: number, nowMs = Date.now()) {\n    const prev = this.buckets.get(userId) ?? { tokens: this.maxBurstTokens, lastRefillMs: nowMs };\n    const elapsedSec = Math.max(0, (nowMs - prev.lastRefillMs) / 1000);\n    const refilled = Math.min(this.maxBurstTokens, prev.tokens + elapsedSec * this.refillTokensPerSec);\n    if (refilled < estimatedTokens) {\n      this.buckets.set(userId, { tokens: refilled, lastRefillMs: nowMs });\n      return { allowed: false, remaining: Math.floor(refilled), retryAfterSec: Math.ceil((estimatedTokens - refilled) / this.refillTokensPerSec) };\n    }\n    const afterReserve = refilled - estimatedTokens;\n    this.buckets.set(userId, { tokens: afterReserve, lastRefillMs: nowMs });\n    return { allowed: true, remaining: Math.floor(afterReserve), retryAfterSec: 0 };\n  }\n\n  reconcile(userId: string, estimatedTokens: number, actualTokens: number): void {\n    const state = this.buckets.get(userId);\n    if (state) state.tokens = Math.max(0, Math.min(this.maxBurstTokens, state.tokens + (estimatedTokens - actualTokens)));\n  }\n}",
+      "options": [
+        "Deve retornar HTTP `429 Too Many Requests` com cabeçalho `Retry-After: String(quota.retryAfterSec)`; sem chamar `reconcile`, o usuário seria penalizado permanentemente pelo teto máximo `maxOutputTokens` reservado na entrada, mesmo tendo cancelado ou recebido apenas poucos tokens.",
+        "Deve retornar HTTP `401 Unauthorized` para forçar novo login JWT; sem `reconcile`, o `Map` apagaria o `userId` da memória imediatamente.",
+        "Deve retornar HTTP `200 OK` com stream vazio; sem `reconcile`, o bucket passaria a ter saldo infinito negativo (`-Infinity`).",
+        "Deve retornar HTTP `500 Internal Server Error`; `reconcile` serve apenas para zerar o `lastRefillMs` quando o usuário acerta o prompt."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Quando a cota é insuficiente, o padrão HTTP correto é `429 Too Many Requests` acompanhado do header `Retry-After` calculado a partir de `(estimatedTokens - refilled) / refillTokensPerSec`. Como `tryReserve` deduz antecipadamente o pior caso (`estInput + maxOutputTokens`), omitir `reconcile` faria com que respostas curtas (ex.: 40 tokens de saída em vez de 800) ou streams abortados no 2º token consumissem injustamente todo o orçamento reservado do usuário. As alternativas B, C e D erram tanto o código de status semântico (`401`, `200`, `500`) quanto o efeito de omitir `reconcile`.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#seguranca-chaves-jwt-rate-limiting",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q15",
+      "sessionId": "2.6",
+      "subtopicTag": "Segurança em Rotas de IA: Gestão de Chaves, JWT, Rate Limiting por Usuário e Zod",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Examine o schema `ChatRequestSchema` abaixo. Quais três barreiras anti-abuso e anti-escalação ele impõe na borda HTTP antes de calcular tokens ou acionar o `AiGateway`?",
+      "codeSnippet": "export const ChatRequestSchema = z.object({\n  mode: z.enum(['assistant-standard', 'code-reviewer']).default('assistant-standard'),\n  messages: z\n    .array(z.object({\n      role: z.enum(['user', 'assistant']),\n      content: z.string().trim().min(1).max(4000)\n    }))\n    .min(1).max(20)\n});",
+      "options": [
+        "Criptografa o corpo da mensagem em AES-256, executa o compilador TypeScript sobre `content` e limita o número de usuários simultâneos no banco.",
+        "Impede a escolha arbitrária de modelos caros via *allowlist* fechada (`mode`), bloqueia a injeção de mensagens com `role: 'system'` pelo cliente (contendo escalação de instruções) e limita o histórico e tamanho de payload (`min(1).max(20)` turnos, `max(4000)` caracteres por mensagem).",
+        "Remove automaticamente quaisquer chaves de API vazadas no texto do usuário e valida a assinatura criptográfica do JWT.",
+        "Força a API a usar streaming SSE no formato XML e impede mensagens de `role: 'assistant'` no histórico."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O `ChatRequestSchema` aplica três proteções estruturais na entrada: (1) substitui um campo livre `model` por `mode` restrito a uma enumeração controlada no servidor, evitando que atacantes forcem chamadas a modelos de fronteira de custo elevado; (2) restringe `role` a `'user' | 'assistant'`, impedindo que o cliente envie `role: 'system'` para sobrescrever o system prompt corporativo; e (3) limita o histórico entre 1 e 20 turnos com até 4000 caracteres por mensagem, contendo payloads gigantes. A alternativa A descreve criptografia/compilação inexistentes no Zod. A C confunde validação de body com inspeção de segredos e middleware JWT. A D erra porque `'assistant'` é explicitamente permitido no array `messages`.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#seguranca-chaves-jwt-rate-limiting",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q16",
+      "sessionId": "2.6",
+      "subtopicTag": "Versionamento de Prompts, Configurações de Modelo e Feature Flags",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que manter prompts versionados em Git juntamente com seus hiperparâmetros (`model`, `temperature`, `maxOutputTokens`) e gerar um hash **SHA-256** (`promptHash`) é superior a editar textos de prompt diretamente em um painel administrativo ou tabela mutável de banco de dados?",
+      "options": [
+        "Porque o registro imutável em Git acoplado aos hiperparâmetros e ao `promptHash` registrado em logs estruturados e traces (OpenTelemetry/Langfuse) garante reprodutibilidade total, permitindo correlacionar imediatamente qualquer queda de qualidade em produção ao commit e à configuração exata que a originou.",
+        "Porque bancos de dados SQL não conseguem armazenar strings maiores que 255 caracteres em UTF-8.",
+        "Porque o algoritmo SHA-256 comprime o `systemPrompt` para zero tokens na fatura dos provedores de IA.",
+        "Porque o Express exige que todo texto enviado ao modelo venha de arquivos `.ts` compilados com hash SHA-256 no nome do arquivo."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Edições manuais *ad hoc* em painéis desconectados do código quebram a rastreabilidade entre código, hiperparâmetros e comportamento do modelo: ao surgir uma regressão de precisão ou aumento de custo, torna-se impossível saber qual alteração causou o incidente. Versionar o `PromptSpec` completo no Git e emitir um resumo criptográfico `promptHash` nos logs e traces fornece auditoria exata e reproduzível. As alternativas B, C e D apresentam afirmações tecnicamente falsas sobre SQL, cobrança por token e Express.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#versionamento-prompts-e-configuracoes",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q17",
+      "sessionId": "2.6",
+      "subtopicTag": "Versionamento de Prompts, Configurações de Modelo e Feature Flags",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Em um rollout canário de `10%` para a versão `1.1.0-canary` de um prompt em um cluster back-end com múltiplas réplicas stateless, por que o roteamento por *hashing* determinístico sobre `promptId:userId` no intervalo `[0, 99]` é preferível a sortear `Math.random() < 0.1` a cada requisição?",
+      "options": [
+        "Porque `Math.random()` em Node.js é bloqueante e trava o Event Loop por 50 milissegundos em cada chamada.",
+        "Porque o hashing determinístico garante que o `userId` só receba a versão `canary` depois de passar por um servidor Redis centralizado obrigatório.",
+        "Porque `Math.random()` sempre retorna `0.0` quando o código TypeScript roda atrás de um balanceador de carga.",
+        "Porque o hashing determinístico mantém o mesmo usuário consistentemente na mesma variante (`canary` ou `control`) em todos os turnos da conversa sem estado de sessão distribuído, preservando a validade do experimento A/B e permitindo rollback imediato ao zerar `canaryPercent`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Sortear `Math.random() < 0.1` a cada requisição HTTP faria o mesmo usuário oscilar aleatoriamente entre os comportamentos de `1.0.0` e `1.1.0-canary` durante uma mesma conversa de múltiplos turnos, degradando a experiência e corrompendo as métricas de comparação entre variantes. Já o hash determinístico sobre `promptId:userId` mapeia o usuário de forma idempotente e stateless em qualquer réplica do servidor, além de permitir rollback instantâneo zerando `canaryPercent`. A alternativa A é falsa (`Math.random()` não bloqueia o loop por 50ms). A B contradiz justamente a propriedade stateless (sem Redis) do hash. A C é absurda.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#versionamento-prompts-e-configuracoes",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q18",
+      "sessionId": "2.6",
+      "subtopicTag": "Versionamento de Prompts, Configurações de Modelo e Feature Flags",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise `resolvePromptWithFlag` em `src/ai/prompts.registry.ts`. Por que `promptHash` é calculado sobre `${spec.model}|${spec.temperature}|${spec.systemPrompt}` em vez de usar apenas `spec.systemPrompt`, e o que acontece se `resolvePromptWithFlag('assistant-standard', userId, 15)` for chamado quando `'1.1.0-canary'` não existir para determinado `promptId` no `REGISTRY`?",
+      "codeSnippet": "const REGISTRY: Record<string, Record<string, PromptSpec>> = {\n  'assistant-standard': {\n    '1.0.0': {\n      id: 'assistant-standard', version: '1.0.0', model: 'gpt-4o-mini', temperature: 0.2, maxOutputTokens: 800,\n      systemPrompt: 'Você é um assistente técnico objetivo. Responda em português com exemplos verificáveis.'\n    },\n    '1.1.0-canary': {\n      id: 'assistant-standard', version: '1.1.0-canary', model: 'gpt-4o-mini', temperature: 0.1, maxOutputTokens: 900,\n      systemPrompt: 'Você é um engenheiro sênior conciso. Liste riscos e complexidade antes de propor código.'\n    }\n  }\n};\n\nexport function resolvePromptWithFlag(promptId: string, userId: string, canaryPercent = 10): { spec: PromptSpec; metadata: PromptMetadata } {\n  const bucket = createHash('sha256').update(`${promptId}:${userId}`).digest().readUInt16BE(0) % 100;\n  const useCanary = bucket < canaryPercent && Boolean(REGISTRY[promptId]?.['1.1.0-canary']);\n  const spec = REGISTRY[promptId][useCanary ? '1.1.0-canary' : '1.0.0'];\n  const promptHash = createHash('sha256').update(`${spec.model}|${spec.temperature}|${spec.systemPrompt}`).digest('hex').slice(0, 12);\n  return {\n    spec,\n    metadata: { promptId: spec.id, promptVersion: spec.version, promptHash, variant: useCanary ? 'canary' : 'control' }\n  };\n}",
+      "options": [
+        "Porque mudar apenas `model` ou `temperature` também altera o comportamento probabilístico da saída, exigindo que o `promptHash` capture toda a tríade; e se `'1.1.0-canary'` não existir no `REGISTRY`, `Boolean(REGISTRY[promptId]?.['1.1.0-canary'])` avalia para `false` e o código faz fallback seguro para `'1.0.0'` (`variant: 'control'`).",
+        "Porque o `createHash('sha256')` do módulo `node:crypto` exige exatamente dois caracteres `|` na string de entrada; caso não haja canário, a função lança `TypeError` imediatamente.",
+        "Porque incluir `model` e `temperature` impede o vazamento da `OPENAI_API_KEY`; sem `'1.1.0-canary'`, `bucket` é redefinido para `100` automaticamente.",
+        "Porque o hash controla a taxa de reposição do `UserTokenBucketLimiter`; sem `'1.1.0-canary'`, o sistema envia ambos os prompts concatenados ao provedor."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em sistemas de IA, alterar `temperature` (ex.: `0.2` para `0.1`) ou trocar o `model` muda significativamente a distribuição das respostas mesmo com o texto do `systemPrompt` idêntico; logo, o `promptHash` precisa refletir a configuração efetiva completa. Além disso, a guarda `Boolean(REGISTRY[promptId]?.['1.1.0-canary'])` garante que `useCanary` seja `false` caso um `promptId` (como `'code-reviewer'`) possua apenas a versão estável `'1.0.0'`, evitando `undefined` e mantendo o retorno seguro na variante `'control'`. As alternativas B, C e D inventam restrições inexistentes no `node:crypto` e fluxos incorretos.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#versionamento-prompts-e-configuracoes",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q19",
+      "sessionId": "2.6",
+      "subtopicTag": "Versionamento de Prompts, Configurações de Modelo e Feature Flags",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Ao integrar a resolução de `PromptMetadata` (`promptId`, `promptVersion`, `promptHash`, `variant`) tanto na chamada ao `AiGateway` quanto no evento SSE inicial `meta` e nos logs de telemetria, qual capacidade operacional estratégica é habilitada para o time de engenharia?",
+      "options": [
+        "Permite que o navegador do usuário final edite livremente o `systemPrompt` via DevTools para testar novas variantes.",
+        "Habilita a segmentação precisa de métricas de latência, taxa de erro, custo por token e feedback/qualidade por `promptVersion` e `promptHash`, viabilizando análise comparativa entre `'control'` e `'canary'` e diagnóstico de regressões em produção sem alterar código de roteamento.",
+        "Substitui completamente a necessidade de autenticar usuários via JWT, pois o `promptHash` serve como assinatura de sessão do usuário.",
+        "Garante que o provedor OpenAI ou Gemini não cobre pelos tokens gerados na variante `'canary'`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Propagar `PromptMetadata` pelo gateway, pelos logs estruturados/traces e pelo evento `meta` do stream permite cruzar indicadores operacionais (latência, consumo de tokens, abortos, avaliações de usuários ou resultados de Evals) exatamente pela versão (`1.0.0` vs. `1.1.0-canary`), variante (`control` vs. `canary`) e hash (`promptHash`). Isso fecha o ciclo de observabilidade para decidir pela promoção ou rollback da feature flag. A alternativa A confundiria exposição de metadados de identificação com entrega/edição do `systemPrompt` (que nunca é enviado no `meta`). As alternativas C e D são incorretas.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#versionamento-prompts-e-configuracoes",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q20",
+      "sessionId": "2.6",
+      "subtopicTag": "Testes Automatizados para IA: Unitários Determinísticos com Fixtures vs. Evals",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na pirâmide de verificação em duas camadas para back-ends com IA, qual é a distinção fundamental entre Testes Unitários Determinísticos (`FakeAiGateway`) e *Evals* Automatizados sobre um *Golden Dataset*?",
+      "options": [
+        "Testes unitários determinísticos rodam contra modelos reais em produção custando entre USD 0,50 e USD 5,00 por execução, enquanto Evals usam apenas dados estáticos offline a USD 0,00.",
+        "Testes unitários determinísticos verificam contratos de software (framing SSE, Zod, Token Bucket, JWT, `AbortController`) offline em milissegundos a USD 0,00 com asserções 100% reproduzíveis; já Evals medem qualidade semântica (fidelidade, ausência de alucinações, tom) online contra modelos reais com custo estimado de USD 0,50 a USD 5,00 por rodada e aprovação estatística agregada.",
+        "Testes unitários verificam apenas o CSS do front-end, e Evals testam apenas se o servidor Express consegue abrir a porta TCP 3000.",
+        "Ambos executam exatamente as mesmas asserções booleanas estritas sobre igualdade literal de strings retornadas pelo LLM."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A separação estrita impede que o pipeline de CI/CD fique caro, lento e instável (*flaky*). Testes unitários usando um `FakeAiGateway` com fixtures gravadas validam 100% da infraestrutura determinística em milissegundos sem gastar USD 0,01 sequer. Por outro lado, Evals automatizados avaliam o comportamento estocástico e semântico do conjunto modelo + prompt contra um *Golden Dataset* em staging ou rotinas noturnas, usando métricas estatísticas. A alternativa A inverte os dois conceitos. A C limita erroneamente o escopo de ambos. A D ignora a natureza probabilística dos LLMs que inviabiliza igualdade literal rígida em Evals.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#testes-unitarios-fixtures-vs-evals",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q21",
+      "sessionId": "2.6",
+      "subtopicTag": "Testes Automatizados para IA: Unitários Determinísticos com Fixtures vs. Evals",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na formulação de Evals automatizados $\\text{PassRate}_{\\text{eval}} = \\frac{1}{N} \\sum_{i=1}^{N} I\\!\\big(s(x_i, \\hat{y}_i) \\geq \\tau\\big)$ sobre um *Golden Dataset* com pares $(x_i, y_i^*)$, qual papel cumprem $s(x_i, \\hat{y}_i)$, o limiar $\\tau$ e a taxa agregada frente à meta de promoção (ex.: $\\geq 0,92$)?",
+      "options": [
+        "$s(x_i, \\hat{y}_i)$ mede a latência de rede em segundos, $\\tau$ é a temperatura fixa do modelo e o indicador $I(\\cdot)$ retorna o total de tokens faturados.",
+        "$s(x_i, \\hat{y}_i)$ representa apenas o tamanho em bytes da resposta $\\hat{y}_i$, devendo ser sempre menor que $\\tau$ para evitar timeouts HTTP.",
+        "A fórmula só se aplica a testes offline sem chamadas de LLM e exige que $\\text{PassRate}_{\\text{eval}}$ seja obrigatoriamente igual a $1,00$ em qualquer conjunto de dados.",
+        "$s(x_i, \\hat{y}_i) \\in [0, 1]$ é a pontuação atribuída combinando asserções determinísticas (JSON válido, citações) e um *LLM-as-a-Judge* para a saída gerada $\\hat{y}_i$; $I(\\cdot)$ vale $1$ se a pontuação atingir o mínimo $\\tau$ (e $0$ caso contrário), e a média $\\text{PassRate}_{\\text{eval}}$ orienta estatisticamente se uma variante canário pode ser promovida."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Conforme a Seção 5, cada exemplo $i$ do *Golden Dataset* recebe uma nota normalizada $s(x_i, \\hat{y}_i) \\in [0, 1]$ obtida via verificações determinísticas aliadas a um avaliador semântico (*LLM-as-a-Judge*). A função indicadora $I(s \\geq \\tau)$ converte cada caso em aprovado ($1$) ou reprovado ($0$) frente ao corte $\\tau$, e a fração agregada sobre os $N$ casos define a taxa de aprovação comparada ao SLA de qualidade (como $\\text{PassRate}_{\\text{eval}} \\geq 0,92$). As alternativas A, B e C distorcem o significado das variáveis matemáticas da fórmula.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#testes-unitarios-fixtures-vs-evals",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q22",
+      "sessionId": "2.6",
+      "subtopicTag": "Testes Automatizados para IA: Unitários Determinísticos com Fixtures vs. Evals",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao desenhar a esteira de CI/CD de um back-end Node.js/TypeScript com rotas de IA, qual política de execução equilibra velocidade de entrega, custo financeiro e proteção contra regressões de prompt?",
+      "options": [
+        "Tornar os testes unitários determinísticos (`FakeAiGateway` a USD 0,00) bloqueantes em todo *commit* e *Pull Request*, e disparar os *Evals* automatizados (USD 0,50 a USD 5,00 por rodada) quando houver alterações em `prompts.registry.ts`, troca de modelo ou em rotina noturna (*nightly*) em staging.",
+        "Executar o *Golden Dataset* completo contra o modelo mais caro em todo *git push* de alteração de CSS ou documentação e dispensar testes unitários no router.",
+        "Remover todos os testes automatizados no CI e confiar exclusivamente em validação manual esporádica em produção.",
+        "Bloquear o merge de qualquer PR no GitHub caso a saída de um modelo real não seja idêntica caractere por caractere à de uma execução feita três meses atrás."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como alterações corriqueiras de código back-end (refatoração de middlewares, DTOs, headers SSE) não mudam prompts nem modelos, rodar testes unitários determinísticos como gate obrigatório em todo commit/PR garante feedback em milissegundos a custo zero e sem flakiness. Já Evals on-line devem ser acionados sob demanda quando `prompts.registry.ts` ou o modelo mudam, além de rodarem em agenda noturna (*nightly*). A alternativa B desperdiça recursos e atrasa o CI. A C abre mão de verificação automatizada. A D cria um pipeline perpetuamente quebrado devido ao não-determinismo inerente de LLMs.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#testes-unitarios-fixtures-vs-evals",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q23",
+      "sessionId": "2.6",
+      "subtopicTag": "Testes Automatizados para IA: Unitários Determinísticos com Fixtures vs. Evals",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Compare os dois componentes de verificação esboçados abaixo: `FakeAiGateway` e `evaluateGoldenDataset`. Qual classe de defeitos o `FakeAiGateway` comprova a custo USD 0,00 que `evaluateGoldenDataset` não foca, e que regressão somente `evaluateGoldenDataset` consegue capturar antes de promover `1.1.0-canary`?",
+      "codeSnippet": "class FakeAiGateway implements AiGateway {\n  readonly providerName = 'fake-fixture-gateway';\n  public abortedObserved = false;\n  constructor(private readonly fixtureTokens: string[], private readonly delayMs = 0) {}\n  async generateStructured(): Promise<never> { throw new Error('Não utilizado'); }\n  async *streamText(req: BaseGenerationRequest): AsyncIterable<StreamChunk> {\n    for (const token of this.fixtureTokens) {\n      if (req.signal?.aborted) { this.abortedObserved = true; return; }\n      if (this.delayMs > 0) await new Promise((r) => setTimeout(r, this.delayMs));\n      yield { type: 'delta', text: token };\n    }\n    yield { type: 'usage', usage: { inputTokens: 25, outputTokens: this.fixtureTokens.length } };\n    yield { type: 'done', finishReason: 'stop' };\n  }\n}\n\nasync function evaluateGoldenDataset(\n  gateway: AiGateway,\n  dataset: Array<{ input: string; expectedCriteria: string }>,\n  tau = 0.92\n): Promise<{ passRate: number; passed: boolean }> { /* ... */ return { passRate: 0.95, passed: true }; }",
+      "options": [
+        "`FakeAiGateway` valida a precisão semântica de novos prompts no mundo real; `evaluateGoldenDataset` testa exclusivamente se o header `X-Accel-Buffering` foi definido no Express.",
+        "Ambos testam exatamente os mesmos defeitos de infraestrutura Express, sendo `FakeAiGateway` apenas uma versão mais lenta de `evaluateGoldenDataset`.",
+        "`FakeAiGateway` comprova de forma determinística contratos de transporte e controle (framing SSE, headers anti-buffer, propagação de `AbortSignal`, Zod e reconciliação de cota); apenas `evaluateGoldenDataset` detecta degradação semântica real (alucinação, perda de precisão técnica ou tom inadequado) introduzida pela nova redação do prompt `1.1.0-canary` ou troca de modelo.",
+        "`FakeAiGateway` verifica a velocidade de inferência das GPUs da OpenAI, enquanto `evaluateGoldenDataset` testa se o Token Bucket devolve HTTP 429."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O `FakeAiGateway` substitui o modelo real por tokens fixos (`fixtureTokens`) e atraso controlado (`delayMs`), isolando e comprovando perfeitamente o código de infraestrutura (SSE, `AbortController`, Zod, Token Bucket) sem rede externa. Contudo, como ele devolve tokens pré-gravados, não é capaz de julgar se o novo `systemPrompt` de `1.1.0-canary` começou a alucinar ou ignorar instruções técnicas — papel exclusivo dos Evals sobre o *Golden Dataset* (`evaluateGoldenDataset`). As alternativas A, B e D invertem ou confundem o escopo de cada camada.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#testes-unitarios-fixtures-vs-evals",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s06-q24",
+      "sessionId": "2.6",
+      "subtopicTag": "Laboratório Prático: Back-End Node.js/TypeScript com Gateway, SSE e Suite de Testes",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "No fluxo completo do endpoint `POST /chat/stream` em `createAiRouter` (`src/server/ai-router.ts`), por que a autenticação JWT, a validação `ChatRequestSchema.safeParse(req.body)` e a reserva `deps.limiter.tryReserve(userId, estTotal)` DEVEM ser executadas antes de chamar `initSseStream(res)`?",
+      "options": [
+        "Porque o Node.js impede a execução de Zod depois que qualquer cabeçalho `Content-Type` é definido na resposta.",
+        "Porque `initSseStream(res)` apaga `req.body` e o cabeçalho `Authorization` da memória do objeto `Request`.",
+        "Porque `initSseStream(res)` define o status `200` e chama `res.flushHeaders()`, enviando os cabeçalhos HTTP na rede imediatamente; depois disso, o servidor não pode mais responder com status HTTP `401`, `400` ou `429` JSON.",
+        "Porque o `UserTokenBucketLimiter` só aceita reservas quando o status da resposta ainda é `404 Not Found`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. No protocolo HTTP, uma vez que `res.flushHeaders()` envia a linha de status `HTTP/1.1 200 OK` e os cabeçalhos `text/event-stream` pela conexão TCP, não é mais possível voltar atrás para retornar `401 Unauthorized`, `400 Bad Request` ou `429 Too Many Requests` (com `Retry-After`). Por isso, toda barreira de admissão e segurança precisa rodar antes da abertura do stream SSE. As alternativas A, B e D inventam limitações falsas sobre Zod, `Request` e Token Bucket.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#laboratorio-backend-gateway-sse-testes",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    },
+    {
+      "id": "m02-s06-q25",
+      "sessionId": "2.6",
+      "subtopicTag": "Laboratório Prático: Back-End Node.js/TypeScript com Gateway, SSE e Suite de Testes",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Observe o trecho de reserva e reconciliação de cota dentro do endpoint `/chat/stream` de `src/server/ai-router.ts`. Por que a variável `actualTokens` é inicializada com `estInput` antes do bloco `try`, e qual é o comportamento de `deps.limiter.reconcile` no `finally` caso o stream falhe ou seja abortado antes da chegada do chunk `'usage'`?",
+      "codeSnippet": "const estInput = Math.ceil((spec.systemPrompt.length + JSON.stringify(parsed.data.messages).length) / 3.5);\nconst estTotal = estInput + spec.maxOutputTokens;\nconst quota = deps.limiter.tryReserve(userId, estTotal);\nif (!quota.allowed) {\n  res.setHeader('Retry-After', String(quota.retryAfterSec));\n  return void res.status(429).json({ error: 'Cota de tokens excedida', retryAfterSec: quota.retryAfterSec });\n}\n\nconst heartbeat = initSseStream(res);\nconst abortController = new AbortController();\nres.on('close', () => { if (!res.writableEnded) abortController.abort(); });\n\nlet actualTokens = estInput;\ntry {\n  // ...\n  for await (const chunk of stream) {\n    if (abortController.signal.aborted) break;\n    if (chunk.type === 'delta') writeSseEvent(res, 'delta', { text: chunk.text });\n    else if (chunk.type === 'usage') { actualTokens = chunk.usage.inputTokens + chunk.usage.outputTokens; writeSseEvent(res, 'usage', chunk.usage); }\n  }\n} finally {\n  clearInterval(heartbeat);\n  deps.limiter.reconcile(userId, estTotal, actualTokens);\n  if (!res.writableEnded) res.end();\n}",
+      "options": [
+        "Inicializar com `estInput` garante que `actualTokens` comece em zero no caso de erro, devolvendo `100%` dos tokens inclusive os do prompt de entrada.",
+        "Inicializar com `estInput` impede o Express de enviar `Retry-After` quando a cota está livre; se o stream abortar antes do chunk `'usage'`, `reconcile` bloqueia o usuário indefinidamente.",
+        "Caso ocorra erro ou aborto antes do chunk `'usage'`, `actualTokens` preserva a estimativa de entrada (`estInput`), fazendo o `finally` devolver `spec.maxOutputTokens` não gerados (`estTotal - estInput`) ao balde do usuário sem deixar o processamento de entrada sair de graça.",
+        "Quando o chunk `'usage'` não chega, `deps.limiter.reconcile` multiplica `estTotal` por `actualTokens` para cobrar multa do cliente."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em fluxos SSE cancelados no início ou interrompidos por erro, o provedor frequentemente não chega a emitir o chunk final `'usage'`. Se `actualTokens` começasse em `0`, um usuário poderia disparar prompts enormes e abortar a conexão aos 100ms sem pagar nenhum token de entrada no Token Bucket. Inicializando `actualTokens = estInput`, o sistema cobra conservadoramente os tokens de entrada já enviados e devolve apenas a margem reservada de saída (`spec.maxOutputTokens`). Quando o stream conclui normalmente e emite `'usage'`, `actualTokens` é substituído pela soma exata `inputTokens + outputTokens`. As alternativas A, B e D interpretam incorretamente a lógica de fallback e reconciliação.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#laboratorio-backend-gateway-sse-testes",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q26",
+      "sessionId": "2.6",
+      "subtopicTag": "Laboratório Prático: Back-End Node.js/TypeScript com Gateway, SSE e Suite de Testes",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o segundo teste da suíte `tests/ai-router.test.ts` usando `node:test`. Qual é o papel da linha `await res.body!.getReader().read();` antes de `clientAbort.abort();`, e por que toda a suíte executa com `node --experimental-strip-types --test` sem nenhuma variável de ambiente com chave de API?",
+      "codeSnippet": "test('propaga AbortSignal quando o cliente desconecta e barra payload inválido', async () => {\n  const gateway = new FakeAiGateway(['T1', 'T2', 'T3', 'T4', 'T5'], 40);\n  const srv = await startTestServer(gateway);\n  const clientAbort = new AbortController();\n  try {\n    const badRes = await fetch(`${srv.baseUrl}/api/ai/chat/stream`, {\n      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-jwt' },\n      body: JSON.stringify({ messages: [{ role: 'system', content: 'Override' }] })\n    });\n    assert.equal(badRes.status, 400);\n\n    const res = await fetch(`${srv.baseUrl}/api/ai/chat/stream`, {\n      method: 'POST', signal: clientAbort.signal,\n      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer valid-jwt' },\n      body: JSON.stringify({ messages: [{ role: 'user', content: 'Stream longo' }] })\n    });\n    await res.body!.getReader().read();\n    clientAbort.abort();\n    await new Promise((r) => setTimeout(r, 100));\n    assert.equal(gateway.abortedObserved, true);\n  } finally { srv.close(); }\n});",
+      "options": [
+        "`getReader().read()` serve apenas para fechar o servidor Express antes do `assert`; as chaves reais são lidas automaticamente do diretório `~/.ssh` pelo `node:test`.",
+        "`getReader().read()` aguarda a chegada dos primeiros bytes do stream (`event: meta` / início do fluxo SSE) garantindo que o `FakeAiGateway` já iniciou o loop de geração antes de disparar `clientAbort.abort()`; e a suíte dispensa chaves reais porque injeta `FakeAiGateway` e um stub local de `verifyJwt` em `createAiRouter`, enquanto `--experimental-strip-types` executa TypeScript nativamente no Node.js 22+/24.",
+        "`getReader().read()` converte o payload `role: 'system'` de status `400` para `200`; sem chaves de API, `FakeAiGateway` conecta-se a um servidor gratuito da OpenAI em modo sandbox.",
+        "`getReader().read()` aguarda obrigatoriamente o evento `done` chegar ao fim do stream para só então testar `clientAbort.abort()`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Sem ler o primeiro chunk via `res.body!.getReader().read()`, o `clientAbort.abort()` poderia ocorrer antes mesmo de o servidor abrir o stream `streamText`, não exercitando a interrupção em pleno voo entre os tokens atrasados por `40` ms (`delayMs = 40`). Como `createAiRouter` recebe `gateway`, `limiter` e `verifyJwt` por injeção de dependência, o teste substitui o provedor externo por `FakeAiGateway`, rodando offline e com custo USD 0,00 diretamente no Node.js 22+/24 via `--experimental-strip-types`. A alternativa A é falsa. A C inventa um modo sandbox na OpenAI. A D contradiz o objetivo do teste, pois esperar `done` significaria tentar abortar depois que o stream já terminou.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#laboratorio-backend-gateway-sse-testes",
+      "officialDocUrl": "https://github.com/openai/openai-node",
+      "officialDocLabel": "OpenAI Node.js SDK Official Repository"
+    },
+    {
+      "id": "m02-s06-q27",
+      "sessionId": "2.6",
+      "subtopicTag": "Laboratório Prático: Back-End Node.js/TypeScript com Gateway, SSE e Suite de Testes",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "No contrato de eventos SSE emitido por `createAiRouter` (`meta`, `delta`, `usage`, `done`, `error`), qual decisão arquitetural permite que o cliente front-end e a observabilidade de back-end identifiquem provedor, versão de prompt, hash e variante antes mesmo do primeiro token de texto chegar, mantendo o servidor testável?",
+      "options": [
+        "Concatenar o `providerName` e o `promptHash` dentro da primeira palavra de texto gerada pelo modelo em `delta`.",
+        "Gravar os metadados em um arquivo texto local no cliente e enviá-los em uma segunda requisição `DELETE` após o término do stream.",
+        "Substituir a interface `AiRouterDeps` por variáveis globais estáticas exportadas diretamente de `openai.adapter.ts`.",
+        "Emitir um quadro SSE dedicado `event: meta` logo após abrir o stream com `{ provider: deps.gateway.providerName, ...metadata }` e injetar `gateway`, `limiter`, `verifyJwt` e `canaryPercent` pela interface `AiRouterDeps`, isolando a lógica de roteamento de dependências globais rígidas."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Emitir `writeSseEvent(res, 'meta', { provider: deps.gateway.providerName, ...metadata })` antes do loop `for await` entrega ao cliente e às ferramentas de diagnóstico informações tipadas sobre provedor, `promptId`, `promptVersion`, `promptHash` e `variant` sem contaminar o texto visível do evento `delta`. Ao mesmo tempo, receber todas as colaborações via `AiRouterDeps` viabiliza a substituição limpa entre ambiente real (`OpenAiGatewayAdapter`/`GeminiGatewayAdapter`, JWT real) e ambiente de teste (`FakeAiGateway`, JWT stub). A alternativa A sujaria o conteúdo textual exibido ao usuário. A B cria complexidade e latência desnecessárias. A C reintroduz acoplamento rígido via estado global.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#laboratorio-backend-gateway-sse-testes",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    },
+    {
+      "id": "m02-s06-q28",
+      "sessionId": "2.6",
+      "subtopicTag": "Laboratório Prático: Back-End Node.js/TypeScript com Gateway, SSE e Suite de Testes",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Durante a validação manual ao vivo em terminal descrita no checklist do laboratório (`curl -N -X POST http://localhost:3000/api/ai/chat/stream ...`), qual é o propósito da flag `-N` e o que a execução seguida de `Ctrl+C` no meio da resposta valida na prática?",
+      "options": [
+        "A flag `-N` força o `curl` a ignorar certificados HTTPS inválidos em produção; já `Ctrl+C` apaga o registro do usuário no `UserTokenBucketLimiter`.",
+        "A flag `-N` instrui o `curl` a enviar requisições usando `new EventSource` nativo; `Ctrl+C` testa o fallback automático de OpenAI para Gemini.",
+        "A flag `-N` converte a resposta SSE para formato Markdown colorido; `Ctrl+C` executa a suíte de Evals contra o Golden Dataset.",
+        "A flag `-N` (`--no-buffer`) desativa o buffering de saída do próprio cliente `curl` para exibir cada evento `delta` imediatamente conforme chega; pressionar `Ctrl+C` encerra o socket TCP do cliente no meio do stream, validando na prática a cadeia `res.on('close')` $\\rightarrow$ `AbortController.abort()` e a reconciliação no `finally`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Mesmo quando o servidor Express envia `X-Accel-Buffering: no`, `Cache-Control: no-cache, no-transform` e chama `res.flushHeaders()`, o próprio cliente `curl` acumula blocos em buffer por padrão antes de imprimir no terminal — a flag `-N` (`--no-buffer`) desabilita esse buffer local para inspeção token a token em tempo real. Ao pressionar `Ctrl+C` durante a exibição, o cliente fecha a conexão abruptamente, permitindo confirmar pelos logs/traces do servidor que `res.on('close')` acionou o `AbortController` e executou a limpeza do heartbeat e `reconcile` no `finally`. As alternativas A, B e C descrevem funções incorretas para `-N` e `Ctrl+C`.",
+      "chapterAnchor": "cap-06-integrando-ia-backend-producao#laboratorio-backend-gateway-sse-testes",
+      "officialDocUrl": "https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events",
+      "officialDocLabel": "MDN – Using Server-Sent Events (SSE)"
+    }
+  ]
+}

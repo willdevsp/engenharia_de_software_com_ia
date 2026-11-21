@@ -11,7 +11,12 @@ import {
 import type { CloudAudioMetadata, CloudSyncStatus, UserStudyState } from '../types/course';
 import { isFirebaseConfigured } from './cloudConfig';
 import { getFirestoreDb } from './firebaseClient';
-import { areStudyStatesEqual, mergeStudyStates, saveStudyState } from './storage';
+import {
+  areStudyStatesEqual,
+  mergeStudyStates,
+  normalizeStudyState,
+  saveStudyState
+} from './storage';
 
 const STUDY_STATE_COLLECTION = 'study_state';
 const STUDY_STATE_DOC_ID = 'default';
@@ -77,28 +82,7 @@ export async function syncStudyStateWithCloud(localState: UserStudyState): Promi
     let shouldPush = false;
 
     if (snap.exists()) {
-      const remoteRaw = snap.data() as Partial<UserStudyState>;
-      const remoteState: UserStudyState = {
-        version: 1,
-        lastUpdated: remoteRaw.lastUpdated || '',
-        completedChapters: Array.isArray(remoteRaw.completedChapters)
-          ? remoteRaw.completedChapters
-          : [],
-        chapterCompletionLog:
-          remoteRaw.chapterCompletionLog && typeof remoteRaw.chapterCompletionLog === 'object'
-            ? remoteRaw.chapterCompletionLog
-            : {},
-        readingProgress: remoteRaw.readingProgress || {},
-        bookmarkedQuestions: Array.isArray(remoteRaw.bookmarkedQuestions)
-          ? remoteRaw.bookmarkedQuestions
-          : [],
-        quizAttempts: Array.isArray(remoteRaw.quizAttempts) ? remoteRaw.quizAttempts : [],
-        audioPositions:
-          remoteRaw.audioPositions && typeof remoteRaw.audioPositions === 'object'
-            ? remoteRaw.audioPositions
-            : {}
-      };
-
+      const remoteState = normalizeStudyState(snap.data());
       mergedState = mergeStudyStates(localState, remoteState);
       shouldPush = !areStudyStatesEqual(mergedState, remoteState);
     } else {
@@ -143,10 +127,15 @@ export async function fetchCloudAudios(sessionId?: string): Promise<CloudAudioMe
     snap.forEach((docSnap) => {
       const data = docSnap.data() as Partial<CloudAudioMetadata>;
       if (!data.sessionId || !data.audioUrl) return;
+      const sessionIdStr = String(data.sessionId);
+      const parsedPrefix = Number.parseInt(sessionIdStr.split('.')[0], 10);
+      const fallbackModuleId = Number.isInteger(parsedPrefix) && parsedPrefix > 0 ? parsedPrefix : 1;
+      const rawModuleId = Number(data.moduleId);
+      const moduleId = Number.isInteger(rawModuleId) && rawModuleId > 0 ? rawModuleId : fallbackModuleId;
       list.push({
         id: data.id || docSnap.id,
-        moduleId: Number(data.moduleId) || 1,
-        sessionId: String(data.sessionId),
+        moduleId,
+        sessionId: sessionIdStr,
         title: String(data.title || data.fileName || 'Áudio da Sessão'),
         fileName: String(data.fileName || `${docSnap.id}.${data.format || 'm4a'}`),
         archiveFileName: String(data.archiveFileName || data.fileName || ''),

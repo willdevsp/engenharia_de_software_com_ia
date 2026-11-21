@@ -2,8 +2,11 @@ import type {
   AudioPositionEntry,
   ChapterCompletionEntry,
   ChapterData,
+  ChapterSummary,
   CognitiveLevel,
+  ModuleMasteryState,
   QuizAttempt,
+  ReadingProgressEntry,
   SessionQuizBank,
   SubtopicDiagnostic,
   UserStudyState
@@ -17,12 +20,14 @@ const DEFAULT_STATE: UserStudyState = {
   completedChapters: [],
   chapterCompletionLog: {},
   readingProgress: {},
+  readingProgressLog: {},
   bookmarkedQuestions: [],
   quizAttempts: [],
-  audioPositions: {}
+  audioPositions: {},
+  moduleMastery: {}
 };
 
-function parseTimestampMs(iso?: string): number {
+export function parseTimestampMs(iso?: string): number {
   if (!iso) return 0;
   const ms = Date.parse(iso);
   return Number.isFinite(ms) ? ms : 0;
@@ -48,29 +53,128 @@ function buildEffectiveCompletionLog(state: UserStudyState): Record<string, Chap
   return log;
 }
 
+function normalizeModuleMasteryMap(raw: unknown): Record<string, ModuleMasteryState> {
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, ModuleMasteryState> = {};
+
+  for (const [key, val] of Object.entries(raw as Record<string, unknown>)) {
+    if (!val || typeof val !== 'object') continue;
+    const item = val as Partial<ModuleMasteryState>;
+    const parsedId = Number(item.moduleId ?? key);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) continue;
+
+    out[String(parsedId)] = {
+      moduleId: parsedId,
+      status:
+        item.status === 'locked' ||
+        item.status === 'in-progress' ||
+        item.status === 'approved' ||
+        item.status === 're-study-required'
+          ? item.status
+          : 'in-progress',
+      approvedScore: typeof item.approvedScore === 'number' ? item.approvedScore : undefined,
+      approvedAt: typeof item.approvedAt === 'string' ? item.approvedAt : undefined,
+      requiredRestudyChapterIds: Array.isArray(item.requiredRestudyChapterIds)
+        ? item.requiredRestudyChapterIds.map(String)
+        : [],
+      restudyResetAt: typeof item.restudyResetAt === 'string' ? item.restudyResetAt : undefined,
+      activeCycle: item.activeCycle && typeof item.activeCycle === 'object' ? item.activeCycle : null,
+      completedCyclesCount:
+        typeof item.completedCyclesCount === 'number' && Number.isFinite(item.completedCyclesCount)
+          ? item.completedCyclesCount
+          : 0,
+      lastUpdated:
+        typeof item.lastUpdated === 'string'
+          ? item.lastUpdated
+          : typeof item.approvedAt === 'string'
+          ? item.approvedAt
+          : typeof item.restudyResetAt === 'string'
+          ? item.restudyResetAt
+          : ''
+    };
+  }
+
+  return out;
+}
+
+function normalizeReadingProgressLog(
+  rawLog: unknown,
+  legacyProgress: Record<string, number>
+): Record<string, ReadingProgressEntry> {
+  const normalized: Record<string, ReadingProgressEntry> = {};
+
+  if (rawLog && typeof rawLog === 'object') {
+    for (const [chId, entry] of Object.entries(rawLog as Record<string, unknown>)) {
+      if (!entry || typeof entry !== 'object') continue;
+      const item = entry as Partial<ReadingProgressEntry>;
+      const pct = Math.max(0, Math.min(100, Math.round(Number(item.percentage) || 0)));
+      normalized[chId] = {
+        percentage: pct,
+        visitedSections: Array.isArray(item.visitedSections)
+          ? Array.from(new Set(item.visitedSections.map(String)))
+          : [],
+        updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : ''
+      };
+    }
+  }
+
+  // Keep numeric readingProgress aligned when log entry exists
+  for (const [chId, entry] of Object.entries(normalized)) {
+    if (!(chId in legacyProgress) && entry.percentage >= 0) {
+      legacyProgress[chId] = entry.percentage;
+    }
+  }
+
+  return normalized;
+}
+
+export function normalizeStudyState(raw: unknown): UserStudyState {
+  if (!raw || typeof raw !== 'object') {
+    return { ...DEFAULT_STATE };
+  }
+  const parsed = raw as Partial<UserStudyState>;
+  const readingProgress: Record<string, number> = {};
+  if (parsed.readingProgress && typeof parsed.readingProgress === 'object') {
+    for (const [k, v] of Object.entries(parsed.readingProgress)) {
+      const n = Number(v);
+      readingProgress[k] = Number.isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 0;
+    }
+  }
+
+  const readingProgressLog = normalizeReadingProgressLog(parsed.readingProgressLog, readingProgress);
+
+  return {
+    version: 1,
+    lastUpdated: typeof parsed.lastUpdated === 'string' ? parsed.lastUpdated : '',
+    completedChapters: Array.isArray(parsed.completedChapters) ? parsed.completedChapters : [],
+    chapterCompletionLog:
+      parsed.chapterCompletionLog && typeof parsed.chapterCompletionLog === 'object'
+        ? parsed.chapterCompletionLog
+        : {},
+    readingProgress,
+    readingProgressLog,
+    bookmarkedQuestions: Array.isArray(parsed.bookmarkedQuestions)
+      ? parsed.bookmarkedQuestions
+      : [],
+    quizAttempts: Array.isArray(parsed.quizAttempts) ? parsed.quizAttempts : [],
+    audioPositions:
+      parsed.audioPositions && typeof parsed.audioPositions === 'object'
+        ? parsed.audioPositions
+        : {},
+    moduleMastery: normalizeModuleMasteryMap(parsed.moduleMastery)
+  };
+}
+
 export function loadStudyState(): UserStudyState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_STATE };
     const parsed = JSON.parse(raw);
-    return {
-      version: 1,
-      lastUpdated: parsed.lastUpdated || new Date().toISOString(),
-      completedChapters: Array.isArray(parsed.completedChapters) ? parsed.completedChapters : [],
-      chapterCompletionLog:
-        parsed.chapterCompletionLog && typeof parsed.chapterCompletionLog === 'object'
-          ? parsed.chapterCompletionLog
-          : {},
-      readingProgress: parsed.readingProgress || {},
-      bookmarkedQuestions: Array.isArray(parsed.bookmarkedQuestions)
-        ? parsed.bookmarkedQuestions
-        : [],
-      quizAttempts: Array.isArray(parsed.quizAttempts) ? parsed.quizAttempts : [],
-      audioPositions:
-        parsed.audioPositions && typeof parsed.audioPositions === 'object'
-          ? parsed.audioPositions
-          : {}
-    };
+    const normalized = normalizeStudyState(parsed);
+    if (!normalized.lastUpdated) {
+      normalized.lastUpdated = new Date().toISOString();
+    }
+    return normalized;
   } catch {
     return { ...DEFAULT_STATE };
   }
@@ -81,15 +185,23 @@ export function saveStudyState(state: UserStudyState, preserveTimestamp = false)
     ...state,
     lastUpdated: preserveTimestamp && state.lastUpdated ? state.lastUpdated : new Date().toISOString()
   };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  }
 }
 
-export function toggleChapterCompleted(state: UserStudyState, chapterId: string): UserStudyState {
+export function setChapterCompleted(
+  state: UserStudyState,
+  chapterId: string,
+  completed: boolean,
+  persist = true
+): UserStudyState {
   const now = new Date().toISOString();
   const exists = state.completedChapters.includes(chapterId);
-  const completed = !exists;
   const completedChapters = completed
-    ? [...state.completedChapters, chapterId]
+    ? exists
+      ? state.completedChapters
+      : [...state.completedChapters, chapterId]
     : state.completedChapters.filter((id) => id !== chapterId);
 
   const chapterCompletionLog: Record<string, ChapterCompletionEntry> = {
@@ -102,6 +214,58 @@ export function toggleChapterCompleted(state: UserStudyState, chapterId: string)
     lastUpdated: now,
     completedChapters,
     chapterCompletionLog
+  };
+  if (persist) {
+    saveStudyState(next, true);
+  }
+  return next;
+}
+
+export function toggleChapterCompleted(state: UserStudyState, chapterId: string): UserStudyState {
+  const exists = state.completedChapters.includes(chapterId);
+  return setChapterCompleted(state, chapterId, !exists, true);
+}
+
+export function updateChapterReadingProgress(
+  state: UserStudyState,
+  chapterId: string,
+  percentage: number,
+  visitedSections: string[] = []
+): UserStudyState {
+  const cleanPct = Math.max(0, Math.min(100, Math.round(percentage)));
+  const cleanSections = Array.from(new Set(visitedSections)).sort();
+  const prevLog = state.readingProgressLog?.[chapterId];
+  const prevPct = prevLog?.percentage ?? state.readingProgress[chapterId] ?? 0;
+  const prevSections = [...(prevLog?.visitedSections || [])].sort();
+
+  if (
+    prevPct === cleanPct &&
+    prevSections.length === cleanSections.length &&
+    prevSections.every((s, idx) => s === cleanSections[idx]) &&
+    prevLog?.updatedAt
+  ) {
+    return state;
+  }
+
+  const now = new Date().toISOString();
+  const readingProgress = {
+    ...(state.readingProgress || {}),
+    [chapterId]: cleanPct
+  };
+  const readingProgressLog: Record<string, ReadingProgressEntry> = {
+    ...(state.readingProgressLog || {}),
+    [chapterId]: {
+      percentage: cleanPct,
+      visitedSections: cleanSections,
+      updatedAt: now
+    }
+  };
+
+  const next: UserStudyState = {
+    ...state,
+    lastUpdated: now,
+    readingProgress,
+    readingProgressLog
   };
   saveStudyState(next, true);
   return next;
@@ -142,6 +306,57 @@ export function updateSyncedAudioPosition(
   };
   saveStudyState(next, true);
   return next;
+}
+
+function getMasteryTimestampMs(entry?: ModuleMasteryState): number {
+  if (!entry) return 0;
+  return Math.max(
+    parseTimestampMs(entry.lastUpdated),
+    parseTimestampMs(entry.approvedAt),
+    parseTimestampMs(entry.restudyResetAt),
+    parseTimestampMs(entry.activeCycle?.lastUpdated)
+  );
+}
+
+function mergeModuleMasteryMaps(
+  localMap: Record<string, ModuleMasteryState>,
+  remoteMap: Record<string, ModuleMasteryState>
+): Record<string, ModuleMasteryState> {
+  const merged: Record<string, ModuleMasteryState> = {};
+  const keys = new Set([...Object.keys(localMap), ...Object.keys(remoteMap)]);
+
+  for (const key of keys) {
+    const l = localMap[key];
+    const r = remoteMap[key];
+    if (l && !r) {
+      merged[key] = l;
+    } else if (!l && r) {
+      merged[key] = r;
+    } else if (l && r) {
+      const lMs = getMasteryTimestampMs(l);
+      const rMs = getMasteryTimestampMs(r);
+      if (lMs > rMs) {
+        merged[key] = l;
+      } else if (rMs > lMs) {
+        merged[key] = r;
+      } else {
+        // Tie-breaker when timestamps match identically
+        if (l.status === 'approved' && r.status !== 'approved') {
+          merged[key] = l;
+        } else if (r.status === 'approved' && l.status !== 'approved') {
+          merged[key] = r;
+        } else if (l.completedCyclesCount !== r.completedCyclesCount) {
+          merged[key] = l.completedCyclesCount >= r.completedCyclesCount ? l : r;
+        } else {
+          const lAttempt = l.activeCycle?.attemptCount || 0;
+          const rAttempt = r.activeCycle?.attemptCount || 0;
+          merged[key] = lAttempt >= rAttempt ? l : r;
+        }
+      }
+    }
+  }
+
+  return merged;
 }
 
 export function mergeStudyStates(local: UserStudyState, remote: UserStudyState): UserStudyState {
@@ -208,12 +423,78 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
     }
   }
 
+  // Timestamp-safe readingProgress reconciliation (preserves surgical restudy resets)
   const mergedReading: Record<string, number> = {};
+  const mergedReadingLog: Record<string, ReadingProgressEntry> = {};
   const localReading = local.readingProgress || {};
   const remoteReading = remote.readingProgress || {};
-  for (const key of new Set([...Object.keys(localReading), ...Object.keys(remoteReading)])) {
-    mergedReading[key] = Math.max(Number(localReading[key]) || 0, Number(remoteReading[key]) || 0);
+  const localReadingLog = local.readingProgressLog || {};
+  const remoteReadingLog = remote.readingProgressLog || {};
+
+  const readingKeys = new Set([
+    ...Object.keys(localReading),
+    ...Object.keys(remoteReading),
+    ...Object.keys(localReadingLog),
+    ...Object.keys(remoteReadingLog)
+  ]);
+
+  for (const key of readingKeys) {
+    const lLog = localReadingLog[key];
+    const rLog = remoteReadingLog[key];
+    const lNum = Number(localReading[key]) || 0;
+    const rNum = Number(remoteReading[key]) || 0;
+
+    if (lLog && rLog) {
+      const lMs = parseTimestampMs(lLog.updatedAt);
+      const rMs = parseTimestampMs(rLog.updatedAt);
+      if (lMs > rMs) {
+        mergedReadingLog[key] = lLog;
+        mergedReading[key] = lLog.percentage;
+      } else if (rMs > lMs) {
+        mergedReadingLog[key] = rLog;
+        mergedReading[key] = rLog.percentage;
+      } else {
+        const chosen = lLog.percentage >= rLog.percentage ? lLog : rLog;
+        mergedReadingLog[key] = chosen;
+        mergedReading[key] = chosen.percentage;
+      }
+    } else if (lLog && !rLog) {
+      const lMs = parseTimestampMs(lLog.updatedAt);
+      const rMs = parseTimestampMs(remote.lastUpdated);
+      if (rNum > lLog.percentage && rMs > lMs) {
+        mergedReading[key] = rNum;
+        mergedReadingLog[key] = {
+          percentage: rNum,
+          visitedSections: lLog.visitedSections || [],
+          updatedAt: remote.lastUpdated || lLog.updatedAt
+        };
+      } else {
+        mergedReadingLog[key] = lLog;
+        mergedReading[key] = lLog.percentage;
+      }
+    } else if (!lLog && rLog) {
+      const rMs = parseTimestampMs(rLog.updatedAt);
+      const lMs = parseTimestampMs(local.lastUpdated);
+      if (lNum > rLog.percentage && lMs > rMs) {
+        mergedReading[key] = lNum;
+        mergedReadingLog[key] = {
+          percentage: lNum,
+          visitedSections: rLog.visitedSections || [],
+          updatedAt: local.lastUpdated || rLog.updatedAt
+        };
+      } else {
+        mergedReadingLog[key] = rLog;
+        mergedReading[key] = rLog.percentage;
+      }
+    } else {
+      mergedReading[key] = Math.max(lNum, rNum);
+    }
   }
+
+  const mergedMastery = mergeModuleMasteryMaps(
+    local.moduleMastery || {},
+    remote.moduleMastery || {}
+  );
 
   const bookmarkedQuestions = Array.from(
     new Set([...(local.bookmarkedQuestions || []), ...(remote.bookmarkedQuestions || [])])
@@ -232,9 +513,11 @@ export function mergeStudyStates(local: UserStudyState, remote: UserStudyState):
     completedChapters,
     chapterCompletionLog: mergedLog,
     readingProgress: mergedReading,
+    readingProgressLog: mergedReadingLog,
     bookmarkedQuestions,
     quizAttempts: mergedAttempts,
-    audioPositions: mergedPositions
+    audioPositions: mergedPositions,
+    moduleMastery: mergedMastery
   };
 }
 
@@ -247,18 +530,25 @@ export function areStudyStatesEqual(a: UserStudyState, b: UserStudyState): boole
     readingProgress: Object.keys(s.readingProgress || {})
       .sort()
       .map((k) => [k, s.readingProgress[k]]),
+    readingProgressLog: Object.keys(s.readingProgressLog || {})
+      .sort()
+      .map((k) => [k, s.readingProgressLog![k]]),
     bookmarkedQuestions: [...(s.bookmarkedQuestions || [])].sort(),
     attemptIds: (s.quizAttempts || []).map((att) => att.attemptId),
     audioPositions: Object.keys(s.audioPositions || {})
       .sort()
-      .map((k) => [k, s.audioPositions![k]])
+      .map((k) => [k, s.audioPositions![k]]),
+    moduleMastery: Object.keys(s.moduleMastery || {})
+      .sort()
+      .map((k) => [k, s.moduleMastery![k]])
   });
 
   return JSON.stringify(norm(a)) === JSON.stringify(norm(b));
 }
 
 export function mergeImportedState(current: UserStudyState, imported: UserStudyState): UserStudyState {
-  const merged = mergeStudyStates(current, imported);
+  const normalizedImported = normalizeStudyState(imported);
+  const merged = mergeStudyStates(current, normalizedImported);
   merged.lastUpdated = new Date().toISOString();
   saveStudyState(merged, true);
   return merged;
@@ -270,8 +560,9 @@ export function getMissedQuestionIds(state: UserStudyState, sessionId?: string):
   const chronological = [...state.quizAttempts].reverse();
 
   for (const attempt of chronological) {
-    if (sessionId && attempt.sessionId !== sessionId) continue;
+    if (sessionId && attempt.sessionId !== sessionId && attempt.mode !== 'module-exam') continue;
     for (const ans of attempt.answers) {
+      if (sessionId && ans.sessionId && ans.sessionId !== sessionId) continue;
       latestByQuestion.set(ans.questionId, ans.isCorrect);
     }
   }
@@ -283,6 +574,91 @@ export function getMissedQuestionIds(state: UserStudyState, sessionId?: string):
     }
   }
   return missed;
+}
+
+export interface CatalogDiagnosticCounts {
+  evaluatedSessions: number;
+  attemptsCount: number;
+  avgMastery: number | null;
+  openGapsCount: number;
+  criticalGapsCount: number;
+  attentionGapsCount: number;
+}
+
+/**
+ * Computes per-module exam metrics cleanly from lightweight ChapterSummary[] without loading full module bundles.
+ */
+export function computeCatalogModuleMetrics(
+  state: UserStudyState,
+  moduleChapters: ChapterSummary[]
+): CatalogDiagnosticCounts {
+  const sessionSet = new Set(moduleChapters.map((c) => c.session));
+  let evaluatedSessions = 0;
+  let attemptsCount = 0;
+  const bestScores: number[] = [];
+
+  for (const ch of moduleChapters) {
+    const sessionAttempts = state.quizAttempts.filter(
+      (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
+    );
+    if (sessionAttempts.length > 0) {
+      evaluatedSessions++;
+      attemptsCount += sessionAttempts.length;
+      bestScores.push(Math.max(...sessionAttempts.map((a) => a.scorePercentage)));
+    }
+  }
+
+  const latestBySubtopicQuestion = new Map<
+    string,
+    { sessionId: string; subtopicTag: string; isCorrect: boolean }
+  >();
+  const chronological = [...state.quizAttempts].reverse();
+  for (const attempt of chronological) {
+    for (const ans of attempt.answers) {
+      const targetSession = ans.sessionId || attempt.sessionId;
+      if (!sessionSet.has(targetSession)) continue;
+      latestBySubtopicQuestion.set(ans.questionId, {
+        sessionId: targetSession,
+        subtopicTag: ans.subtopicTag,
+        isCorrect: ans.isCorrect
+      });
+    }
+  }
+
+  const subtopicGroups = new Map<string, { total: number; correct: number }>();
+  for (const item of latestBySubtopicQuestion.values()) {
+    const key = `${item.sessionId}::${item.subtopicTag}`;
+    const g = subtopicGroups.get(key) || { total: 0, correct: 0 };
+    g.total += 1;
+    if (item.isCorrect) g.correct += 1;
+    subtopicGroups.set(key, g);
+  }
+
+  let openGapsCount = 0;
+  let criticalGapsCount = 0;
+  let attentionGapsCount = 0;
+  for (const g of subtopicGroups.values()) {
+    const pct = Math.round((g.correct / g.total) * 100);
+    if (pct < 75) {
+      openGapsCount++;
+      if (pct < 50) criticalGapsCount++;
+      else attentionGapsCount++;
+    }
+  }
+
+  const avgMastery =
+    bestScores.length > 0
+      ? Math.round(bestScores.reduce((acc, s) => acc + s, 0) / bestScores.length)
+      : null;
+
+  return {
+    evaluatedSessions,
+    attemptsCount,
+    avgMastery,
+    openGapsCount,
+    criticalGapsCount,
+    attentionGapsCount
+  };
 }
 
 export function computeSubtopicDiagnostics(

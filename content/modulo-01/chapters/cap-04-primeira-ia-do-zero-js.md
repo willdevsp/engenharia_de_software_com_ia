@@ -25,11 +25,14 @@ official_docs:
     section: "IndexedDB, LocalStorage and FileSystem schemes"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=TuYbgZ59Kpg"
+  video_url: "https://www.youtube.com/watch?v=epSgXU3AyiI"
   videos:
-    - title: "1.1: Machine Learning for Web Devs & Creatives (Web ML) — TensorFlow.js"
-      channel: "Google for Developers"
-      url: "https://www.youtube.com/watch?v=TuYbgZ59Kpg"
+    - title: "Utilize o TensorFlow.js no seu navegador (Coding TensorFlow em português)"
+      channel: "TensorFlow"
+      url: "https://www.youtube.com/watch?v=epSgXU3AyiI"
+    - title: "Prepare o seu conjunto de dados para machine learning (Coding TensorFlow em português)"
+      channel: "TensorFlow"
+      url: "https://www.youtube.com/watch?v=5Dohtgm79n0"
 ---
 
 # Sessão 1.4: Criando sua Primeira IA do Zero em JavaScript

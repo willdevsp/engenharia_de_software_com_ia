@@ -28,7 +28,14 @@ official_docs:
     section: "Clear and specific instructions, Few-shot examples, Constraints"
 media:
   audio_notebooklm: null
-  video_url: null
+  video_url: "https://www.youtube.com/watch?v=y39Ws92mhjE"
+  videos:
+    - title: "Prompt Engineering - O Essencial que Todo Dev Precisa Saber"
+      channel: "DIO"
+      url: "https://www.youtube.com/watch?v=y39Ws92mhjE"
+    - title: "Engenharia de Prompt pra DEV: pare de receber código bugado"
+      channel: "Locaweb"
+      url: "https://www.youtube.com/watch?v=4mgiNEOHRGk"
 ---
 
 # Sessão 1.6: Prompt Engineering na Prática para Desenvolvedores

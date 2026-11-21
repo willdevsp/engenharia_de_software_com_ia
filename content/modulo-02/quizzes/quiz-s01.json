@@ -1,0 +1,491 @@
+{
+  "sessionId": "2.1",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.1 — Panorama do Mercado de IA como Serviço (AIaaS)",
+  "questions": [
+    {
+      "id": "m02-s01-q01",
+      "sessionId": "2.1",
+      "subtopicTag": "O Fenômeno dos ChatGPT Wrappers e o Act Two da IA Generativa",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual transformação econômica estrutural o modelo de AIaaS (AI as a Service) trouxe para a engenharia de software comercial, de forma análoga à transição dos data centers físicos para a computação em nuvem?",
+      "options": [
+        "Permitiu que qualquer startup executasse treinamento completo de modelos fundacionais em navegadores WebAssembly sem necessidade de GPUs em nuvem.",
+        "Eliminou completamente os custos variáveis de produção por usuário ativo, igualando a estrutura de custos de aplicações de IA à de sistemas CRUD relacionais.",
+        "Dissociou o CapEx proibitivo de treinar modelos de fronteira (clusters H100/B200, trilhões de tokens e RLHF/DPO) do OpEx variável de consumir inferência via APIs cobradas por milhão de tokens.",
+        "Substituiu todas as linguagens tipadas e APIs REST por prompts em linguagem natural executados diretamente no banco de dados."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Conforme o capítulo, o AIaaS dissociou o investimento inicial proibitivo de capital (CapEx na casa de centenas de milhões ou bilhões de dólares em clusters NVIDIA H100/B200, redes InfiniBand, curadoria de dados e alinhamento RLHF/DPO) do custo operacional variável (OpEx) de invocar endpoints REST/SSE cobrados por milhão de tokens. A alternativa A é falsa porque modelos fundacionais continuam rodando em clusters GPU especializados no provedor, não em WebAssembly no navegador. A alternativa B é incorreta porque AIaaS introduz custo marginal relevante por token a cada clique, ao contrário do CRUD clássico. A alternativa D é falsa porque o acesso ao modelo ocorre justamente via SDKs e APIs REST/SSE integradas a sistemas de software tipados.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#fenomeno-chatgpt-wrappers-e-act-two",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q02",
+      "sessionId": "2.1",
+      "subtopicTag": "O Fenômeno dos ChatGPT Wrappers e o Act Two da IA Generativa",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Segundo a análise 'Generative AI's Act Two' da Sequoia Capital apresentada no capítulo, como muda o papel arquitetural do LLM na transição do Act One (Model-First) para o Act Two (Problem-First)?",
+      "options": [
+        "O LLM deixa de ser o produto inteiro exposto cru ao usuário em uma chamada síncrona única e passa a operar como um componente probabilístico encapsulado em um sistema determinístico com estado persistente, RAG com permissões, tool calling e evals.",
+        "O LLM passa a controlar diretamente o esquema físico das tabelas SQL e as permissões de rede em tempo de execução sem supervisão do back-end.",
+        "A arquitetura abandona completamente modelos fundacionais externos no Act Two, exigindo que toda aplicação treine um Transformer do zero antes do lançamento.",
+        "O sistema substitui fluxos nativos de domínio por uma caixa de chat genérica em branco para maximizar a liberdade criativa do usuário final."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No Act One, o modelo era exposto diretamente por meio de uma chamada simples ('Single Prompt -> Raw Markdown'); no Act Two, a IA torna-se um motor probabilístico integrado a uma arquitetura determinística de engenharia com fluxos nativos de domínio, estado persistente, RAG com controle de acesso, tool calling e suítes de avaliação (evals). A alternativa B está errada porque sistemas resilientes não delegam governança e esquema ao acaso probabilístico do modelo. A alternativa C é falsa porque vencedoras do Act Two (como Cursor, Perplexity, Harvey e Glean) constroem sobre APIs fundacionais sem treinar modelos genéricos do zero. A alternativa D inverte exatamente o movimento: o Act Two abandona a caixa de chat em branco em favor de interfaces integradas ao fluxo de trabalho.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#do-act-one-ao-act-two-sequoia-capital",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q03",
+      "sessionId": "2.1",
+      "subtopicTag": "O Fenômeno dos ChatGPT Wrappers e o Act Two da IA Generativa",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual indicador de produto melhor expôs a fragilidade arquitetural dos 'ChatGPT Wrappers' do Act One logo após o pico inicial de curiosidade tecnológica?",
+      "options": [
+        "O aumento progressivo da velocidade de tokenização BPE após os primeiros 30 dias de operação.",
+        "A redução do tamanho da janela de contexto dos provedores para menos de 4.000 tokens.",
+        "A impossibilidade técnica de transmitir respostas em streaming via Server-Sent Events (SSE).",
+        "A queda contínua da Retenção D30 (fração de usuários ainda ativos 30 dias após o primeiro uso) em direção a zero, em contraste com o platô horizontal de softwares incorporados à rotina de trabalho."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Como destaca a análise da Sequoia Capital no capítulo, embora wrappers do Act One conquistassem tráfego viral massivo no lançamento por efeito novidade, suas curvas de Retenção D30 caíam continuamente em direção a zero após a primeira semana por falta de integração real e estado persistente. A alternativa A é absurda porque a tokenização BPE não acelera nem muda com o tempo de uso do produto. A alternativa B contraria a realidade do mercado, no qual as janelas de contexto expandiram para 1M–2M de tokens. A alternativa C é incorreta porque endpoints de AIaaS suportam streaming via SSE nativamente desde as primeiras gerações de APIs.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#do-act-one-ao-act-two-sequoia-capital",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q04",
+      "sessionId": "2.1",
+      "subtopicTag": "O Fenômeno dos ChatGPT Wrappers e o Act Two da IA Generativa",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na 'Falácia da Caixa de Chat Genérica' (The Blank Prompt Box Fallacy), o que significa o 'Imposto do Copiar-e-Colar' (Context Copy-Paste Tax) e por que ele provoca abandono prematuro do produto?",
+      "options": [
+        "É uma tarifa extra cobrada pelas APIs de LLM sempre que o prompt contém caracteres de quebra de linha copiados de editores de texto.",
+        "É o atrito operacional imposto ao usuário quando a aplicação está desconectada dos sistemas de registro (ERP, CRM, Git, Prontuário), transformando o ser humano no barramento manual de dados até que o esforço de montar o contexto supere o valor da resposta.",
+        "É a penalidade de latência causada pelo uso de JSON Schema no front-end em vez de texto Markdown bruto.",
+        "É o bloqueio de segurança do navegador que impede qualquer aplicação web de acessar a área de transferência do sistema operacional."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Quando um produto não se integra aos sistemas de registro do cliente, o profissional precisa exportar CSVs, selecionar cláusulas de PDFs ou copiar logs manualmente para o chat e depois transcrever a prosa de volta ao sistema de destino; quando esse custo cognitivo e operacional excede o tempo economizado, ocorre churn antes do dia 30. A alternativa A é falsa porque APIs cobram por tokens independentemente de terem sido colados ou digitados. A alternativa C é incorreta porque JSON Schema reduz o atrito e viabiliza UIs acionáveis em vez de prosa manual. A alternativa D é falsa e não tem relação com a desconexão estrutural de contexto em wrappers.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#a-falacia-da-caixa-de-chat-generica-the-blank-prompt-box-fallacy",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q05",
+      "sessionId": "2.1",
+      "subtopicTag": "O Fenômeno dos ChatGPT Wrappers e o Act Two da IA Generativa",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise o controlador de API TypeScript abaixo e a configuração enviada ao auditor `evaluateAiProductMoat`. Sob a ótica arquitetural do capítulo, por que essa implementação representa o arquétipo do Act One e qual combinação de métricas ela produz na auditoria?",
+      "codeSnippet": "export async function handleChatRequest(userPrompt: string): Promise<string> {\n  const systemPrompt = 'Você é um assistente jurídico experiente. Responda em Markdown.';\n  const response = await llmClient.messages.create({\n    model: 'frontier-default',\n    system: systemPrompt,\n    messages: [{ role: 'user', content: userPrompt }],\n  });\n  return response.text;\n}\n\nconst audit = evaluateAiProductMoat({\n  productName: 'LegalChat Wrapper',\n  hasProprietaryConnectors: false,\n  enforcesAclPreFiltering: false,\n  hasFeedbackEvalFlywheel: false,\n  usesBlankChatAsPrimaryUi: true,\n  usesStructuredOutputsAndStateMachine: false,\n  hasMultiModelRoutingAndFallback: false,\n  implementsPromptCaching: false,\n  hasPiiRedactionAndAuditLog: false,\n  reliesOnSingleSystemPrompt: true,\n});",
+      "options": [
+        "Ela obtém score 55/100 (FEATURE_ADDON) porque utilizar um system prompt fixo no servidor já garante governança determinística e proteção contra churn D30.",
+        "Ela obtém score 100/100 (AI_NATIVE_DEFENSIBLE) porque delega todo o raciocínio para o modelo frontier-default em vez de escrever lógica de domínio em código.",
+        "Ela obtém score 0/100 (SHALLOW_WRAPPER, sherlockingRisk: HIGH) e dispara alertas críticos por UI em chat em branco (atrito de cold-start e churn D30), saída não-estruturada (que impede automação na UI) e acoplamento a um único system prompt.",
+        "Ela gera erro de compilação no TypeScript porque mensagens enviadas à API exigem obrigatoriamente conectores proprietários e pré-filtragem de ACL."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O código expõe exatamente o anti-padrão do Act One: um prompt de sistema estático concatenado à entrada manual do usuário retornando texto livre em Markdown, sem conectores, sem estado tipado, sem roteamento/cache e sem governança. Em `evaluateAiProductMoat`, todos os 4 pilares somam 0 pontos, a penalidade por `reliesOnSingleSystemPrompt` mantém `totalScore` truncado no mínimo 0 (`SHALLOW_WRAPPER`, risco `HIGH`), emitindo os três avisos críticos correspondentes. A alternativa A é falsa porque um system prompt estático gera zero pontos positivos e ainda aplica penalidade de -15. A alternativa B inverte os princípios do Act Two. A alternativa D é falsa porque o SDK compila normalmente; a fragilidade é arquitetural e de produto, não sintática.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#a-falacia-da-caixa-de-chat-generica-the-blank-prompt-box-fallacy",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q06",
+      "sessionId": "2.1",
+      "subtopicTag": "Anatomia de Casos Reais: Cursor, Perplexity, Harvey e Glean",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual conclusão estratégica emerge da comparação entre o caso inicial do Jasper e as trajetórias de sucesso de Cursor, Perplexity, Harvey e Glean no mercado de AIaaS?",
+      "options": [
+        "Empresas de software AIaaS podem construir moats bilionários sobre APIs fundacionais sem treinar um LLM genérico do zero, desde que a defensibilidade resida na arquitetura de engenharia ao redor do modelo; depender apenas de acesso antecipado ou de um prompt sobre o modelo base expõe o negócio à comoditização.",
+        "Nenhuma empresa que consome APIs da OpenAI ou Anthropic consegue manter avaliação de mercado positiva após o lançamento de interfaces web oficiais pelos provedores.",
+        "A única forma viável de competir no Act Two é abandonar completamente modelos de fronteira de terceiros e treinar um modelo próprio de 500 bilhões de parâmetros.",
+        "Produtos B2B como Harvey e Glean não precisam de fluxos especializados nem de integrações externas porque modelos de fronteira já leem qualquer sistema privado sem conectores."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como mostra a Seção 2, quando o acesso ao GPT-3 deixou de ser restrito e surgiu o ChatGPT, produtos apoiados apenas em acesso precoce (caso inicial do Jasper) precisaram se reinventar em torno de memória de marca e workflows; em contraste, Cursor, Perplexity, Harvey e Glean escalaram sobre modelos fundacionais graças às camadas de engenharia acima, ao lado e abaixo do LLM. A alternativa B contradiz os próprios casos de sucesso citados. A alternativa C é falsa porque nenhuma dessas quatro empresas precisou treinar um LLM generalista concorrente direto de GPT ou Claude do zero. A alternativa D ignora que a vantagem competitiva de Harvey e Glean depende justamente de integrações diretas com iManage, SharePoint e mais de 100 SaaS corporativos.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#anatomia-de-casos-reais-de-mercado",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q07",
+      "sessionId": "2.1",
+      "subtopicTag": "Anatomia de Casos Reais: Cursor, Perplexity, Harvey e Glean",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na anatomia técnica do Cursor apresentada no capítulo, qual conjunto de mecanismos de engenharia sustenta sua defensibilidade (moat) além da simples chamada a modelos como Claude ou GPT?",
+      "options": [
+        "Conversão de todo o repositório em um único arquivo PDF enviado integralmente no prompt a cada tecla pressionada.",
+        "Uso exclusivo de expressões regulares no navegador para colorir sintaxe sem interação com compiladores ou editores.",
+        "Substituição do Language Server Protocol (LSP) por um modelo de linguagem único responsável por inventar erros de tipagem sem executar checagem estática.",
+        "Fork completo do VS Code integrando chunking sintático via AST, indexação incremental por árvores de Merkle, diagnósticos em tempo real do LSP, modelos rápidos de Edição Especulativa (Fast Apply) e telemetria contínua de aceitação/rejeição de diffs."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. O Cursor controla o ambiente completo do editor (fork do VS Code), utiliza AST + árvores de Merkle para detectar e re-indexar rapidamente apenas blocos alterados sem trafegar o código inteiro repetidamente, realimenta o agente com diagnósticos determinísticos do LSP (como erros de tipo TypeScript), acelera aplicações de diffs multi-arquivo com Edição Especulativa (Fast Apply) e captura um flywheel valioso com os sinais de Accept versus Reject dos desenvolvedores. As alternativas A, B e C descrevem práticas ineficientes ou opostas à arquitetura real do Cursor (reenviar o repo inteiro destruiria latência e custo, e dispensar o LSP removeria o sinal determinístico de compilação).",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#dissecando-a-engenharia-sob-o-capo",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q08",
+      "sessionId": "2.1",
+      "subtopicTag": "Anatomia de Casos Reais: Cursor, Perplexity, Harvey e Glean",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Por que o capítulo destaca que o maior desafio arquitetural de plataformas corporativas como Glean e Harvey não é calcular similaridade de cosseno em vetores, mas sim garantir isolamento organizacional e confiabilidade contratual?",
+      "options": [
+        "Porque algoritmos de similaridade de cosseno só funcionam em documentos públicos da web e falham matematicamente com textos em inglês jurídico.",
+        "Porque em ambientes corporativos uma busca vetorial ingênua em índice compartilhado vazaria documentos restritos (como planos de demissão ou bônus executivos) e uma taxa de alucinação de 5% inviabiliza auditorias jurídicas; por isso o Glean sincroniza ACLs/RBAC como pré-filtro obrigatório de recuperação + Grafo Organizacional, e o Harvey exige citação exata por cláusula sob acordos de Zero Data Retention (ZDR).",
+        "Porque bancos vetoriais modernos proíbem armazenar mais de mil documentos por empresa devido a limitações do protocolo HTTP.",
+        "Porque o Harvey e o Glean processam todos os documentos corporativos exclusivamente na máquina local do usuário sem qualquer comunicação de rede."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Calcular distância vetorial é commodity; o moat corporativo do Glean está em sincronizar permissões ACL/RBAC de mais de 100 SaaS e aplicá-las como pré-filtro antes da recuperação, além de usar um Grafo de Conhecimento Organizacional para calibrar autoridade, enquanto o Harvey executa fluxos paralelos de due diligence com citação verificável de página/cláusula e acordos estritos ZDR para que dados de clientes não fiquem retidos nos provedores de inferência. As alternativas A, C e D são tecnicamente falsas: similaridade de cosseno independe do domínio jurídico, bancos vetoriais escalam muito além de mil documentos e ambas as plataformas operam com arquiteturas em nuvem enterprise governadas por ZDR e ACLs.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#dissecando-a-engenharia-sob-o-capo",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q09",
+      "sessionId": "2.1",
+      "subtopicTag": "Anatomia de Casos Reais: Cursor, Perplexity, Harvey e Glean",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Inspirado na estratégia de indexação do Cursor, observe a função TypeScript `detectChangedSubtrees` baseada em hashes de árvore de Merkle. Qual benefício arquitetural direto essa abordagem entrega ao sincronizar um repositório de 20.000 arquivos?",
+      "codeSnippet": "export interface MerkleSnapshot {\n  readonly path: string;\n  readonly sha256: string;\n}\n\nexport function detectChangedSubtrees(\n  previousIndex: ReadonlyMap<string, string>,\n  currentWorkspace: readonly MerkleSnapshot[]\n): readonly string[] {\n  const dirtyPaths: string[] = [];\n  for (const node of currentWorkspace) {\n    if (previousIndex.get(node.path) !== node.sha256) {\n      dirtyPaths.push(node.path);\n    }\n  }\n  return dirtyPaths;\n}",
+      "options": [
+        "Permite dispensar o uso de embeddings e buscas semânticas, respondendo perguntas de arquitetura apenas comparando strings SHA-256.",
+        "Garante que o provedor de AIaaS armazene gratuitamente o código-fonte completo em seu cache público global para outros clientes.",
+        "Identifica em segundos apenas os arquivos ou blocos AST cujo hash divergiu desde a última sincronização, evitando trafegar e re-indexar todo o código-fonte a cada alteração.",
+        "Impede qualquer erro de compilação TypeScript em tempo de execução sem necessidade de Language Server Protocol."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Árvores de Merkle permitem comparar snapshots criptográficos de diretórios e blocos de código (AST) rapidamente: apenas os nós cujos hashes diferem da indexação anterior (`dirtyPaths`) precisam ser reenviados para atualização de embeddings e índice. A alternativa A está errada porque o hash serve para detecção de mudança incremental, não para busca semântica. A alternativa B é falsa e contraria práticas de privacidade/isolamento. A alternativa D confunde indexação incremental por hash com análise semântica/tipagem estática executada pelo LSP.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#dissecando-a-engenharia-sob-o-capo",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q10",
+      "sessionId": "2.1",
+      "subtopicTag": "Anatomia de Casos Reais: Cursor, Perplexity, Harvey e Glean",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Um engenheiro implementou a função `retrieveCorpDocs` abaixo para um sistema inspirado no Glean e no Harvey, mas falhou em uma auditoria de segurança enterprise. Qual é a falha crítica desse código e qual correção é obrigatória segundo o capítulo?",
+      "codeSnippet": "export async function retrieveCorpDocs(\n  vectorDb: VectorStore,\n  userRoles: readonly string[],\n  queryVector: readonly number[],\n  topK: number\n): Promise<readonly DocChunk[]> {\n  const candidates = await vectorDb.similaritySearch(queryVector, { limit: topK });\n  return candidates.filter((doc) =>\n    doc.allowedRoleIds.some((role) => userRoles.includes(role))\n  );\n}",
+      "options": [
+        "A função executa pós-filtragem (post-filtering) em memória após o LIMIT topK, podendo retornar zero resultados úteis se os k vizinhos mais próximos forem restritos e expondo dados confidenciais na memória da aplicação antes do filtro; o correto é aplicar o filtro de ACL/RBAC como pré-filtro obrigatório dentro da query do banco antes/durante a busca vetorial.",
+        "A função deveria remover completamente `userRoles` do back-end e apenas instruir o LLM via system prompt para não mencionar trechos confidenciais.",
+        "O erro está em usar `readonly` nas interfaces TypeScript, o que impede o banco vetorial de ler o parâmetro `queryVector`.",
+        "A função deveria enviar todos os documentos da empresa sem limite (`limit: Infinity`) diretamente para a API pública sem acordo ZDR."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Na busca vetorial com pós-filtragem, se um estagiário busca por 'bônus executivo' e todos os `topK` documentos mais próximos forem confidenciais da diretoria, o filtro posterior descarta tudo (degradando o recall para zero) ou mantém chunks sensíveis trafegando na camada de aplicação antes do descarte. O capítulo exige que permissões ACL/RBAC sejam aplicadas como pré-filtro obrigatório na camada de recuperação (`WHERE allowed_role_ids && user.roles`). A alternativa B viola frontalmente a regra do capítulo de nunca delegar controle de acesso ao prompt do LLM. A alternativa C é absurda porque `readonly` existe apenas em tempo de compilação TypeScript. A alternativa D violaria segurança corporativa e requisitos de Zero Data Retention.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#dissecando-a-engenharia-sob-o-capo",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q11",
+      "sessionId": "2.1",
+      "subtopicTag": "Por Que Wrappers Rasos Morrem e O Que Constitui um Moat de Engenharia",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na indústria de software em IA Generativa, o que caracteriza o 'Efeito Sherlocking' e por que ele ameaça fatalmente startups baseadas em wrappers rasos?",
+      "options": [
+        "É a técnica de usar Chain-of-Thought para auditar vulnerabilidades criptográficas em código legado.",
+        "É o fenômeno em que o dono da plataforma subjacente (como OpenAI, Anthropic ou Google) incorpora nativamente funcionalidades que sustentavam produtos de terceiros — como upload de PDF, janelas de 1M–2M tokens, Canvas/Projects, Artifacts e Deep Research — comprimindo o ciclo de obsolescência do wrapper de anos para semanas.",
+        "É o aumento de velocidade obtido quando dois modelos fundacionais competem na mesma requisição HTTP.",
+        "É a obrigatoriedade legal de abrir o código-fonte de qualquer produto que utilize mais de um provedor de AIaaS."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Originado quando a Apple incorporou no Sherlock os recursos do utilitário Watson, o Efeito Sherlocking na era da IA ocorre quando provedores fundacionais absorvem diretamente na assinatura de USD 20,00 / mês casos de uso isolados ('converse com seu PDF', resumos simples, edição lateral via Canvas/Artifacts), eliminando a razão de existir de wrappers sem integração proprietária. A alternativa A descreve auditoria via CoT, não Sherlocking. A alternativa C descreve roteamento ou corrida de requisições, sem relação com o termo. A alternativa D é fictícia, pois não existe tal exigência legal.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#wrappers-rasos-vs-moat-de-engenharia",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q12",
+      "sessionId": "2.1",
+      "subtopicTag": "Por Que Wrappers Rasos Morrem e O Que Constitui um Moat de Engenharia",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Quais são as três patologias estruturais que condenam um wrapper raso mesmo antes de ele sofrer o Efeito Sherlocking pelo provedor base?",
+      "options": [
+        "Excesso de testes unitários, uso obrigatório de TypeScript estrito e assinatura de acordos ZDR com clientes.",
+        "Latência negativa em chamadas SSE, excesso de memória cache L1 e tipagem forte em bancos PostgreSQL.",
+        "Uso exclusivo de modelos open-weights locais, proibição de cobrança recorrente e ausência de interface web.",
+        "Acoplamento frágil ao comportamento do modelo (Model Drift em prompts monolíticos e regex artesanal sem evals), custo de troca zero (Zero Switching Cost) e compressão negativa de preço frente aos USD 20,00 / mês das assinaturas oficiais."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Conforme a Seção 3, um wrapper raso sofre de: (1) Model Drift (mudanças de snapshot ou filtros quebram parsing artesanal baseado em regex sem contratos tipados nem suítes de evals), (2) Zero Switching Cost (sem dados indexados, memória nem integrações, o usuário cancela em dois cliques) e (3) compressão negativa de preço (cobrar USD 29,00 / mês por uma casca cosmética sobre a mesma inferência já disponível em planos de USD 20,00 / mês). As alternativas A, B e C listam práticas positivas de engenharia, termos fictícios ('latência negativa') ou premissas falsas sobre modelos locais.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#as-tres-patologias-estruturais-de-um-wrapper-raso",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q13",
+      "sessionId": "2.1",
+      "subtopicTag": "Por Que Wrappers Rasos Morrem e O Que Constitui um Moat de Engenharia",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Para construir uma aplicação AI-Native resiliente ao Sherlocking e com barreira competitiva sustentável, como os 4 Pilares de um Moat de Engenharia atuam de forma integrada na arquitetura?",
+      "options": [
+        "Combinam Gravidade de Dados e Data Flywheel (Pilar 1), Propriedade do Fluxo de Trabalho com máquinas de estado determinísticas, contratos tipados, sandbox e Human-in-the-Loop (Pilar 2), Arquitetura Composta Multi-Modelo com Prompt/Semantic Caching (Pilar 3) e Confiança Corporativa via redação de PII, pré-filtragem ACL, auditoria imutável e ZDR (Pilar 4).",
+        "Concentram 100% do esforço em engenharia de prompt em um único arquivo de texto, evitando código de controle de fluxo, cache ou mascaramento de dados no back-end.",
+        "Substituem bancos relacionais, validação JSON Schema e controle de acesso RBAC por chamadas diretas do front-end às APIs de IA usando chaves públicas.",
+        "Focam apenas em aplicar gradientes visuais no front-end e publicar o mesmo modelo base com preço mais alto do que o provedor oficial."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Os 4 Pilares formam uma arquitetura composta e defensável: dados proprietários com ACL e ciclo contínuo de melhoria (Data Flywheel), encapsulamento determinístico do LLM via contratos tipados e portões de aprovação humana (HITL), otimização de custo/latência/resiliência por roteamento multi-modelo e caching, e governança enterprise (PII, auditoria, LGPD/GDPR/SOC 2 e ZDR). A alternativa B descreve exatamente o anti-padrão de wrapper frágil. A alternativa C introduz falhas graves de segurança (exposição de chaves no front-end e ausência de RBAC/schemas). A alternativa D descreve a patologia de casca cosmética e compressão negativa de preço.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#os-4-pilares-de-um-moat-de-engenharia-defensavel",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q14",
+      "sessionId": "2.1",
+      "subtopicTag": "Por Que Wrappers Rasos Morrem e O Que Constitui um Moat de Engenharia",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Considere a lógica exata de `evaluateAiProductMoat` do Laboratório Prático (Seção 5.3) reproduzida abaixo para auditar o produto `'CorpSync Assistant'`. Qual será o `totalScore`, a `classification`, o `sherlockingRisk` e o conteúdo de `criticalWarnings` retornados?",
+      "codeSnippet": "export function evaluateMoatSample(arch: AiProductArchitecture) {\n  const warnings: string[] = [];\n  const contextAndDataGravity =\n    (arch.hasProprietaryConnectors ? 12 : 0) +\n    (arch.enforcesAclPreFiltering ? 10 : 0) +\n    (arch.hasFeedbackEvalFlywheel ? 8 : 0);\n  let domainUxAndWorkflow = 0;\n  if (!arch.usesBlankChatAsPrimaryUi) domainUxAndWorkflow += 12;\n  if (arch.usesStructuredOutputsAndStateMachine) domainUxAndWorkflow += 13;\n  const multiModelAndInference =\n    (arch.hasMultiModelRoutingAndFallback ? 15 : 0) +\n    (arch.implementsPromptCaching ? 10 : 0);\n  const enterpriseCompliance = arch.hasPiiRedactionAndAuditLog ? 20 : 0;\n  let penalty = 0;\n  if (arch.reliesOnSingleSystemPrompt) penalty += 15;\n  if (!arch.enforcesAclPreFiltering && arch.hasProprietaryConnectors) {\n    penalty += 10;\n    warnings.push('Vulnerabilidade crítica: conectores sem filtragem prévia de ACL/RBAC.');\n  }\n  const raw = contextAndDataGravity + domainUxAndWorkflow + multiModelAndInference + enterpriseCompliance;\n  const totalScore = Math.max(0, Math.min(100, raw - penalty));\n  const classification = totalScore >= 75 ? 'AI_NATIVE_DEFENSIBLE' : totalScore >= 45 ? 'FEATURE_ADDON' : 'SHALLOW_WRAPPER';\n  const sherlockingRisk = totalScore >= 75 ? 'LOW' : totalScore >= 45 ? 'MEDIUM' : 'HIGH';\n  return { totalScore, classification, sherlockingRisk, warnings };\n}\n\nevaluateMoatSample({\n  productName: 'CorpSync Assistant',\n  hasProprietaryConnectors: true, enforcesAclPreFiltering: false, hasFeedbackEvalFlywheel: true,\n  usesBlankChatAsPrimaryUi: false, usesStructuredOutputsAndStateMachine: true,\n  hasMultiModelRoutingAndFallback: true, implementsPromptCaching: false,\n  hasPiiRedactionAndAuditLog: false, reliesOnSingleSystemPrompt: false,\n});",
+      "options": [
+        "`totalScore: 60`, `classification: 'FEATURE_ADDON'`, `sherlockingRisk: 'MEDIUM'`, `warnings: []`.",
+        "`totalScore: 40`, `classification: 'SHALLOW_WRAPPER'`, `sherlockingRisk: 'HIGH'`, com dois alertas críticos.",
+        "`totalScore: 50`, `classification: 'FEATURE_ADDON'`, `sherlockingRisk: 'MEDIUM'`, e `warnings` contendo `'Vulnerabilidade crítica: conectores sem filtragem prévia de ACL/RBAC.'`.",
+        "`totalScore: 75`, `classification: 'AI_NATIVE_DEFENSIBLE'`, `sherlockingRisk: 'LOW'`, `warnings: []`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Somando os pilares: Pilar 1 = 12 (conectores) + 0 (sem ACL) + 8 (flywheel) = 20; Pilar 2 = 12 (não usa chat em branco) + 13 (saída estruturada) = 25; Pilar 3 = 15 (multi-modelo) + 0 (sem cache) = 15; Pilar 4 = 0 (sem PII/auditoria). O rawScore é 20 + 25 + 15 + 0 = 60. Contudo, como `hasProprietaryConnectors` é true e `enforcesAclPreFiltering` é false, aplica-se a penalidade estrutural de 10 pontos e registra-se o alerta crítico de segurança, resultando em `totalScore = 50` (faixa >= 45 e < 75 -> `FEATURE_ADDON` e `sherlockingRisk: 'MEDIUM'`). A alternativa A ignora a penalidade e o alerta de conectores sem ACL. A alternativa B subtrai indevidamente 20 pontos ou ignora parte da pontuação dos pilares. A alternativa D superestima o rawScore sem considerar os recursos ausentes nem a penalidade.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#53-laboratorio-pratico-em-typescript-auditoria-de-moat-e-simulador-de-unit-economics",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q15",
+      "sessionId": "2.1",
+      "subtopicTag": "Por Que Wrappers Rasos Morrem e O Que Constitui um Moat de Engenharia",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a função `extractInvoiceRisk` abaixo, típica de um wrapper vulnerável a *Model Drift*. Por que esse código falha silenciosamente quando o provedor atualiza o snapshot do modelo e qual prática dos 4 Pilares resolve o problema na raiz?",
+      "codeSnippet": "export function extractInvoiceRisk(markdownOutput: string): { totalUsd: number; risky: boolean } {\n  const totalMatch = markdownOutput.match(/## Total:\\s*USD\\s*([0-9.]+)/);\n  const riskMatch = markdownOutput.match(/Risco:\\s*(ALTO|BAIXO)/);\n  return {\n    totalUsd: totalMatch ? Number(totalMatch[1]) : 0,\n    risky: riskMatch ? riskMatch[1] === 'ALTO' : false,\n  };\n}",
+      "options": [
+        "O uso de `Number(...)` em TypeScript é proibido por causar vazamento de memória quando recebe strings com ponto decimal.",
+        "O parsing artesanal por regex sobre texto Markdown quebra silenciosamente (retornando fallback `0` e `false`) sempre que o novo snapshot alterar cabeçalhos, espaços ou sinônimos ('Elevado' em vez de 'ALTO'); a solução é impor contratos tipados com JSON Schema/Zod (Structured Outputs) aliados a uma suíte de evals de regressão.",
+        "O problema ocorre apenas porque `markdownOutput` não foi convertido para XML antes de rodar a expressão regular.",
+        "Expressões regulares não conseguem capturar palavras em letras maiúsculas em versões modernas do Node.js."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Como explica a Seção 3, a patologia de Model Drift atinge diretamente sistemas baseados em parsing artesanal (`regex` sobre Markdown livre): basta o provedor ajustar formatação ('**Total:**' em vez de '## Total:') ou vocabulário ('CRÍTICO' em vez de 'ALTO') para a função retornar falsos negativos (`totalUsd: 0, risky: false`) sem lançar erro. Contratos estritos via JSON Schema/Zod no Pilar 2 e suítes automatizadas de evals eliminam essa fragilidade. A alternativa A é falsa porque `Number(...)` é padrão seguro da linguagem. A alternativa C é incorreta porque converter Markdown livre para XML não resolve a variabilidade semântica do modelo. A alternativa D é falsa sobre o funcionamento de regex no Node.js.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#as-tres-patologias-estruturais-de-um-wrapper-raso",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q16",
+      "sessionId": "2.1",
+      "subtopicTag": "Contexto Proprietário, UX Específica de Domínio e Orquestração Multi-Modelo",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na arquitetura de hidratação contínua de contexto proprietário (Seção 4.1), como devem ser combinados Webhooks/CDC e servidores MCP/APIs OAuth 2.0?",
+      "options": [
+        "Webhooks e CDC devem ser usados apenas para exibir notificações visuais no navegador, deixando a atualização do banco vetorial para uploads manuais mensais do usuário.",
+        "Servidores MCP devem replicar uma cópia estática de todo o banco de dados transacional a cada segundo para evitar consultas em tempo de execução.",
+        "Todos os dados corporativos, incluindo logs dos últimos 5 minutos e saldo de estoque em tempo real, devem ser concatenados manualmente em um único prompt estático no código-fonte.",
+        "Webhooks e CDC (Change Data Capture) mantêm índices vetoriais, lexicais (BM25) e metadados de permissão sincronizados assincronamente após eventos (PRs, faturas, tickets), enquanto APIs OAuth 2.0 e servidores MCP consultam em tempo real dados altamente voláteis que não devem residir em índice estático."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Em produtos AI-Native de produção, o contexto não depende de upload manual: eventos de negócio (Pull Request no GitHub, fatura no ERP, ticket no Zendesk) acionam filas assíncronas via Webhooks/CDC para atualizar índice vetorial, BM25 e ACLs em segundos, enquanto informações voláteis (saldo em estoque, status de deploy, logs recentes) são consultadas ao vivo em tempo de execução via OAuth 2.0 ou MCP com escopo restrito. A alternativa A reintroduz o atrito de upload manual. A alternativa B inverte o propósito do MCP, causando replicação desnecessária de estado altamente mutável. A alternativa C é arquiteturalmente inviável em produção.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#41-dominio-do-contexto-proprietario-apis-webhooks-e-mcp",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q17",
+      "sessionId": "2.1",
+      "subtopicTag": "Contexto Proprietário, UX Específica de Domínio e Orquestração Multi-Modelo",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Qual é a regra inviolável de engenharia para imposição de permissões (ACL Pre-Filtering) em bancos vetoriais corporativos descrita na Seção 4.1?",
+      "options": [
+        "O predicado de permissão (como `WHERE allowed_role_ids && user.roles`) deve ser executado antes ou durante a busca vetorial no banco de dados, jamais delegado a instruções no prompt pedindo ao LLM para ocultar documentos confidenciais.",
+        "As permissões devem ser checadas apenas no componente React do front-end depois que todos os trechos confidenciais já trafegaram pela API e pelo LLM.",
+        "Todos os usuários da empresa devem compartilhar os mesmos papéis na camada vetorial para simplificar a construção do índice HNSW.",
+        "Deve-se enviar todos os documentos confidenciais ao LLM junto com uma instrução em caixa alta proibindo a citação de segredos na resposta final."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como enfatiza o capítulo, o LLM é um motor probabilístico sujeito a jailbreaks e vazamentos indiretos de contexto: se um chunk confidencial entra no prompt, a segurança já foi violada. Por isso, o filtro de ACL/RBAC precisa ocorrer antes ou durante a consulta no banco de dados. As alternativas B e D expõem dados confidenciais à camada do modelo ou do cliente, tornando o sistema vulnerável a Prompt Injection e interceptação de payload. A alternativa C destrói a segregação corporativa de acesso.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#41-dominio-do-contexto-proprietario-apis-webhooks-e-mcp",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q18",
+      "sessionId": "2.1",
+      "subtopicTag": "Contexto Proprietário, UX Específica de Domínio e Orquestração Multi-Modelo",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Em uma arquitetura madura de AI Gateway / Orquestrador Multi-Modelo (Seção 4.3), como os quatro mecanismos centrais cooperam para otimizar custo, latência percebida, disponibilidade e conformidade?",
+      "options": [
+        "Enviando 100% das requisições ao modelo de fronteira mais caro sem streaming, confiando que o provedor jamais retornará erros HTTP 429 ou 503.",
+        "Desabilitando timeouts e circuit breakers para que uma única requisição aguarde indefinidamente até o provedor primário voltar ao ar, mantendo dados PII intactos no payload.",
+        "Combinando roteamento dinâmico (< 100 ms) entre modelos rápidos econômicos e modelos de fronteira, streaming via SSE para reduzir o TTFT, Adapter Pattern com fallback e circuit breakers para HTTP 429/503, e middleware de egresso com PII Redaction, tracing e acordos ZDR.",
+        "Rodando todos os modelos simultaneamente para cada clique do usuário e escolhendo aleatoriamente uma das respostas no front-end sem registrar logs de trace."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. A Seção 4.3 define exatamente essa quadra arquitetural: (1) Model Routing rápido (< 100 ms) enviando tarefas simples para modelos leves (`gpt-4o-mini`, `gemini-2.5-flash`, `claude-3-5-haiku`) e raciocínio complexo para fronteira, (2) SSE para otimizar o TTFT (*Time to First Token*), (3) cadeias de fallback via Adapter Pattern com circuit breakers/backoff curto para `HTTP 429` e `503`, e (4) Gateway de Conformidade que aplica PII Redaction antes do egresso, registra telemetria de trace e garante roteamento apenas para endpoints ZDR. A alternativa A destrói margem, latência e disponibilidade. A alternativa B causa falhas em cascata e vazamento de dados pessoais. A alternativa D multiplicaria o custo de tokens desnecessariamente sem observabilidade.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#43-orquestracao-multi-modelo-confiabilidade-latencia-e-conformidade",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q19",
+      "sessionId": "2.1",
+      "subtopicTag": "Contexto Proprietário, UX Específica de Domínio e Orquestração Multi-Modelo",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual é o princípio central do conceito de 'IA Invisível e Acionável' descrito na Seção 4.2?",
+      "options": [
+        "Ocultar totalmente da interface qualquer feedback sobre o que o sistema processou, executando ações irreversíveis em produção sem mostrar diffs nem citações.",
+        "Substituir a tela de conversa em branco por gatilhos contextuais embutidos no fluxo nativo (como botões ao lado de logs ou pré-preenchimento em background) e usar Structured Outputs (JSON Schema/Zod) para alimentar componentes determinísticos ricos como diff viewers, badges de confiança e links ao parágrafo-fonte.",
+        "Remover toda a interface gráfica do produto e obrigar o usuário final a interagir apenas por comandos cURL no terminal.",
+        "Permitir que o modelo gere HTML e JavaScript arbitrários sem validação de schema para redesenhar livremente a tela a cada resposta."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A 'IA Invisível' elimina o atrito do prompt em branco inserindo acionamentos contextuais diretamente onde o problema acontece (ex.: 'Diagnosticar Falha de Pipeline') e transformando saídas estruturadas e tipadas em componentes de UI acionáveis (diffs com aceitar/rejeitar, tabelas editáveis, citações clicáveis). A alternativa A é falsa porque ações críticas exigem transparência, confiança verificável e Human-in-the-Loop. A alternativa C reduz usabilidade para usuários de domínio. A alternativa D abre brechas graves de XSS e quebra a previsibilidade determinística da interface.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#contexto-proprietario-ux-e-orquestracao",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q20",
+      "sessionId": "2.1",
+      "subtopicTag": "Contexto Proprietário, UX Específica de Domínio e Orquestração Multi-Modelo",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a função `dispatchWithGovernance` do AI Gateway abaixo. Em qual detalhe crítico de segurança e confiabilidade essa implementação protege a aplicação, e por que a ordem das operações dentro dela é indispensável?",
+      "codeSnippet": "export async function dispatchWithGovernance(\n  rawPayload: string,\n  complexity: 'simple' | 'deep',\n  primary: LlmAdapter,\n  fallback: LlmAdapter,\n  traceLog: (meta: { model: string; usedFallback: boolean }) => void\n): Promise<string> {\n  const sanitizedPayload = redactPiiAndSecrets(rawPayload);\n  const selectedTier = complexity === 'simple' ? 'fast-economic' : 'frontier-reasoning';\n  try {\n    const res = await primary.invoke(sanitizedPayload, { tier: selectedTier, zdr: true, timeoutMs: 8000 });\n    traceLog({ model: res.modelId, usedFallback: false });\n    return res.outputJson;\n  } catch (err) {\n    if (!isTransientCapacityError(err)) throw err;\n    const res = await fallback.invoke(sanitizedPayload, { tier: selectedTier, zdr: true, timeoutMs: 8000 });\n    traceLog({ model: res.modelId, usedFallback: true });\n    return res.outputJson;\n  }\n}",
+      "options": [
+        "A ordem não importa; `redactPiiAndSecrets` poderia rodar somente após `primary.invoke` para economizar CPU antes da chamada de rede.",
+        "O bloco `catch` deveria acionar o fallback mesmo em erros 400 de schema inválido para mascarar bugs de validação de entrada.",
+        "O snippet força sempre o uso do provedor fallback antes do primário para duplicar a cobrança de tokens e testar a rede.",
+        "Aplicar `redactPiiAndSecrets` antes do bloco `try` garante que chaves JWT e PII jamais deixem a infraestrutura rumo a nenhum provedor (nem primário nem fallback), enquanto `zdr: true`, roteamento por complexidade, timeout rígido e fallback seletivo apenas para falhas transitórias (como HTTP 429/503) preservam conformidade, latência e disponibilidade."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. O gateway higieniza PII e segredos na entrada antes de qualquer egresso TCP/HTTP, garantindo proteção tanto na rota principal quanto na rota de fallback, impõe a política `zdr: true` em ambos os adaptadores, escolhe o tier adequado pela complexidade da tarefa, limita a espera com timeout rígido e só faz failover quando `isTransientCapacityError` identifica oscilações de capacidade (`429`/`503`/timeout), registrando telemetria em `traceLog`. A alternativa A vazaria PII antes da sanitização. A alternativa B mascararia bugs determinísticos de validação (HTTP 400) repetindo requisições inválidas no provedor secundário. A alternativa C lê incorretamente o fluxo `try/catch` do código.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#43-orquestracao-multi-modelo-confiabilidade-latencia-e-conformidade",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q21",
+      "sessionId": "2.1",
+      "subtopicTag": "Economia Unitária (Unit Economics) e Matriz de Decisão Arquitetural em AIaaS",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que modelar o custo variável de uma aplicação AIaaS usando apenas a média simples de requisições por usuário representa uma armadilha financeira grave em planos de assinatura fixa?",
+      "options": [
+        "Porque o consumo em produtos de IA segue uma distribuição de cauda pesada (heavy-tailed distribution), na qual uma pequena fração de power users em fluxos agênticos intensivos consome dezenas de vezes mais tokens (e tokens de saída custam tipicamente 3x a 5x mais que os de entrada), podendo transformar o lucro dos usuários casuais em prejuízo líquido consolidado.",
+        "Porque os provedores de AIaaS cobram mais caro por token apenas de contas que possuem menos de 100 usuários ativos.",
+        "Porque modelos de linguagem consomem exatamente o mesmo número de tokens em toda requisição, tornando qualquer cálculo médio idêntico ao caso extremo.",
+        "Porque o custo de banco de dados relacional cresce exponencialmente a cada token gerado, independentemente da infraestrutura."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como demonstrado na Seção 5.1, o software SaaS clássico possui custo marginal próximo de zero, enquanto no AIaaS cada clique dispara inferência em GPU cobrada por token, com assimetria de preços entre entrada e saída ($3\\times$ a $5\\times$ mais cara) e uso altamente concentrado na cauda pesada de *power users*; assim, a média simples oculta prejuízos severos dessa coorte. A alternativa B é falsa porque a precificação por milhão de tokens não penaliza bases pequenas. A alternativa C contraria a natureza variável dos tamanhos de contexto e resposta. A alternativa D confunde custo de inferência de GPU com armazenamento CRUD.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#51-modelagem-matematica-de-unit-economics-em-aiaas",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    },
+    {
+      "id": "m02-s01-q22",
+      "sessionId": "2.1",
+      "subtopicTag": "Economia Unitária (Unit Economics) e Matriz de Decisão Arquitetural em AIaaS",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "De acordo com a Matriz de Decisão Arquitetural em AIaaS (Seção 5.2), em qual cenário técnico específico justifica-se sair da abordagem 'Aplicação AI-Native com Moat' (padrão-ouro para ~90% dos produtos comerciais) e investir na estratégia 'Build / Fine-Tuning / Self-Hosted'?",
+      "options": [
+        "Logo na primeira semana de um MVP B2B com 20 usuários para validar se existe demanda pelo produto.",
+        "Sempre que o time quiser adicionar um botão de resumo em texto sobre documentos simples sem restrições de privacidade.",
+        "Apenas quando houver requisitos extremos como latência sub-50ms crítica, escala massiva superior a bilhões de tokens/dia ou soberania estrita em ambientes offline/air-gapped que justifiquem o CapEx muito alto e equipe dedicada de ML/MLOps.",
+        "Quando não houver nenhum orçamento para infraestrutura nem engenheiros especializados, pois hospedar clusters GPU dedicados reduz o CapEx inicial a zero."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. A Matriz da Seção 5.2 posiciona o modelo *Build / Fine-Tuning / Self-Hosted* com time-to-market de meses, CapEx muito alto (datasets curados, clusters GPU e equipe dedicada de ML/MLOps), reservado para necessidades reais de latência sub-50ms, volume massivo (> bilhões de tokens/dia) ou soberania estrita offline/air-gapped. As alternativas A e B descrevem cenários onde *Buy* ou *AI-Native com Moat* sobre AIaaS são muito superiores em time-to-market e eficiência de capital. A alternativa D inverte o perfil de custos, já que self-hosting de modelos dedicados exige o maior CapEx da matriz.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#52-matriz-de-decisao-arquitetural-em-aiaas",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q23",
+      "sessionId": "2.1",
+      "subtopicTag": "Economia Unitária (Unit Economics) e Matriz de Decisão Arquitetural em AIaaS",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Considere o código TypeScript abaixo derivado da equação $C_{\\text{req}} = \\frac{T_{\\text{in}} \\cdot P_{\\text{in}} + T_{\\text{cached}} \\cdot P_{\\text{cached}} + T_{\\text{out}} \\cdot P_{\\text{out}}}{10^6}$. Qual valor exato `computeSingleRequestCostUsd` retornará para esses parâmetros?",
+      "codeSnippet": "export function computeSingleRequestCostUsd(): number {\n  const avgInputTokens = 20_000;\n  const cacheHitRatio = 0.8;\n  const avgOutputTokens = 500;\n  const inputUsdPerMillion = 3.0;\n  const cachedInputUsdPerMillion = 0.3;\n  const outputUsdPerMillion = 15.0;\n\n  const uncachedTokens = avgInputTokens * (1 - cacheHitRatio);\n  const cachedTokens = avgInputTokens * cacheHitRatio;\n\n  return (\n    (uncachedTokens * inputUsdPerMillion +\n      cachedTokens * cachedInputUsdPerMillion +\n      avgOutputTokens * outputUsdPerMillion) /\n    1_000_000\n  );\n}",
+      "options": [
+        "USD 0,0675 por requisição.",
+        "USD 0,0243 por requisição.",
+        "USD 0,0195 por requisição.",
+        "USD 0,0318 por requisição."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Com $80\\%$ de cache hit sobre $20.000$ tokens de entrada, temos $T_{\\text{in}} = 4.000$ tokens não cacheados e $T_{\\text{cached}} = 16.000$ tokens em cache. Calculando cada parcela em USD: entrada não cacheada $= (4.000 \\times 3{,}0) / 10^6 = 0{,}0120$; entrada cacheada $= (16.000 \\times 0{,}3) / 10^6 = 0{,}0048$; saída $= (500 \\times 15{,}0) / 10^6 = 0{,}0075$. Somando: $0{,}0120 + 0{,}0048 + 0{,}0075 = 0{,}0243$ (USD 0,0243). A alternativa A (USD 0,0675) corresponde ao cenário sem Prompt Caching ($20.000 \\times 3{,}0 + 500 \\times 15{,}0$). A alternativa C ignora o custo dos $16.000$ tokens lidos do cache ($0{,}0120 + 0{,}0075$). A alternativa D aplica indevidamente um preço intermediário ou dobra o custo de saída.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#51-modelagem-matematica-de-unit-economics-em-aiaas",
+      "officialDocUrl": "https://docs.anthropic.com/en/api/getting-started",
+      "officialDocLabel": "Anthropic Claude API – Getting Started"
+    },
+    {
+      "id": "m02-s01-q24",
+      "sessionId": "2.1",
+      "subtopicTag": "Economia Unitária (Unit Economics) e Matriz de Decisão Arquitetural em AIaaS",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Baseado na fórmula de teto operacional $N_{\\max} \\le \\frac{R \\cdot (1 - \\text{GM}_{\\text{alvo}}) - C_{\\text{infra}}}{\\bar{C}_{\\text{req}}}$ implementada em `calculateAiUnitEconomics` abaixo, qual é o orçamento mensal de tokens permitido (`allowedTokenBudgetUsd`) e o teto médio de requisições (`maxAvgRequestsForTargetMargin`) para esses parâmetros?",
+      "codeSnippet": "export function computeRequestCeiling() {\n  const monthlyArpuUsd = 25.0;\n  const fixedInfraPerUserUsd = 2.5;\n  const targetGrossMarginPct = 70;\n  const weightedAvgReqCostUsd = 0.05;\n\n  const allowedTokenBudgetUsd =\n    monthlyArpuUsd * (1 - targetGrossMarginPct / 100) - fixedInfraPerUserUsd;\n  const maxAvgRequestsForTargetMargin = Math.max(\n    0,\n    Math.floor(allowedTokenBudgetUsd / weightedAvgReqCostUsd)\n  );\n\n  return { allowedTokenBudgetUsd, maxAvgRequestsForTargetMargin };\n}",
+      "options": [
+        "`allowedTokenBudgetUsd: USD 7,50` e `maxAvgRequestsForTargetMargin: 150` req/mês.",
+        "`allowedTokenBudgetUsd: USD 15,00` e `maxAvgRequestsForTargetMargin: 300` req/mês.",
+        "`allowedTokenBudgetUsd: USD 22,50` e `maxAvgRequestsForTargetMargin: 450` req/mês.",
+        "`allowedTokenBudgetUsd: USD 5,00` e `maxAvgRequestsForTargetMargin: 100` req/mês."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Para garantir uma margem bruta alvo de $70\\%$ sobre um ARPU de USD 25,00, o custo total máximo por usuário (infraestrutura + tokens) é $25 \\times (1 - 0{,}70) = \\text{USD } 7{,}50$. Subtraindo o custo fixo de infraestrutura `fixedInfraPerUserUsd = USD 2,50`, resta exatamente `allowedTokenBudgetUsd = USD 5,00`. Dividindo pelo custo médio por requisição (`USD 0,05`), obtém-se $\\lfloor 5{,}00 / 0{,}05 \\rfloor = 100$ requisições/mês. A alternativa A esquece de descontar `fixedInfraPerUserUsd`. A alternativa B multiplica o ARPU por $0{,}70$ em vez de $(1 - 0{,}70)$. A alternativa C apenas subtrai a infraestrutura do ARPU sem aplicar a restrição de margem bruta.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#53-laboratorio-pratico-em-typescript-auditoria-de-moat-e-simulador-de-unit-economics",
+      "officialDocUrl": "https://platform.openai.com/docs/overview",
+      "officialDocLabel": "OpenAI Platform – Overview"
+    },
+    {
+      "id": "m02-s01-q25",
+      "sessionId": "2.1",
+      "subtopicTag": "Economia Unitária (Unit Economics) e Matriz de Decisão Arquitetural em AIaaS",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a comparação de configurações entre o Cenário A e o Cenário B do simulador do capítulo abaixo. Por que o Cenário A colapsa para margem bruta de 24,42% (`viable: false`) enquanto o Cenário B sustenta 88,60% (`viable: true`) com exatamente os mesmos volumes mensais de requisições por coorte?",
+      "codeSnippet": "// Cenário A (ARPU: USD 20.00, infra: USD 1.50) -> E[C_tokens]=USD 13.62 | GM=24.42% | viable=false\nconst scenarioAModelTiers = [\n  { modelName: 'frontier-only', inputUsdPerMillion: 3.0, cachedInputUsdPerMillion: 3.0, outputUsdPerMillion: 15.0, trafficShare: 1.0 },\n];\nconst scenarioACohorts = [\n  { name: 'casual', userShare: 0.65, monthlyRequests: 35, avgInputTokens: 28000, cacheHitRatio: 0, avgOutputTokens: 1100 },\n  { name: 'regular', userShare: 0.27, monthlyRequests: 140, avgInputTokens: 32000, cacheHitRatio: 0, avgOutputTokens: 1200 },\n  { name: 'power', userShare: 0.08, monthlyRequests: 650, avgInputTokens: 38000, cacheHitRatio: 0, avgOutputTokens: 1400 },\n];\n\n// Cenário B (ARPU: USD 29.00, infra: USD 2.20) -> E[C_tokens]=USD 1.11 | GM=88.60% | viable=true\nconst scenarioBModelTiers = [\n  { modelName: 'fast-router-tier', inputUsdPerMillion: 0.15, cachedInputUsdPerMillion: 0.0375, outputUsdPerMillion: 0.6, trafficShare: 0.75 },\n  { modelName: 'frontier-reasoning-tier', inputUsdPerMillion: 3.0, cachedInputUsdPerMillion: 0.3, outputUsdPerMillion: 15.0, trafficShare: 0.25 },\n];\nconst scenarioBCohorts = [\n  { name: 'casual', userShare: 0.65, monthlyRequests: 35, avgInputTokens: 28000, cacheHitRatio: 0.8, avgOutputTokens: 450 },\n  { name: 'regular', userShare: 0.27, monthlyRequests: 140, avgInputTokens: 32000, cacheHitRatio: 0.85, avgOutputTokens: 500 },\n  { name: 'power', userShare: 0.08, monthlyRequests: 650, avgInputTokens: 38000, cacheHitRatio: 0.85, avgOutputTokens: 600 },\n];",
+      "options": [
+        "Porque o Cenário B diminuiu `monthlyRequests` dos power users de 650 para 35 requisições por mês, eliminando o uso intensivo.",
+        "Porque no Cenário A apenas 8% de power users geram USD 87,75/mês em tokens (GM = -346,25%) sem caching e em modelo frontier-only, enquanto o Cenário B combina Roteamento Multi-Modelo (75% para fast-router-tier / 25% frontier), Prompt Caching (80%–85% hit ratio) e saídas estruturadas mais enxutas (`avgOutputTokens` reduzidos), derrubando $\\mathbb{E}[C_{\\text{tokens}}]$ em mais de $12\\times$ (USD 13,62 para USD 1,11) além do ARPU ajustado.",
+        "Porque o aumento do ARPU de USD 20,00 para USD 29,00 sozinho reduziria o custo esperado de tokens $\\mathbb{E}[C_{\\text{tokens}}]$ de USD 13,62 para USD 1,11, mesmo sem roteamento nem cache.",
+        "Porque no Cenário B a infraestrutura fixa por usuário (`USD 2,20`) é deduzida como crédito na fatura dos provedores de inferência."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A saída real do laboratório mostra que os mesmos `650 req/mês` da coorte `power` ($8\\%$ dos usuários) custam `USD 87,75/mês` no Cenário A (`GM = -346,25%`), puxando $\\mathbb{E}[C_{\\text{tokens}}]$ para `USD 13,62` e a margem global para `24,42%`. No Cenário B, três alavancas de engenharia atuam juntas sobre os mesmos volumes: (1) Roteamento Multi-Modelo $75\\%/25\\%$, (2) Prompt Caching ($80\\%\\text{–}85\\%$), e (3) redução de `avgOutputTokens` via saídas JSON enxutas (reduzindo tokens de saída, que são $5\\times$ mais caros), derrubando $\\mathbb{E}[C_{\\text{tokens}}]$ de `USD 13,62` para `USD 1,11` e elevando a margem para `88,60%`. A alternativa A é falsa porque `monthlyRequests` permanece idêntico (`35, 140, 650`). A alternativa C erra ao atribuir ao ARPU a queda absoluta do custo de tokens. A alternativa D inventa um subsídio inexistente para infraestrutura fixa.",
+      "chapterAnchor": "cap-01-panorama-mercado-aiaas#53-laboratorio-pratico-em-typescript-auditoria-de-moat-e-simulador-de-unit-economics",
+      "officialDocUrl": "https://www.sequoiacap.com/article/generative-ai-act-two/",
+      "officialDocLabel": "Sequoia Capital – Generative AI's Act Two"
+    }
+  ]
+}

@@ -144,7 +144,27 @@ export default defineConfig(() => {
     build: {
       outDir: 'dist',
       assetsDir: 'assets',
-      emptyOutDir: true
+      emptyOutDir: true,
+      chunkSizeWarningLimit: 900,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            const normalized = id.replace(/\\/g, '/');
+            if (normalized.includes('/node_modules/katex/')) {
+              return 'vendor-katex';
+            }
+            if (normalized.includes('/node_modules/firebase/') || normalized.includes('/node_modules/@firebase/')) {
+              return 'vendor-firebase';
+            }
+            if (normalized.includes('/node_modules/jszip/') || normalized.includes('/node_modules/marked/')) {
+              return 'vendor-content-tools';
+            }
+            if (normalized.includes('/node_modules/lucide-react/')) {
+              return 'vendor-icons';
+            }
+          }
+        }
+      }
     }
   };
 });

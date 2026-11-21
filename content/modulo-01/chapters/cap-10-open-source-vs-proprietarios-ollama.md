@@ -30,11 +30,14 @@ official_docs:
     section: "Usage, Streaming, Structured Outputs and Embeddings"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=WxYC9-hBM_g"
+  video_url: "https://www.youtube.com/watch?v=djphX0TzMM0"
   videos:
-    - title: "Run your own AI (but private) — Ollama Local Setup"
-      channel: "NetworkChuck"
-      url: "https://www.youtube.com/watch?v=WxYC9-hBM_g"
+    - title: "CRIAMOS NOSSO CHATGPT PARA PROGRAMAÇÃO COM O LLAMA3 CUSTOMIZADO"
+      channel: "Código Fonte TV"
+      url: "https://www.youtube.com/watch?v=djphX0TzMM0"
+    - title: "Explorando o Ollama: Baixando e Testando LLMs Open Source!"
+      channel: "Explorando o Mundo AI (Inteligência Artificial)"
+      url: "https://www.youtube.com/watch?v=T_3MBGo7fhU"
 ---
 
 # Sessão 1.10: Modelos Open-Source vs. Proprietários (OpenRouter e Ollama)

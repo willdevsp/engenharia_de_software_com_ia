@@ -25,11 +25,11 @@ official_docs:
     section: "Core concepts of Layers and Activations"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=aircAruvnKk"
+  video_url: "https://www.youtube.com/watch?v=i6l3R7j95x8"
   videos:
-    - title: "But what is a neural network? | Deep Learning Chapter 1"
-      channel: "3Blue1Brown"
-      url: "https://www.youtube.com/watch?v=aircAruvnKk"
+    - title: "O que é Rede Neural Artificial e como funciona | Pesquisador de IA explica | IA Descomplicada"
+      channel: "Programação Dinâmica"
+      url: "https://www.youtube.com/watch?v=i6l3R7j95x8"
 ---
 
 # Sessão 1.3: Fundamentos de Web Machine Learning

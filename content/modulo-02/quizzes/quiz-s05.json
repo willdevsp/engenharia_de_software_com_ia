@@ -1,0 +1,587 @@
+{
+  "sessionId": "2.5",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.5 — RAG Avançado na Prática (Orquestração, Resiliência e Observabilidade)",
+  "questions": [
+    {
+      "id": "m02-s05-q01",
+      "sessionId": "2.5",
+      "subtopicTag": "Orquestração Declarativa com LangChain.js e LCEL (Pipes e Runnables)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual vantagem arquitetural a interface polimórfica `Runnable<RunInput, RunOutput>` do LangChain Expression Language (LCEL) oferece em comparação a pipelines RAG escritos exclusivamente com funções `async/await` imperativas acopladas?",
+      "options": [
+        "Elimina a necessidade de validar variáveis de entrada ou tipar interfaces em TypeScript, convertendo tudo para `any` em tempo de execução.",
+        "Unifica todos os blocos (prompts, modelos, parsers e funções customizadas) sob um único contrato que herda nativamente `.invoke()`, `.batch()`, `.stream()`, `.streamEvents()` e propagação automática de `RunnableConfig` (`callbacks`, `tags`, `metadata` e `signal`).",
+        "Substitui o banco vetorial `pgvector` por um cache em memória dentro do navegador do usuário, dispensando conexões TCP com o PostgreSQL.",
+        "Compila instruções de prompt diretamente em código de máquina WebAssembly para evitar chamadas HTTP às APIs dos provedores de LLM."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No LCEL, todo componente implementa `Runnable<RunInput, RunOutput>`, permitindo compor grafos declarativos em que `.invoke()`, `.batch()`, `.stream()`, `.streamEvents()` e `RunnableConfig` (como `callbacks`, `tags`, `metadata` e `AbortSignal`) propagam-se uniformemente a todos os nós internos. A alternativa A está incorreta porque o LCEL preserva tipagem estrita genérica `<RunInput, RunOutput>` em TypeScript; a C está errada porque o LCEL é uma camada de orquestração e não substitui o armazenamento vetorial no `pgvector`; e a D é falsa porque prompts continuam sendo enviados via API aos provedores de modelo, não compilados em WebAssembly.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#orquestracao-langchain-js-e-lcel",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q02",
+      "sessionId": "2.5",
+      "subtopicTag": "Orquestração Declarativa com LangChain.js e LCEL (Pipes e Runnables)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao construir um pipeline RAG declarativo com LCEL em TypeScript, por que o padrão canônico combina `RunnablePassthrough.assign()` para o passo de recuperação com `RunnableParallel.from()` para formatar a entrada do `ChatPromptTemplate`?",
+      "options": [
+        "Porque `RunnablePassthrough.assign()` descarta automaticamente os campos originais (`question`, `tenantId`) para economizar memória RAM antes de chamar o banco vetorial.",
+        "Porque `RunnableParallel.from()` força a execução sequencial estrita em uma única thread síncrona, impedindo o uso de `Promise.all`.",
+        "Porque `RunnablePassthrough.assign()` enriquece o objeto de estado preservando as chaves recebidas (`question`, `tenantId`) enquanto anexa `chunks`, e `RunnableParallel.from()` permite computar múltiplas chaves do prompt concorrentemente a partir desse mesmo estado.",
+        "Porque apenas `RunnablePassthrough.assign()` possui autorização para se conectar ao PostgreSQL via SSL em ambientes Node.js."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em um fluxo RAG, se conectássemos o retriever diretamente por `.pipe(prompt)`, o retorno do retriever (`Chunk[]`) sobrescreveria a pergunta original `question` e `tenantId`. `RunnablePassthrough.assign({ chunks: retriever })` preserva todas as chaves de entrada e injeta `chunks` no estado, enquanto `RunnableParallel.from({ ... })` executa os ramos mapeados concorrentemente (via `Promise.all`) sobre o estado enriquecido. A alternativa A inverte exatamente o comportamento de `RunnablePassthrough.assign()`; a B é falsa porque `RunnableParallel` executa em paralelo via `Promise.all`, não sequencialmente; e a D é incorreta porque conexões SQL/SSL dependem do driver do banco dentro da função, não de uma primitiva LCEL.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#orquestracao-langchain-js-e-lcel",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q03",
+      "sessionId": "2.5",
+      "subtopicTag": "Orquestração Declarativa com LangChain.js e LCEL (Pipes e Runnables)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o pipeline LCEL em TypeScript abaixo e a invocação final com `.stream()`. O que acontece em tempo de execução se o modelo primário demorar mais de 10 segundos para concluir a geração?",
+      "codeSnippet": "const ragChain = RunnableSequence.from([\n  RunnablePassthrough.assign({ chunks: pgvectorRetriever }),\n  RunnableParallel.from({\n    question: (s: RagInput & { chunks: Chunk[] }) => s.question,\n    context: (s: RagInput & { chunks: Chunk[] }) =>\n      s.chunks.map((c, i) => `[FONTE ${i + 1} | ${c.source}]\\n${c.content}`).join(\"\\n\\n\"),\n  }),\n  prompt,\n  new ChatOpenAI({ model: \"gpt-4o-mini\", temperature: 0.1 }),\n  new StringOutputParser(),\n]);\n\nconst stream = await ragChain.stream(\n  { question: \"Qual o timeout do gateway?\", tenantId: \"acme-corp\" },\n  { signal: AbortSignal.timeout(10_000), tags: [\"rag-prod\"] }\n);",
+      "options": [
+        "O `RunnableConfig` propaga o `AbortSignal.timeout(10_000)` e as `tags` para os nós internos da sequência, abortando a requisição HTTP subjacente ao ultrapassar 10 segundos e emitindo os tokens anteriores em streaming.",
+        "O `StringOutputParser` bloqueia o streaming até que todos os tokens sejam gerados no servidor da OpenAI, só então aplicando o timeout de 10 segundos.",
+        "A chamada falha em tempo de compilação porque `RunnableSequence.from` não aceita funções inline dentro de `RunnableParallel.from`.",
+        "O `AbortSignal` é aplicado apenas ao `pgvectorRetriever` e ignorado pelo `ChatOpenAI`, mantendo a conexão aberta indefinidamente."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Um dos pilares do LCEL é a propagação automática do `RunnableConfig` (`signal`, `tags`, `metadata`, `callbacks`) ao longo de toda a cadeia composta por `RunnableSequence.from`, garantindo cancelamento cooperativo ponta a ponta via `AbortSignal` e emissão incremental de chunks pelo `StringOutputParser`. A alternativa B é falsa porque o `StringOutputParser` suporta transformação em streaming chunk a chunk sem aguardar o fim da geração; a C é incorreta porque funções TypeScript dentro de `RunnableParallel.from` são automaticamente convertidas em `RunnableLambda`; e a D está errada porque o `signal` de `RunnableConfig` é repassado a todos os Runnables da cadeia, inclusive ao cliente HTTP do `ChatOpenAI`.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#orquestracao-langchain-js-e-lcel",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q04",
+      "sessionId": "2.5",
+      "subtopicTag": "Orquestração Declarativa com LangChain.js e LCEL (Pipes e Runnables)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Observe o trecho TypeScript abaixo utilizando `RunnableLambda.from`. Por que devemos encapsular `fetchTenantChunks` nessa primitiva ao integrá-la em um pipeline LCEL?",
+      "codeSnippet": "interface RagInput { question: string; tenantId: string }\ninterface Chunk { id: string; content: string; source: string; score: number }\n\nconst pgvectorRetriever = RunnableLambda.from(\n  async (input: RagInput): Promise<Chunk[]> => {\n    return fetchTenantChunks(input.question, input.tenantId);\n  }\n);",
+      "options": [
+        "Para converter o retorno `Promise<Chunk[]>` em uma query SQL nativa executada diretamente no cliente do navegador.",
+        "Para impedir que a função receba parâmetros tipados da interface `RagInput` durante a chamada `.invoke()`.",
+        "Para desabilitar automaticamente todos os callbacks de observabilidade nessa etapa, mantendo a consulta SQL invisível nos traces.",
+        "Para elevar uma função TypeScript arbitrária ao contrato `Runnable<RagInput, Chunk[]>`, permitindo encadeamento com `.pipe()`, uso em `RunnablePassthrough.assign()`, batching e rastreamento automático nos callbacks."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. `RunnableLambda.from(fn)` adapta qualquer função pura ou assíncrona de TypeScript ao contrato `Runnable`, tornando-a componível via `.pipe()`, `RunnableSequence`, `RunnableParallel` e `RunnablePassthrough.assign()`, além de receber automaticamente `RunnableConfig` (para propagar `signal` e traces). A alternativa A é falsa porque `RunnableLambda` não transpila TypeScript para SQL no navegador; a B é incorreta porque a assinatura preserva exatamente a tipagem de `RagInput` para `Chunk[]`; e a C é o oposto da realidade, pois `RunnableLambda` passa a participar integralmente dos spans e callbacks da execução.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#orquestracao-langchain-js-e-lcel",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q05",
+      "sessionId": "2.5",
+      "subtopicTag": "Orquestração Declarativa com LangChain.js e LCEL (Pipes e Runnables)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Considere uma cadeia LCEL `prompt.pipe(chatModel).pipe(outputParser)` executada com `.streamEvents()` ou `.stream()`. Qual propriedade do design de `Runnable` possibilita reduzir o *Time to First Token* (TTFT) percebido pelo usuário final sem reescrever a lógica de cada etapa?",
+      "options": [
+        "Os `Runnables` implementam um protocolo de streaming baseado em iteradores assíncronos (`AsyncIterable`), no qual cada estágio transforma e repassa incrementos (`AIMessageChunk` -> `string`) assim que o provedor emite o primeiro token.",
+        "O LCEL pré-computa todas as respostas possíveis em tempo de build do TypeScript e as armazena em um arquivo estático JSON.",
+        "O método `.stream()` ignora a etapa do `prompt` e do retriever, enviando a pergunta bruta diretamente ao `StringOutputParser`.",
+        "O modelo passa a gerar todos os tokens simultaneamente em um único pacote UDP sem ordem sequencial."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No LCEL, cadeias implementam streaming em cascata via iteradores assíncronos: enquanto etapas anteriores (`prompt`) produzem seu valor completo, o `chatModel` transmite `AIMessageChunk`s via SSE/stream HTTP e o `StringOutputParser` converte cada chunk em `string` imediatamente para o consumidor, minimizando o TTFT sem código imperativo de buffering manual. A alternativa B é absurda porque respostas de LLMs são dinâmicas e geradas em inferência; a C é falsa pois todos os passos anteriores da cadeia são executados normalmente; e a D é tecnicamente impossível na geração autoregressiva de Transformers sobre HTTP/TCP.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#orquestracao-langchain-js-e-lcel",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q06",
+      "sessionId": "2.5",
+      "subtopicTag": "Recuperação Avançada: Query Rewriting, Multi-Query Retrieval e Reranking (RRF/Cross-Encoder)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que uma busca vetorial única direta (`embed(pergunta)` $\\rightarrow$ `pgvector LIMIT 15`) falha sistematicamente em chats corporativos de produção, mesmo quando o índice HNSW está bem calibrado?",
+      "options": [
+        "Porque o operador de distância de cosseno `<=>` no PostgreSQL retorna erro HTTP 429 quando há mais de 5 registros na tabela.",
+        "Porque vetores densos de embeddings só funcionam para textos em inglês e ignoram caracteres acentuados em português.",
+        "Por três causas estruturais: anáfora conversacional (pronomes dependentes do histórico), assimetria léxica (códigos literais como `ERR_SSL_PROTOCOL_ERROR` ou SKUs suavizados pelo embedding) e o efeito *Lost in the Middle* em janelas com muitos chunks.",
+        "Porque LLMs modernos não conseguem ler mais do que 256 tokens de contexto enviados dentro de uma mensagem `system`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Perguntas de acompanhamento com pronomes ('quanto tempo ele espera?') perdem suas âncoras semânticas sem *Query Rewriting*; termos exatos como códigos de erro ou SKUs são diluídos em embeddings densos sem busca léxica/BM25; e injetar 15 a 20 chunks diretamente no prompt ativa a curva de atenção em 'U' (*Lost in the Middle*), degradando a acurácia. A alternativa A é falsa porque `<=>` é uma operação local de banco de dados, não uma API com HTTP 429; a B é incorreta porque embeddings modernos são multilíngues; e a D é falsa pois modelos modernos suportam janelas de dezenas de milhares a milhões de tokens.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#recuperacao-avancada-query-rewrite-e-reranking",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q07",
+      "sessionId": "2.5",
+      "subtopicTag": "Recuperação Avançada: Query Rewriting, Multi-Query Retrieval e Reranking (RRF/Cross-Encoder)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Na arquitetura de recuperação em Dois Estágios (*Two-Stage Retrieval*), qual é a diferença fundamental entre um **Bi-Encoder** e um **Cross-Encoder**, e por que o Cross-Encoder é aplicado apenas sobre os Top-$30$ a Top-$50$ candidatos após o RRF?",
+      "options": [
+        "O Bi-Encoder processa query e chunk juntos na mesma matriz de atenção e por isso é mais lento; o Cross-Encoder pré-computa vetores isolados no índice HNSW.",
+        "O Bi-Encoder codifica query e documento separadamente (permitindo pré-indexação HNSW rápida em milhões de chunks, porém sem interação palavra a palavra), enquanto o Cross-Encoder processa `[CLS] query [SEP] chunk [SEP]` em *cross-attention* conjunta — capturando negações e nuances lógicas, mas com custo computacional inviável para varrer toda a base.",
+        "O Cross-Encoder funciona apenas com buscas SQL `ILIKE` e não utiliza camadas de Transformer.",
+        "Ambos possuem exatamente a mesma latência por documento, mas o Cross-Encoder é limitado por licença a no máximo 50 chamadas diárias."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Bi-Encoders geram vetores independentes para documento e consulta, possibilitando busca sublinear aproximada (HNSW) sobre milhões de registros em milissegundos, ao custo de não modelar atenção cruzada entre termos da query e do chunk. O Cross-Encoder (ex.: `BAAI/bge-reranker-v2-m3`) avalia o par `[CLS] query [SEP] chunk [SEP]` conjuntamente na rede Transformer, alcançando alta precisão semântica e filtrando os Top-$4$ ou Top-$5$ chunks para o LLM, mas exigindo um forward pass por candidato. A alternativa A inverte exatamente os papéis de Bi-Encoder e Cross-Encoder; a C é falsa pois Cross-Encoders são modelos Transformer neurais; e a D é incorreta porque a restrição a Top-30/Top-50 decorre do custo quadrático/linear de inferência por par, não de limite artificial de licença.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#recuperacao-avancada-query-rewrite-e-reranking",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q08",
+      "sessionId": "2.5",
+      "subtopicTag": "Recuperação Avançada: Query Rewriting, Multi-Query Retrieval e Reranking (RRF/Cross-Encoder)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na busca híbrida (vetor denso + BM25), por que aplicamos o algoritmo *Reciprocal Rank Fusion* $\\text{RRF}(d) = \\sum_{r \\in R} \\frac{1}{k + \\text{rank}_r(d)}$ com $k = 60$ em vez de somar diretamente a similaridade de cosseno com o score BM25? Qual é a pontuação RRF do `Chunk A` se ele ficar em $1^\\circ$ lugar no vetor e $3^\\circ$ no BM25?",
+      "options": [
+        "Porque o BM25 retorna sempre valores negativos; o score do `Chunk A` seria $-0{,}50$.",
+        "Porque a soma direta exige normalização trigonométrica; o score do `Chunk A` seria $\\frac{1}{60 + 1 + 3} \\approx 0{,}01563$.",
+        "Porque o score BM25 varia em $[0, 1]$ e o cosseno é ilimitado; o `Chunk A` obteria $\\frac{1}{1} + \\frac{1}{3} \\approx 1{,}33333$.",
+        "Porque a similaridade de cosseno vive em $[0, 1]$ enquanto o score BM25 é não-limitado (escalas incompatíveis), e o RRF agrega apenas posições ordinais suavizadas por $k=60$; logo, o `Chunk A` obtém $\\frac{1}{61} + \\frac{1}{63} \\approx 0{,}03226$."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Cosseno ($[0, 1]$) e BM25 (não-limitado, dependente de TF-IDF e tamanho do documento) têm escalas incompatíveis para soma direta. O RRF usa apenas o posto ordinal ($1$-indexado) de cada lista e a constante $k=60$ para evitar que um único $1^\\circ$ lugar isole documentos fortes em múltiplos recuperadores: $\\frac{1}{60+1} + \\frac{1}{60+3} = \\frac{1}{61} + \\frac{1}{63} \\approx 0{,}01639 + 0{,}01587 = 0{,}03226$. A alternativa A é falsa porque BM25 padrão não é negativo e o RRF soma frações positivas; a B aplica incorretamente uma única fração somando os ranks em vez de somar os recíprocos por lista; e a C inverte as escalas de BM25 e cosseno além de ignorar a constante $k=60$.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#recuperacao-avancada-query-rewrite-e-reranking",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q09",
+      "sessionId": "2.5",
+      "subtopicTag": "Recuperação Avançada: Query Rewriting, Multi-Query Retrieval e Reranking (RRF/Cross-Encoder)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Examine o trecho de `queryExpanderChain` abaixo. Qual problema específico de recuperação ele resolve ao combinar `MessagesPlaceholder(\"chatHistory\")`, `temperature: 0` e `.withStructuredOutput(QueryExpansionSchema)`?",
+      "codeSnippet": "const QueryExpansionSchema = z.object({\n  standaloneQuery: z.string(),\n  variants: z.array(z.string()).min(2).max(3),\n});\n\nexport const queryExpanderChain = ChatPromptTemplate.fromMessages([\n  [\"system\", \"Reescreva a dúvida resolvendo pronomes do histórico e gere 2-3 variações de busca técnica.\"],\n  new MessagesPlaceholder(\"chatHistory\"),\n  [\"human\", \"{question}\"],\n]).pipe(\n  new ChatOpenAI({ model: \"gpt-4o-mini\", temperature: 0 }).withStructuredOutput(QueryExpansionSchema)\n);",
+      "options": [
+        "Elimina a anáfora conversacional gerando uma `standaloneQuery` autossuficiente e produz de 2 a 3 variações tipadas via Zod (`variants`) para ampliar o recall com buscas paralelas (conceitual, léxica e orientada a sintomas).",
+        "Executa o algoritmo Cross-Encoder diretamente dentro do schema Zod sem necessidade de enviar prompts ao `ChatOpenAI`.",
+        "Substitui todas as palavras da pergunta do usuário por seus códigos MD5 antes de consultar o `pgvector`.",
+        "Garante que o banco de dados PostgreSQL armazene o histórico de chat em colunas `tsvector` automaticamente."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Ao receber `chatHistory` via `MessagesPlaceholder`, o modelo rápido (`gpt-4o-mini`, `temperature: 0`) desfaz ambiguidades pronominais na `standaloneQuery` e retorna um objeto Zod validado com 2 a 3 `variants` complementares para o padrão *Multi-Query Retrieval*, aumentando a cobertura contra vocabulário distinto nos documentos. A alternativa B é falsa pois Zod apenas valida o JSON estruturado retornado pelo `ChatOpenAI`, não executa um Cross-Encoder; a C é incorreta porque hashes MD5 destruiriam a semântica dos embeddings; e a D é falsa pois o chain apenas reescreve e expande consultas sem persistir dados no PostgreSQL.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#recuperacao-avancada-query-rewrite-e-reranking",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q10",
+      "sessionId": "2.5",
+      "subtopicTag": "Recuperação Avançada: Query Rewriting, Multi-Query Retrieval e Reranking (RRF/Cross-Encoder)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a implementação TypeScript de `reciprocalRankFusion` abaixo. Qual é o efeito exato da expressão `1 / (k + index + 1)` combinada à acumulação no `Map` indexado por `doc.id`?",
+      "codeSnippet": "export function reciprocalRankFusion(rankedLists: RankedDoc[][], k = 60): RankedDoc[] {\n  const fused = new Map<string, { doc: RankedDoc; score: number }>();\n\n  for (const list of rankedLists) {\n    list.forEach((doc, index) => {\n      const contribution = 1 / (k + index + 1);\n      const existing = fused.get(doc.id);\n      if (existing) existing.score += contribution;\n      else fused.set(doc.id, { doc: { ...doc }, score: contribution });\n    });\n  }\n\n  return Array.from(fused.values())\n    .sort((a, b) => b.score - a.score)\n    .map(({ doc, score }) => ({ ...doc, rrfScore: Number(score.toFixed(6)) }));\n}",
+      "options": [
+        "Substitui o score acumulado de um documento sempre que ele reaparece em uma nova lista, mantendo apenas o pior ranking.",
+        "Converte o índice 0-based em peso linear multiplicando por `k`, favorecendo documentos que aparecem apenas no final da última lista.",
+        "Converte o índice 0-based do array em posto 1-indexado (`index + 1`), soma a contribuição recíproca de cada lista onde o mesmo `doc.id` aparece (deduplicando resultados) e ordena do maior para o menor `rrfScore`.",
+        "Descarta automaticamente qualquer documento que não apareça simultaneamente em todas as listas de entrada."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Como arrays em JS/TS são 0-indexados, `index + 1` representa o $\\text{rank}_r(d) \\in \\{1, 2, \\dots\\}$ exigido pela fórmula RRF; o `Map` garante deduplicação por `doc.id` enquanto `existing.score += contribution` soma a evidência de múltiplos recuperadores/variações antes de ordenar por `b.score - a.score`. A alternativa A está errada porque `+=` acumula as contribuições em vez de sobrescrever com o pior ranking; a B é falsa porque a fórmula divide por `k + index + 1` (decaimento inverso), não multiplica; e a D é incorreta porque documentos presentes em apenas uma lista permanecem no `Map` com a sua contribuição unitária.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#recuperacao-avancada-query-rewrite-e-reranking",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q11",
+      "sessionId": "2.5",
+      "subtopicTag": "Resiliência em APIs de IA: Erros 429/503 e Exponential Backoff com Jitter",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que configurar um valor superdimensionado como `max_tokens: 4096` em requisições que geram respostas curtas de aproximadamente $200$ tokens provoca erros `429 Too Many Requests` prematuros na API?",
+      "options": [
+        "Porque valores altos de `max_tokens` fazem o SDK alterar o método HTTP de `POST` para `GET`, violando o protocolo da API.",
+        "Porque os rate limiters dos provedores reservam antecipadamente `prompt_tokens + max_tokens` contra a cota de TPM (*Tokens Per Minute*) na chegada da requisição, desperdiçando capacidade que só será parcialmente devolvida após a resposta.",
+        "Porque o parâmetro `max_tokens` define a quantidade de retries automáticos executados por segundo dentro do mesmo socket TCP.",
+        "Porque `max_tokens` acima de 1024 obriga o modelo a reprocessar todo o índice HNSW do banco vetorial em cada chamada."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Segundo a documentação de Rate Limits da OpenAI e práticas de produção dos provedores, a cota TPM reserva o teto estimado (`prompt_tokens + max_tokens`) no instante em que a requisição entra no gateway. Se você solicita `max_tokens: 4096` para saídas de $200$ tokens, consome $20\\times$ mais orçamento de admissão por requisição, saturando a cota TPM precocemente. A alternativa A é falsa pois `max_tokens` é um campo do payload JSON e não muda o verbo HTTP; a C confunde limite de tokens de saída com política de retentativas; e a D é falsa porque `max_tokens` não tem relação com índices HNSW.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#resiliencia-erros-429-503-backoff-jitter",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/rate-limits",
+      "officialDocLabel": "OpenAI – Rate Limits & Error Mitigation"
+    },
+    {
+      "id": "m02-s05-q12",
+      "sessionId": "2.5",
+      "subtopicTag": "Resiliência em APIs de IA: Erros 429/503 e Exponential Backoff com Jitter",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "De acordo com a taxonomia operacional de falhas em APIs de IA, qual combinação de status HTTP deve acionar **fail-fast imediato (sem retry)** em vez de entrar em loop de retentativas?",
+      "options": [
+        "`429 Too Many Requests` e `503 Overloaded`.",
+        "`500 Internal Server Error` e `502 Bad Gateway`.",
+        "`ETIMEDOUT` e `AbortError` em sockets presos.",
+        "`400 Bad Request` / `422` (payload inválido ou estouro de janela de contexto) e `401` / `403` / `404` (credenciais inválidas ou modelo inexistente)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Erros `400`/`422` (schema malformado ou *context length exceeded*) e `401`/`403`/`404` (chave de API inválida, sem permissão ou modelo inexistente) são falhas estruturais determinísticas: repetir a mesma requisição falhará sempre, desperdiçando latência e cota; o correto é falhar imediatamente, corrigir/podar o payload ou disparar alerta de configuração. As alternativas A, B e C listam exatamente as falhas transitórias ou de capacidade (`429`, `500`/`502`/`503`/`529`, `ETIMEDOUT`/`AbortError`) que justificam retry com backoff e teto de tentativas.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#resiliencia-erros-429-503-backoff-jitter",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/rate-limits",
+      "officialDocLabel": "OpenAI – Rate Limits & Error Mitigation"
+    },
+    {
+      "id": "m02-s05-q13",
+      "sessionId": "2.5",
+      "subtopicTag": "Resiliência em APIs de IA: Erros 429/503 e Exponential Backoff com Jitter",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual problema sistêmico é resolvido ao evoluir de um backoff exponencial puramente determinístico ($1\\text{ s}, 2\\text{ s}, 4\\text{ s}$) para a fórmula de **Full Jitter** $t_n = \\text{Uniform}(0, \\min(t_{\\max}, t_0 \\cdot 2^n))$?",
+      "options": [
+        "Mitiga o fenômeno de *Thundering Herd*: impede que centenas de requisições falhadas no mesmo instante voltem a disparar sincronizadas exatamente nos mesmos segundos, dispersando os retries uniformemente ao longo da janela $[0, \\text{teto}]$.",
+        "Garante que o tempo de espera cresça infinitamente sem teto máximo ($t_{\\max}$), bloqueando o servidor até a madrugada.",
+        "Converte erros `401 Unauthorized` em `200 OK` ao randomizar os cabeçalhos de autenticação.",
+        "Reduz a quantidade de tokens gerados pela OpenAI em exatamente $50\\%$ em cada nova tentativa."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Quando $200$ requisições recebem `429` juntas às 14:00:00, um backoff determinístico faz todas reentrarem exatamente às 14:00:01, derrubando a API em ondas repetidas (*Thundering Herd*). A amostragem uniforme entre $0$ e $\\min(t_{\\max}, t_0 \\cdot 2^n)$ (*Full Jitter*, recomendada pela OpenAI e AWS) espalha a carga ao longo de toda a janela. A alternativa B é falsa porque $\\min(t_{\\max}, \\dots)$ impõe explicitamente um teto máximo; a C é absurda porque jitter altera apenas o atraso temporal e nunca autoriza credenciais inválidas; e a D é incorreta porque jitter não reduz o consumo de tokens de uma geração.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#resiliencia-erros-429-503-backoff-jitter",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/rate-limits",
+      "officialDocLabel": "OpenAI – Rate Limits & Error Mitigation"
+    },
+    {
+      "id": "m02-s05-q14",
+      "sessionId": "2.5",
+      "subtopicTag": "Resiliência em APIs de IA: Erros 429/503 e Exponential Backoff com Jitter",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função `retryWithFullJitter` em TypeScript abaixo. Qual é o comportamento correto implementado quando a API retorna HTTP `429` acompanhado do cabeçalho `retry-after: 5`, considerando a política padrão (`baseDelayMs: 500`, `maxDelayMs: 12_000`) na primeira falha (`attempt = 0`)?",
+      "codeSnippet": "export async function retryWithFullJitter<T>(\n  op: (signal: AbortSignal) => Promise<T>,\n  policy: RetryPolicy = { maxAttempts: 4, baseDelayMs: 500, maxDelayMs: 12_000, timeoutMs: 6_000 }\n): Promise<T> {\n  for (let attempt = 0; attempt < policy.maxAttempts; attempt++) {\n    try {\n      return await op(AbortSignal.timeout(policy.timeoutMs));\n    } catch (err) {\n      if (attempt === policy.maxAttempts - 1 || !isRetryableAiError(err)) throw err;\n      const ceiling = Math.min(policy.maxDelayMs, policy.baseDelayMs * Math.pow(2, attempt));\n      const waitMs = Math.max(Math.random() * ceiling, getRetryAfterMs(err));\n      await new Promise((resolve) => setTimeout(resolve, waitMs));\n    }\n  }\n  throw new Error(\"Unreachable\");\n}",
+      "options": [
+        "Aguarda no máximo `500ms`, ignorando o cabeçalho `retry-after` para responder mais rápido ao cliente.",
+        "Relança o erro imediatamente porque `attempt === 0` é ignorado pelo loop `for`.",
+        "Calcula o teto `ceiling = 500ms`, sorteia o jitter em `[0, 500)` ms e aplica `Math.max(..., 5000)`, aguardando `5000ms` para honrar o `Retry-After` do servidor antes da nova tentativa com novo `AbortSignal.timeout(6_000)`.",
+        "Soma `500ms + 5000ms` e cancela permanentemente todas as outras requisições em andamento no Event Loop do Node.js."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em `attempt = 0`, `ceiling = Math.min(12000, 500 * 2^0) = 500`. Como `getRetryAfterMs(err)` converte `retry-after: 5` em `5000` ms e `Math.random() * 500` é sempre menor que `5000`, `Math.max(...)` garante que o cliente respeite os $5\\text{ s}$ solicitados pelo provedor (evitando desperdício de retry precoce) e gere um novo `AbortSignal.timeout(6_000)` na tentativa seguinte. A alternativa A falha porque `Math.max` prioriza o `Retry-After` quando maior que o jitter; a B é falsa porque a condição só relança na última tentativa (`attempt === maxAttempts - 1`) ou erro não-retentável; e a D é incorreta porque usa `Math.max` (não soma) e o timeout por tentativa não cancela outras requisições do Event Loop.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#resiliencia-erros-429-503-backoff-jitter",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/rate-limits",
+      "officialDocLabel": "OpenAI – Rate Limits & Error Mitigation"
+    },
+    {
+      "id": "m02-s05-q15",
+      "sessionId": "2.5",
+      "subtopicTag": "Resiliência em APIs de IA: Erros 429/503 e Exponential Backoff com Jitter",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine o código abaixo que acopla `.withRetry()` a um `Runnable` do LangChain.js usando `isRetryableAiError`. Por que é indispensável verificar `!isRetryableAiError(err)` e relançar `err` dentro do hook `onFailedAttempt`?",
+      "codeSnippet": "export function isRetryableAiError(err: unknown): boolean {\n  const e = err as { status?: number; code?: string; name?: string };\n  if (e?.name === \"TimeoutError\" || e?.name === \"AbortError\") return true;\n  if (e?.code === \"ECONNRESET\" || e?.code === \"ETIMEDOUT\") return true;\n  return [429, 500, 502, 503, 529].includes(e?.status ?? 0);\n}\n\nconst resilientStep = primaryGpt4o.withRetry({\n  stopAfterAttempt: 3,\n  onFailedAttempt: (err) => {\n    if (!isRetryableAiError(err)) throw err;\n  },\n});",
+      "options": [
+        "Porque o `.withRetry()` sem esse filtro sempre falha na primeira tentativa mesmo quando a API retorna `200 OK`.",
+        "Porque, sem esse guard, `.withRetry()` repetiria cegamente erros fatais como `400 Bad Request` ou `401 Unauthorized` até esgotar as 3 tentativas, adicionando latência inútil em vez de aplicar *fail-fast* ou acionar imediatamente o fallback.",
+        "Porque o `throw err` dentro de `onFailedAttempt` corrige automaticamente erros de sintaxe JSON retornados pelo usuário.",
+        "Porque apenas erros de status `401` e `404` estão incluídos na lista de retorno `true` de `isRetryableAiError`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Por padrão, mecanismos genéricos de retry tendem a tentar novamente qualquer exceção até `stopAfterAttempt`. Relançar `err` em `onFailedAttempt` quando `!isRetryableAiError(err)` interrompe imediatamente o ciclo de retentativas para falhas determinísticas (`400`, `401`, `403`, `404`, `422`), preservando latência e permitindo falha rápida ou roteamento imediato para um fallback. A alternativa A é falsa pois `withRetry` nunca atua em respostas `200 OK`; a C é incorreta porque `throw err` propaga o erro, não conserta JSON; e a D é falsa porque `isRetryableAiError` retorna `true` apenas para timeouts/erros de socket e status `[429, 500, 502, 503, 529]`.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#resiliencia-erros-429-503-backoff-jitter",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/rate-limits",
+      "officialDocLabel": "OpenAI – Rate Limits & Error Mitigation"
+    },
+    {
+      "id": "m02-s05-q16",
+      "sessionId": "2.5",
+      "subtopicTag": "Circuit Breakers e Fallback Chains Multi-Provedor em Produção",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é a função de cada um dos três estados da máquina de estados de um **Circuit Breaker** (`CLOSED`, `OPEN` e `HALF-OPEN`) ao proteger uma API de LLM em degradação prolongada?",
+      "options": [
+        "`CLOSED` bloqueia todas as chamadas por segurança; `OPEN` executa chamadas normalmente; `HALF-OPEN` duplica o número de tentativas paralelas no provedor primário.",
+        "`CLOSED` envia solicitações apenas em horário comercial; `OPEN` redireciona para o banco `pgvector`; `HALF-OPEN` desativa a validação Zod.",
+        "`CLOSED` opera normalmente contabilizando falhas até o limiar; `OPEN` bloqueia chamadas localmente em menos de $1\\text{ ms}$ (*fail-fast*) durante o *cooldown* para poupar sockets e latência; `HALF-OPEN` libera requisições canário após o *cooldown* para testar se o provedor se recuperou.",
+        "`CLOSED` encerra o processo Node.js; `OPEN` apaga os logs do dia; `HALF-OPEN` reinicia o servidor PostgreSQL."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em operação saudável (`CLOSED`), o disjuntor monitora falhas consecutivas; ao cruzar o limiar (ex.: 4 falhas), transita para `OPEN`, recusando chamadas localmente em $< 1\\text{ ms}$ durante o *cooldown* para evitar que cada usuário pague $15\\text{–}30\\text{ s}$ de retries e esgote o pool de conexões; após o *cooldown*, entra em `HALF-OPEN` e deixa passar sonda(s) canário para fechar novamente (`CLOSED`) se tiver sucesso ou reabrir (`OPEN`) se falhar. As alternativas A, B e D atribuem comportamentos invertidos ou inexistentes aos três estados.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#circuit-breakers-e-fallback-chains",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q17",
+      "sessionId": "2.5",
+      "subtopicTag": "Circuit Breakers e Fallback Chains Multi-Provedor em Produção",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao projetar uma *Fallback Chain* multi-provedor com `.withFallbacks()` no LangChain.js (`gpt-4o` $\\rightarrow$ `claude-3-7-sonnet` $\\rightarrow$ `gemini-2.5-flash`), qual prática garante o **Invariante de Portabilidade** entre modelos heterogêneos?",
+      "options": [
+        "Evitar instruções ou parâmetros proprietários exclusivos de um único provedor no prompt compartilhado e normalizar o formato final com um parser comum (`StringOutputParser` ou `.withStructuredOutput()`).",
+        "Concatenar o código-fonte do SDK da Anthropic dentro da mensagem `system` enviada para o `gpt-4o`.",
+        "Configurar temperaturas aleatórias acima de `1.8` apenas no modelo de fallback para compensar a mudança de arquitetura.",
+        "Exigir que os três provedores retornem exatamente os mesmos IDs internos de tokens BPE na resposta."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como `ChatOpenAI`, `ChatAnthropic` e `ChatGoogleGenerativeAI` possuem particularidades de API e vocabulário próprio, manter prompts neutros (sem diretivas/flags proprietárias exclusivas de um fornecedor) e acoplar um parser padronizado (`StringOutputParser` ou `.withStructuredOutput()`) assegura que os consumidores posteriores do pipeline recebam o mesmo contrato de saída independentemente de qual provedor respondeu. A alternativa B não faz sentido técnico; a C degradaria a consistência das respostas no fallback; e a D é impossível porque cada família de modelos utiliza seu próprio tokenizador e formato de IDs.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#circuit-breakers-e-fallback-chains",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q18",
+      "sessionId": "2.5",
+      "subtopicTag": "Circuit Breakers e Fallback Chains Multi-Provedor em Produção",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a implementação da classe `CircuitBreaker` abaixo. Suponha que o disjuntor está em `OPEN`, o `cooldownMs` de 30 segundos acaba de expirar e a próxima requisição entra como sonda canário (`HALF_OPEN`), mas lança uma exceção. O que acontece imediatamente no bloco `catch`?",
+      "codeSnippet": "export class CircuitBreaker {\n  private state: \"CLOSED\" | \"OPEN\" | \"HALF_OPEN\" = \"CLOSED\";\n  private failures = 0;\n  private openedAt = 0;\n\n  constructor(private readonly threshold = 4, private readonly cooldownMs = 30_000) {}\n\n  async execute<T>(fn: () => Promise<T>): Promise<T> {\n    if (this.state === \"OPEN\") {\n      if (Date.now() - this.openedAt < this.cooldownMs) {\n        throw new Error(\"CircuitBreakerOPEN: provedor primário isolado\");\n      }\n      this.state = \"HALF_OPEN\";\n    }\n    try {\n      const result = await fn();\n      this.failures = 0;\n      this.state = \"CLOSED\";\n      return result;\n    } catch (err) {\n      this.failures++;\n      if (this.state === \"HALF_OPEN\" || this.failures >= this.threshold) {\n        this.state = \"OPEN\";\n        this.openedAt = Date.now();\n      }\n      throw err;\n    }\n  }\n}",
+      "options": [
+        "O estado permanece em `HALF_OPEN` e só retorna para `OPEN` após acumular outras 4 novas falhas consecutivas.",
+        "O disjuntor muda imediatamente para `CLOSED` e zera `this.failures` para evitar bloquear o usuário seguinte.",
+        "O método engole o erro silenciosamente e retorna `undefined` em vez de acionar o próximo fallback.",
+        "Como `this.state === \"HALF_OPEN\"` é verdadeiro, o disjuntor reabre imediatamente para `OPEN`, atualiza `this.openedAt = Date.now()` iniciando um novo *cooldown* de 30 segundos e relança `err` para o fallback."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A condição `if (this.state === \"HALF_OPEN\" || this.failures >= this.threshold)` garante que qualquer falha da sonda canário em `HALF_OPEN` reabra imediatamente o circuito para `OPEN` e reinicie o timestamp `openedAt`, protegendo o sistema por mais um ciclo de *cooldown* de 30s enquanto `throw err` permite que `.withFallbacks()` assuma a execução. A alternativa A ignora o primeiro termo do operador `||`; a B descreve o comportamento do caminho de sucesso (`try`), não do `catch`; e a C é falsa porque `throw err` sempre propaga a exceção.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#circuit-breakers-e-fallback-chains",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q19",
+      "sessionId": "2.5",
+      "subtopicTag": "Circuit Breakers e Fallback Chains Multi-Provedor em Produção",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Observe a configuração do modelo primário e da cadeia de fallback abaixo. Por que definimos explicitamente `maxRetries: 0` e `timeout: 4_000` em `primaryModel` ao envolvê-lo com `CircuitBreaker` e `.withFallbacks()`?",
+      "codeSnippet": "const breaker = new CircuitBreaker(4, 30_000);\nconst primaryModel = new ChatOpenAI({\n  model: \"gpt-4o\",\n  temperature: 0.1,\n  timeout: 4_000,\n  maxRetries: 0,\n});\nconst guardedPrimary = RunnableLambda.from((input: unknown, config) =>\n  breaker.execute(() => primaryModel.invoke(input as never, config))\n);\n\nexport const multiProviderModel = guardedPrimary.withFallbacks({\n  fallbacks: [\n    new ChatAnthropic({ model: \"claude-3-7-sonnet-latest\", temperature: 0.1, maxTokens: 1024 }),\n    new ChatGoogleGenerativeAI({ model: \"gemini-2.5-flash\", temperature: 0.1 }),\n  ],\n});",
+      "options": [
+        "Porque `ChatOpenAI` não suporta streaming quando `maxRetries` é maior que zero.",
+        "Para impor um orçamento rígido de timeout de $4\\text{ s}$ no primário: sem `maxRetries: 0`, os retries internos padrão do SDK da OpenAI multiplicariam a espera silenciosamente antes de entregar o controle ao `CircuitBreaker` e acionar o `ChatAnthropic`.",
+        "Porque `withFallbacks` só aceita modelos cuja soma das temperaturas seja igual a `1.0`.",
+        "Para forçar o `ChatOpenAI` a executar sempre `gemini-2.5-flash` antes de tentar o `gpt-4o`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A documentação oficial de Fallbacks do LangChain.js recomenda desabilitar retries internos (`maxRetries: 0`) no modelo primário quando o objetivo é falhar dentro de um orçamento estrito de latência (*Timeout Budget* de $4\\text{ s}$) e comutar rapidamente para o provedor secundário (`claude-3-7-sonnet-latest`), deixando a política de contagem de falhas e retentativas sob controle explícito da nossa camada de resiliência. A alternativa A é falsa pois streaming funciona normalmente com `maxRetries > 0`; a C é inexistente; e a D inverte a ordem da cadeia, pois `guardedPrimary` sempre executa primeiro.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#circuit-breakers-e-fallback-chains",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q20",
+      "sessionId": "2.5",
+      "subtopicTag": "Circuit Breakers e Fallback Chains Multi-Provedor em Produção",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Durante uma queda de $5$ minutos da API primária sob alto tráfego concorrente, qual é o ganho de latência $P_{99}$ ao posicionar o `CircuitBreaker` dentro de `guardedPrimary` antes de `.withFallbacks({ fallbacks: [claude, gemini] })`, em comparação a usar apenas `.withFallbacks()` sem Circuit Breaker?",
+      "options": [
+        "Nenhum ganho; com ou sem Circuit Breaker todas as requisições precisam esperar o timeout completo de $4\\text{ s}$ no primário antes do fallback.",
+        "Com Circuit Breaker, a aplicação interrompe totalmente os fallbacks e retorna HTTP 500 para todos os clientes durante os $5$ minutos.",
+        "Após as primeiras falhas que abrem o disjuntor (`OPEN`), todas as requisições subsequentes durante o *cooldown* falham localmente em $< 1\\text{ ms}$ ao lançar `CircuitBreakerOPEN` e são desviadas instantaneamente para o provedor secundário saudável, eliminando os $4\\text{ s}$ de latência morta por requisição.",
+        "O Circuit Breaker acelera fisicamente a resposta dos servidores da OpenAI via redirecionamento BGP."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Usar apenas `.withFallbacks()` sem um Circuit Breaker faz com que $100\\%$ das requisições paguem o *timeout budget* inteiro (ex.: $4\\text{ s}$) tentando o provedor primário caído antes de acionar o `claude-3-7-sonnet`. Quando `guardedPrimary` verifica o `CircuitBreaker` em estado `OPEN`, ele lança `CircuitBreakerOPEN` em $< 1\\text{ ms}$ sem abrir conexão TCP, permitindo que `.withFallbacks()` roteie imediatamente ao fallback saudável. A alternativa A ignora o efeito *fail-fast* do estado `OPEN`; a B confunde isolamento do primário com queda total (pois o fallback captura a exceção do disjuntor); e a D é absurda.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#circuit-breakers-e-fallback-chains",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q21",
+      "sessionId": "2.5",
+      "subtopicTag": "Observabilidade e Tracing para LLMs: LangSmith, Langfuse e OpenTelemetry",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que `console.log` plano não é suficiente para diagnosticar falhas em pipelines RAG avançados em produção?",
+      "options": [
+        "Porque a maioria dos bugs em RAG é silenciosa (o endpoint retorna `HTTP 200` sem exceções, mas o *Query Rewriter* distorceu um termo, o filtro no `pgvector` retornou zero documentos ou o reranker descartou a evidência), e logs planos perdem a causalidade pai-filho em fluxos assíncronos concorrentes sem agregar tokens e custo em `USD`.",
+        "Porque o Node.js desativa a função `console.log` automaticamente sempre que `@langchain/openai` é importado no projeto.",
+        "Porque `console.log` só aceita variáveis numéricas e gera falha de segmentação ao imprimir strings UTF-8.",
+        "Porque provedores de LLM proíbem contratualmente qualquer registro local de timestamps de execução."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em sistemas probabilísticos multi-etapas, respostas incorretas frequentemente ocorrem com status `HTTP 200` devido à degradação semântica intermediária (reescrita ruim, chunks descartados no reranker, queda para fallback mais caro), e requisições concorrentes intercalam linhas soltas de `console.log` sem árvore causal (`traceId`/`spanId`) nem cálculo de tokens e custos em `USD`. As alternativas B, C e D são tecnicamente falsas sobre Node.js e contratos de provedores.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#observabilidade-tracing-langsmith-langfuse-otel",
+      "officialDocUrl": "https://docs.smith.langchain.com/observability/how_to_guides/trace_with_langchain",
+      "officialDocLabel": "LangSmith – Observability Quickstart (JS/TS)"
+    },
+    {
+      "id": "m02-s05-q22",
+      "sessionId": "2.5",
+      "subtopicTag": "Observabilidade e Tracing para LLMs: LangSmith, Langfuse e OpenTelemetry",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na hierarquia de telemetria adotada por plataformas como Langfuse e LangSmith (`Trace` $\\rightarrow$ `Span` $\\rightarrow$ `Generation`), qual é o papel específico de cada nível?",
+      "options": [
+        "`Trace` armazena apenas erros `500`; `Span` guarda chaves de API em texto claro; `Generation` executa queries SQL no PostgreSQL.",
+        "`Generation` é a transação de ponta a ponta do usuário; `Span` representa exclusivamente o hardware da GPU; `Trace` representa um único token de saída.",
+        "`Trace`, `Span` e `Generation` são sinônimos exatos usados aleatoriamente apenas para compatibilidade com JSON legado.",
+        "`Trace` representa a transação completa da requisição (`traceId`, `userId`, `sessionId`, latência e custo total em `USD`); `Span` representa qualquer etapa cronometrada intermediária (como retrieval, RRF e reranking com IDs/scores dos chunks); e `Generation` é o span especializado em chamadas de LLM/Embedding (modelo, prompts, TTFT, `input_tokens`, `cached_tokens`, `output_tokens` e custo)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Essa árvore hierárquica organiza a causalidade e o faturamento: um `Trace` agrupa toda a jornada de uma requisição (ex.: custo total `USD 0,0048`), contendo `Spans` para etapas não-LLM (como busca híbrida e reranking com os IDs dos chunks selecionados) e `Generations` para cada invocação de modelo (capturando hiperparâmetros, TTFT e detalhamento de tokens incluindo `cached_tokens`). As alternativas A, B e C invertem ou distorcem completamente os três conceitos da especificação.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#observabilidade-tracing-langsmith-langfuse-otel",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    },
+    {
+      "id": "m02-s05-q23",
+      "sessionId": "2.5",
+      "subtopicTag": "Observabilidade e Tracing para LLMs: LangSmith, Langfuse e OpenTelemetry",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Uma equipe de engenharia em saúde ou finanças no Brasil precisa de rastreabilidade de custos em `USD`, integração nativa com LangChain.js e facilidade de conformidade com a LGPD mantendo toda a telemetria dentro da própria infraestrutura (*self-hosted* via Docker/Kubernetes). Qual escolha arquitetural atende diretamente a esses requisitos segundo o comparativo da sessão?",
+      "options": [
+        "Remover toda telemetria do sistema para evitar armazenar metadados de latência.",
+        "**Langfuse** (licença Open-Source MIT com suporte a deploy *self-hosted* e integração modular via `@langfuse/otel` + `@langfuse/langchain`) ou **OpenTelemetry (`gen_ai.*`)** exportando para coletores internos sob controle da empresa.",
+        "Habilitar exclusivamente `console.debug` sem correlação de spans e enviar o stdout para um bucket público.",
+        "Utilizar exclusivamente `LANGSMITH_TRACING=true` apontando para o SaaS público sem Enterprise VPC ou mascaramento de cliente."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Langfuse possui licença MIT open-source permitindo hospedagem *self-hosted* em Docker/K8s (facilitando conformidade LGPD mantendo dados na VPC interna) além de tabelas nativas de uso e custo, enquanto OpenTelemetry com atributos `gen_ai.*` oferece um padrão aberto vendor-agnostic com *scrubbing* total no OTel Collector. A alternativa A deixa o sistema cego em produção; a C viola segurança e não entrega rastreabilidade causal ou de custos; e a D envia payloads brutos a um SaaS proprietário externo sem isolamento VPC ou mascaramento.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#observabilidade-tracing-langsmith-langfuse-otel",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    },
+    {
+      "id": "m02-s05-q24",
+      "sessionId": "2.5",
+      "subtopicTag": "Observabilidade e Tracing para LLMs: LangSmith, Langfuse e OpenTelemetry",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise as duas abordagens de instrumentação em TypeScript abaixo. Qual afirmação descreve corretamente o papel de `traceable()` na Opção A e da dupla `LangfuseSpanProcessor` + `CallbackHandler` na Opção B?",
+      "codeSnippet": "// Opção A: LangSmith\nimport { traceable } from \"langsmith/traceable\";\nexport const tracedReranker = traceable(\n  async (query: string, docs: { id: string; content: string }[]) => docs.slice(0, 4),\n  { name: \"cross-encoder-reranker\", run_type: \"retriever\" }\n);\n\n// Opção B: Langfuse + OpenTelemetry\nimport { NodeTracerProvider } from \"@opentelemetry/sdk-trace-node\";\nimport { LangfuseSpanProcessor } from \"@langfuse/otel\";\nimport { CallbackHandler } from \"@langfuse/langchain\";\n\nnew NodeTracerProvider({ spanProcessors: [new LangfuseSpanProcessor()] }).register();\nexport const createTraceCallbacks = (userId: string, sessionId: string) => [\n  new CallbackHandler({ userId, sessionId }),\n];",
+      "options": [
+        "Na Opção A, `traceable()` é usada apenas para gerar embeddings vetoriais; na Opção B, `LangfuseSpanProcessor` substitui o compilador TypeScript.",
+        "Ambas as opções desligam automaticamente o tracing de modelos `ChatOpenAI` para impedir o registro de tokens.",
+        "Na Opção A, `traceable()` instrumenta funções JS/TS customizadas fora das primitivas nativas do LangChain (classificando-a como `run_type: \"retriever\"`); na Opção B, `LangfuseSpanProcessor` integra o `NodeTracerProvider` do OpenTelemetry ao Langfuse enquanto `CallbackHandler` captura os eventos LangChain associados a `userId` e `sessionId`.",
+        "Na Opção B, é obrigatório instanciar um novo `NodeTracerProvider().register()` dentro de cada requisição HTTP para que o `CallbackHandler` funcione."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Enquanto cadeias LCEL no LangSmith são rastreadas automaticamente via `LANGSMITH_TRACING=true`, funções puras externas (como chamadas HTTP ao Cross-Encoder) precisam do wrapper `traceable()` para aparecer como nós filhos no trace. Na arquitetura moderna do Langfuse com OTel, o `NodeTracerProvider` é registrado globalmente na inicialização da aplicação com `LangfuseSpanProcessor`, e o `CallbackHandler` é criado com `userId`/`sessionId` para ligar os callbacks do LangChain.js ao contexto de trace. As alternativas A e B inventam efeitos inexistentes; e a D é um anti-padrão clássico, pois o provider global deve ser registrado apenas uma vez na inicialização do processo.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#observabilidade-tracing-langsmith-langfuse-otel",
+      "officialDocUrl": "https://docs.smith.langchain.com/observability/how_to_guides/trace_with_langchain",
+      "officialDocLabel": "LangSmith – Observability Quickstart (JS/TS)"
+    },
+    {
+      "id": "m02-s05-q25",
+      "sessionId": "2.5",
+      "subtopicTag": "Observabilidade e Tracing para LLMs: LangSmith, Langfuse e OpenTelemetry",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Qual benefício arquitetural as **OpenTelemetry GenAI Semantic Conventions** (`gen_ai.operation.name`, `gen_ai.provider.name`, `gen_ai.request.model`, `gen_ai.usage.input_tokens`, `gen_ai.usage.output_tokens`) trazem para pipelines multi-provedor?",
+      "options": [
+        "Forçam todos os provedores de LLM a cobrarem exatamente o mesmo preço por milhão de tokens.",
+        "Exigem que a aplicação reescreva todo o código de inferência sempre que a equipe alternar o backend de observabilidade entre Langfuse, Grafana Tempo ou Datadog.",
+        "Substituem a necessidade de calcular `output_tokens`, pois assumem que entrada e saída possuem sempre o mesmo valor monetário.",
+        "Padronizam atributos semânticos portáveis e *vendor-agnostic* nos spans de IA, permitindo trocar exportadores OTLP (Langfuse, Grafana Tempo, Datadog) e aplicar políticas centralizadas de *scrubbing* no OTel Collector sem acoplar a instrumentação a um único fornecedor."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Ao emitir spans padronizados com atributos `gen_ai.*` da CNCF OpenTelemetry, a aplicação desacopla sua instrumentação do fornecedor de visualização/armazenamento: o mesmo OTel Collector pode aplicar higienização de dados sensíveis (*scrubbing*) e exportar via OTLP para Langfuse, Grafana Tempo ou Datadog sem alterar o código de negócio. As alternativas A e C são falsas sobre precificação e contabilização de tokens; e a B descreve exatamente o acoplamento proprietário que o OpenTelemetry elimina.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#observabilidade-tracing-langsmith-langfuse-otel",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    },
+    {
+      "id": "m02-s05-q26",
+      "sessionId": "2.5",
+      "subtopicTag": "Laboratório Prático: Pipeline RAG Avançado com Reranking, Fallbacks e Tracing",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "No laboratório `src/rag/advanced-rag-pipeline.ts`, por que a função `crossEncoderRerank(expanded.standaloneQuery, fused, 4)` recebe `expanded.standaloneQuery` como referência da consulta em vez da `input.question` bruta original do usuário?",
+      "options": [
+        "Porque `input.question` é deletada do objeto `PipelineInput` antes da execução de `auditedRetriever`.",
+        "Porque se a pergunta original contiver pronomes ambíguos dependentes do histórico (ex.: 'qual o timeout dele?'), o Cross-Encoder avaliaria o par `[CLS] qual o timeout dele? [SEP] chunk [SEP]` sem saber a qual componente 'dele' se refere; usar `standaloneQuery` garante desambiguação completa na atenção cruzada.",
+        "Porque `crossEncoderRerank` exige que todas as queries tenham exatamente 4 palavras em inglês.",
+        "Porque `expanded.standaloneQuery` já contém a resposta final gerada pelo `claude-3-7-sonnet`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Cross-Encoder não recebe o histórico completo do chat (`chatHistory`), apenas o par `(query, chunk)`. Portanto, enviar `input.question` com anáfora não resolvida degradaria drasticamente a pontuação de relevância do reranker, ao passo que `expanded.standaloneQuery` carrega todos os substantivos e entidades técnicas restauradas pelo `expansionChain`. A alternativa A é falsa pois `input` permanece íntegro durante o span; a C e a D são incorretas sobre o contrato e propósito de `standaloneQuery`.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#laboratorio-rag-avancado-resiliente",
+      "officialDocUrl": "https://js.langchain.com/docs/concepts/lcel/",
+      "officialDocLabel": "LangChain.js – LCEL (LangChain Expression Language)"
+    },
+    {
+      "id": "m02-s05-q27",
+      "sessionId": "2.5",
+      "subtopicTag": "Laboratório Prático: Pipeline RAG Avançado com Reranking, Fallbacks e Tracing",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a instrumentação manual com OpenTelemetry dentro de `auditedRetriever` no laboratório prático. Qual combinação de práticas garante visibilidade sobre falhas silenciosas de recuperação sem vazar spans abertos em caso de erro?",
+      "codeSnippet": "const auditedRetriever = RunnableLambda.from(async (input: PipelineInput) =>\n  tracer.startActiveSpan(\"rag.advanced_retrieval\", async (span) => {\n    try {\n      const expanded = await expansionChain.invoke({ question: input.question, chatHistory: input.chatHistory });\n      const batches = await Promise.all([expanded.standaloneQuery, ...expanded.searchQueries].map((q) => hybridSearchStore(q, input.tenantId)));\n      const fused = reciprocalRankFusion(batches.flat(), 60);\n      const topChunks = await crossEncoderRerank(expanded.standaloneQuery, fused, 4);\n\n      span.setAttributes({\n        \"rag.standalone_query\": expanded.standaloneQuery,\n        \"rag.candidates_fused\": fused.length,\n        \"rag.top_chunk_ids\": topChunks.map((c) => c.id).join(\",\"),\n      });\n      span.setStatus({ code: SpanStatusCode.OK });\n      return { standaloneQuery: expanded.standaloneQuery, chunks: topChunks };\n    } catch (err) {\n      span.recordException(err as Error);\n      span.setStatus({ code: SpanStatusCode.ERROR });\n      throw err;\n    } finally {\n      span.end();\n    }\n  })\n);",
+      "options": [
+        "Registrar atributos semânticos (`rag.standalone_query`, `rag.candidates_fused`, `rag.top_chunk_ids`) para auditar o que foi buscado/selecionado, gravar a exceção e status `ERROR` no `catch` relançando `err`, e invocar `span.end()` dentro de `finally` para fechar o span em qualquer desfecho.",
+        "Remover o bloco `finally` para manter o span aberto indefinidamente após exceções no `pgvector`.",
+        "Substituir `throw err` no `catch` por `return { standaloneQuery: \"\", chunks: [] }` para esconder exceções de rede da aplicação.",
+        "Executar `span.end()` antes de `expansionChain.invoke()` para medir sempre latência igual a `0 ms`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Registrar `rag.standalone_query`, `rag.candidates_fused` e `rag.top_chunk_ids` no span permite diagnosticar por que uma resposta foi alucinada mesmo com `HTTP 200`, enquanto `catch` grava a exceção (`recordException`), sinaliza `SpanStatusCode.ERROR`, relança o erro para não mascarar falhas e o `finally` garante que `span.end()` sempre execute (evitando memory leaks e spans órfãos). A alternativa B provoca vazamento de spans abertos; a C engole falhas graves mascarando erros operacionais; e a D inviabilizaria a medição de duração real e rejeitaria atributos adicionados depois.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#laboratorio-rag-avancado-resiliente",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    },
+    {
+      "id": "m02-s05-q28",
+      "sessionId": "2.5",
+      "subtopicTag": "Laboratório Prático: Pipeline RAG Avançado com Reranking, Fallbacks e Tracing",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao inspecionar um trace completo da função `executeAuditedRag` no painel do Langfuse durante uma falha do modelo primário (`expansionChain`: $380\\text{ ms}$ / `USD 0,0004`; `rag.advanced_retrieval`: $42\\text{ ms}$; tentativa `gpt-4o`: $4.000\\text{ ms}$ abortada por timeout; fallback `claude-3-7-sonnet`: $490\\text{ ms}$ / `USD 0,0062`), qual diagnóstico arquitetural é objetivamente confirmado pelo trace?",
+      "options": [
+        "O gargalo de $4.000\\text{ ms}$ ocorreu na consulta SQL HNSW do `pgvector`, exigindo troca imediata de banco de dados.",
+        "O modelo `gpt-4o` gerou a resposta final em $490\\text{ ms}$ e o fallback `claude-3-7-sonnet` não foi chamado.",
+        "Mais de $80\\%$ da latência total ($4.000\\text{ ms}$ de $\\sim 4.912\\text{ ms}$) veio do timeout budget do primário antes da comutação bem-sucedida para o `claude-3-7-sonnet`, enquanto o retrieval levou apenas $42\\text{ ms}$ e o custo total consolidado foi `USD 0,0066`.",
+        "A requisição falhou com `HTTP 504` para o usuário final porque o fallback `claude-3-7-sonnet` excedeu o orçamento."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O trace atribui precisamente cada fatia de latência e custo: o retrieval completo levou $42\\text{ ms}$, o `expansionChain` consumiu $380\\text{ ms}$ (`USD 0,0004`), o `gpt-4o` consumiu seu orçamento de $4.000\\text{ ms}$ antes de abortar e o fallback `claude-3-7-sonnet` concluiu a entrega em $490\\text{ ms}$ (`USD 0,0062`), totalizando $\\sim 4.912\\text{ ms}$ e `USD 0,0066`. A alternativa A erra ao culpar o banco (`rag.advanced_retrieval` durou apenas $42\\text{ ms}$); a B inverte qual modelo falhou e qual respondeu; e a D é falsa porque o fallback completou a geração em $490\\text{ ms}$ sem falhar.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#laboratorio-rag-avancado-resiliente",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    },
+    {
+      "id": "m02-s05-q29",
+      "sessionId": "2.5",
+      "subtopicTag": "Laboratório Prático: Pipeline RAG Avançado com Reranking, Fallbacks e Tracing",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "No laboratório prático, o `CircuitBreaker` encapsula apenas `primaryGpt4o` (`guardedPrimary`) antes de `.withFallbacks({ fallbacks: [claude, gemini] })`. Qual bug crítico de resiliência aconteceria se o engenheiro envolvesse a cadeia inteira `resilientGenerator` (já com fallbacks) por fora com um único `CircuitBreaker`?",
+      "options": [
+        "O TypeScript recusaria importar `ChatAnthropic` e `ChatGoogleGenerativeAI` no mesmo arquivo.",
+        "Caso ocorressem falhas simultâneas suficientes para abrir o disjuntor externo, ele bloquearia localmente toda a cadeia incluindo `claude-3-7-sonnet` e `gemini-2.5-flash` — anulando a alta disponibilidade multi-provedor — além de impedir o isolamento granular do `gpt-4o` enquanto o fallback ainda estivesse saudável.",
+        "O `CircuitBreaker` externo duplicaria a temperatura do `gpt-4o` a cada nova requisição.",
+        "A cadeia passaria a executar os três modelos em paralelo para toda requisição válida, triplicando a resposta concatenada."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O `CircuitBreaker` existe para isolar um recurso específico degradado (o provedor primário `gpt-4o`) para que o tráfego desvie rapidamente para provedores independentes (`claude-3-7-sonnet`, `gemini-2.5-flash`). Envolver o `resilientGenerator` inteiro por fora faria o disjuntor impedir chamadas aos fallbacks saudáveis quando aberto, além de nunca disparar para proteger o primário enquanto os fallbacks estivessem absorvendo as falhas com sucesso. As alternativas A, C e D são tecnicamente falsas.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#laboratorio-rag-avancado-resiliente",
+      "officialDocUrl": "https://js.langchain.com/docs/how_to/fallbacks/",
+      "officialDocLabel": "LangChain.js – How to Add Fallbacks to a Runnable"
+    },
+    {
+      "id": "m02-s05-q30",
+      "sessionId": "2.5",
+      "subtopicTag": "Laboratório Prático: Pipeline RAG Avançado com Reranking, Fallbacks e Tracing",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na função `executeAuditedRag(input)` do laboratório final, qual é o papel conjunto do `NodeTracerProvider` registrado com `LangfuseSpanProcessor` e das opções `{ callbacks: [langfuseHandler], tags: [\"modulo-02\", \"rag-avancado\"], metadata: { tenantId: input.tenantId } }` passadas a `fullRagChain.invoke(...)`?",
+      "options": [
+        "Impedir que `fullRagChain` utilize `RunnablePassthrough.assign()` para preservar `retrieval.chunks`.",
+        "Substituir a autenticação JWT da API HTTP e gravar a chave secreta da OpenAI dentro do campo `metadata`.",
+        "Converter o formato de resposta do `StringOutputParser` em um arquivo binário PDF antes de retornar ao chamador.",
+        "Correlacionar em um único trace unificado tanto os eventos nativos dos Runnables LCEL (capturados pelo `CallbackHandler` com `userId`, `sessionId`, `tags` e `tenantId`) quanto os spans manuais OpenTelemetry (`rag.advanced_retrieval` exportados pelo `LangfuseSpanProcessor`), garantindo auditoria ponta a ponta multi-tenant."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Registrar `LangfuseSpanProcessor` no `NodeTracerProvider` captura spans manuais OpenTelemetry (como `rag.advanced_retrieval` com atributos dos chunks), enquanto o `CallbackHandler` em `RunnableConfig` captura todas as gerações e cadeias do LangChain.js atribuídas a `userId`, `sessionId`, `tags` e `metadata.tenantId`, unificando a depuração semântica e de custos por tenant. A alternativa A é falsa pois `RunnablePassthrough.assign` funciona normalmente junto a `callbacks`; a B confunde telemetria com autenticação e exporia segredos; e a C é inventada.",
+      "chapterAnchor": "cap-05-rag-avancado-resiliencia-observabilidade#laboratorio-rag-avancado-resiliente",
+      "officialDocUrl": "https://langfuse.com/docs/model-usage-and-cost",
+      "officialDocLabel": "Langfuse – Model Usage & Cost Tracking"
+    }
+  ]
+}

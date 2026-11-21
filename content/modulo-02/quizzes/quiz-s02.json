@@ -1,0 +1,587 @@
+{
+  "sessionId": "2.2",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.2 — Principais Provedores de Modelos de IA e Comparativo de APIs",
+  "questions": [
+    {
+      "id": "m02-s02-q01",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema OpenAI: Responses API, Chat Completions, Modelos o1/o3, Batch e Realtime",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No ecossistema do SDK `openai` para Node.js/TypeScript, qual é a diferença fundamental entre a primitiva clássica `client.chat.completions.create` e a moderna `client.responses.create`?",
+      "options": [
+        "A `chat.completions.create` é exclusiva para modelos de áudio em tempo real via UDP, enquanto a `responses.create` aceita apenas prompts de texto sem suporte a ferramentas.",
+        "A `chat.completions.create` opera de modo estritamente stateless sobre um array linear `messages[]` (servindo de padrão universal de compatibilidade), enquanto a `responses.create` unifica fluxos agênticos com estado opcional encadeado (`previous_response_id`), política `store: false`, itens polimórficos e ferramentas gerenciadas como `web_search_preview` e `file_search`.",
+        "A `responses.create` exige obrigatoriamente o envio de um arquivo JSONL via `files.create` antes de qualquer chamada síncrona.",
+        "A `chat.completions.create` desativa o faturamento de tokens de saída em modelos GPT-4o, ao passo que a `responses.create` cobra apenas os tokens de entrada."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A Chat Completions API é stateless e centrada no array `messages[]`, permanecendo como denominador comum compatível com gateways e servidores locais (OpenRouter, vLLM, Ollama). Já a Responses API (`client.responses.create`) introduz estado opcional encadeado via `previous_response_id` (ou Zero Data Retention via `store: false`), parâmetros dedicados (`instructions`, `input`), ferramentas nativas gerenciadas (`web_search_preview`, `file_search`) e saída estruturada (`output_text` e `output`). A alternativa A inverte e distorce o suporte a ferramentas e áudio (que pertence à Realtime API). A C descreve o fluxo da Batch API, não da Responses API. A D é falsa, pois ambas faturam entrada e saída conforme a tabela de cada modelo.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-openai-api-e-sdk",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q02",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema OpenAI: Responses API, Chat Completions, Modelos o1/o3, Batch e Realtime",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Ao utilizar modelos de raciocínio System 2 da OpenAI (`o1` e `o3-mini`) em produção, qual armadilha operacional ocorre com o parâmetro de limite de tokens de saída e com o faturamento?",
+      "options": [
+        "Os reasoning tokens internos são gerados gratuitamente pela OpenAI e não consomem o limite configurado em `max_output_tokens` ou `max_completion_tokens`.",
+        "O parâmetro `temperature` deve ser obrigatoriamente ajustado para `0.0` em `o3-mini`, caso contrário a API rejeita a chamada com erro HTTP 400.",
+        "Os reasoning tokens ocultos consomem o mesmo teto definido em `max_output_tokens` (ou `max_completion_tokens` na Chat Completions) e são faturados integralmente como tokens de saída; se o teto for baixo (ex.: `300`), o raciocínio pode esgotar a cota e retornar texto visível vazio.",
+        "Modelos `o1` e `o3-mini` utilizam o campo legado `max_tokens` na Chat Completions API para separar o orçamento de pensamento do texto final."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Modelos System 2 (`o1`/`o3-mini`) executam test-time compute gerando uma cadeia oculta de reasoning tokens via Reinforcement Learning antes de emitir o texto visível. Esses tokens ocultos entram tanto no consumo do teto (`max_output_tokens` na Responses API ou `max_completion_tokens` na Chat Completions) quanto na cobrança de saída (`P_out`). Um teto muito baixo pode ser totalmente absorvido pelo raciocínio interno, resultando em resposta visível vazia. A alternativa A erra ao afirmar que reasoning tokens são gratuitos e fora do teto. A B é falsa, pois a temperatura é fixada pelo servidor nesses modelos (controla-se `reasoning: { effort }`). A D erra porque `o1`/`o3-mini` substituem `max_tokens` por `max_completion_tokens` na Chat Completions.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-openai-api-e-sdk",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q03",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema OpenAI: Responses API, Chat Completions, Modelos o1/o3, Batch e Realtime",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Uma equipe está arquitetando duas integrações de voz speech-to-speech com a OpenAI Realtime API (`gpt-4o-realtime-preview`): (1) um aplicativo web/mobile para atendimento direto do usuário final e (2) um servidor Node.js conectado a um gateway de telefonia SIP/Twilio. Qual protocolo de transporte deve ser adotado em cada cenário?",
+      "options": [
+        "WebRTC (`RTCPeerConnection` com áudio Opus sobre UDP e tokens efêmeros emitidos pelo backend) para o cliente web/mobile; WebSockets (`wss://api.openai.com/v1/realtime` com frames JSON PCM16) para a integração server-to-server com SIP/Twilio.",
+        "WebSockets com áudio PCM16 diretamente no navegador sem backend, e WebRTC apenas para comunicação entre servidores Node.js e troncos SIP.",
+        "Batch API em arquivos JSONL via `batches.create` para o cliente web/mobile e REST HTTP/1.1 síncrono para a telefonia SIP.",
+        "Ambos os cenários devem usar o pipeline sequencial STT -> LLM -> TTS sobre Webhooks HTTP para eliminar a latência sub-segundo."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Para clientes finais (browsers e mobile), a recomendação oficial da Realtime API é WebRTC (`RTCPeerConnection`), pois trafega áudio Opus sobre UDP com controle adaptativo de jitter em redes móveis/Wi-Fi e usa ephemeral tokens gerados pelo backend para proteger a chave da API. Já para backends Node.js conectados a telefonia SIP/Twilio (server-to-server), utilizam-se WebSockets (`wss://api.openai.com/v1/realtime`) trocando frames JSON com áudio PCM16 (`input_audio_buffer.append`, `response.audio.delta`). A alternativa B inverte os casos de uso e exporia a API key permanente no browser. A C confunde voz em tempo real com processamento assíncrono em lote de 24h. A D descreve exatamente o pipeline lento que a Realtime API elimina.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-openai-api-e-sdk",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q04",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema OpenAI: Responses API, Chat Completions, Modelos o1/o3, Batch e Realtime",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função TypeScript abaixo que utiliza o SDK `openai` para executar análise arquitetural com o modelo `o3-mini` via Responses API. Qual alteração é necessária para aumentar o orçamento de raciocínio e evitar que o texto final seja truncado?",
+      "codeSnippet": "import OpenAI from 'openai';\nconst openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });\n\nexport async function analyzeSpec(spec: string) {\n  const res = await openai.responses.create({\n    model: 'o3-mini',\n    reasoning: { effort: 'low' },\n    instructions: 'Você é um arquiteto de sistemas distribuídos. Aponte gargalos.',\n    input: spec,\n    max_output_tokens: 300,\n  });\n  return {\n    text: res.output_text,\n    reasoningTokens: res.usage?.output_tokens_details?.reasoning_tokens ?? 0,\n  };\n}",
+      "options": [
+        "Adicionar `temperature: 0.1` e substituir `instructions` por uma mensagem `system` dentro de `input`.",
+        "Trocar `openai.responses.create` por `openai.batches.create` mantendo `max_output_tokens: 300`, pois o modo batch ignora limites de tokens.",
+        "Remover `max_output_tokens` e passar `thinking: { type: 'enabled', budget_tokens: 4096 }`, que é a assinatura padrão do `o3-mini`.",
+        "Elevar `reasoning: { effort: 'high' }` (ou `'medium'`) e ampliar significativamente `max_output_tokens` (por exemplo, para `4096` ou mais), garantindo folga para os reasoning tokens e para o texto visível em `res.output_text`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Na `responses.create` com `o3-mini`, o esforço de raciocínio é regulado por `reasoning: { effort: 'low' | 'medium' | 'high' }`, e os reasoning tokens internos consomem `max_output_tokens`. Com apenas `300` tokens no teto e `effort: 'high'`, os tokens de pensamento esgotariam toda a cota antes de produzir `res.output_text`; por isso é necessário elevar tanto o `effort` quanto `max_output_tokens`. A alternativa A falha porque modelos `o3-mini` têm `temperature` fixada pelo servidor. A B está errada porque `batches.create` é assíncrono (janela de 24h) e também respeita os tetos de saída definidos em cada linha do JSONL. A C mistura a assinatura do Anthropic Extended Thinking (`thinking.budget_tokens`) com o SDK da OpenAI.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-openai-api-e-sdk",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q05",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema OpenAI: Responses API, Chat Completions, Modelos o1/o3, Batch e Realtime",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Uma pipeline de catalogação noturna precisa processar 120.000 descrições de produtos com `gpt-4o`, tolerando latência de até 24 horas para reduzir o custo de entrada de `USD 2,50` para `USD 1,25` por 1M de tokens. Analise o snippet abaixo: por que o código falhará ou ficará incompleto antes de criar o lote na OpenAI Batch API?",
+      "codeSnippet": "import fs from 'node:fs';\nimport OpenAI from 'openai';\nconst openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });\n\nexport async function dispatchOpenAIBatch(jsonlPath: string) {\n  const file = await openai.files.create({\n    file: fs.createReadStream(jsonlPath),\n    purpose: 'assistants',\n  });\n  return openai.batches.create({\n    input_file_id: file.id,\n    endpoint: '/v1/responses',\n    completion_window: '1h',\n  });\n}",
+      "options": [
+        "Porque `openai.files.create` aceita apenas imagens PNG e não arquivos `.jsonl`.",
+        "Porque o upload do arquivo deve declarar `purpose: 'batch'` (não `'assistants'`) e a Batch API exige `completion_window: '24h'` (não `'1h'`) para processar na capacidade ociosa com `50%` de desconto.",
+        "Porque `endpoint` na Batch API aceita exclusivamente `'/v1/realtime'` e nunca `'/v1/responses'`.",
+        "Porque `openai.batches.create` exige o parâmetro `thinking: { type: 'enabled', budget_tokens: 1024 }` para obter o desconto de `50%`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O fluxo correto da OpenAI Batch API requer que o arquivo JSONL seja enviado via `openai.files.create` com `purpose: 'batch'` e que `openai.batches.create` especifique `completion_window: '24h'` junto ao `endpoint` alvo (como `'/v1/responses'`), habilitando o processamento em capacidade ociosa com `50%` de desconto. A alternativa A é falsa, pois arquivos JSONL são o formato padrão da Batch API. A C é falsa porque `'/v1/realtime'` é transporte WebSocket/WebRTC interativo, não endpoint de lote. A D mistura parâmetros exclusivos do SDK da Anthropic.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-openai-api-e-sdk",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q06",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Anthropic: Messages API, Claude 3.7 Sonnet, Extended Thinking e Cache",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Quais características estruturais definem uma requisição válida na Messages API do SDK `@anthropic-ai/sdk` (`client.messages.create`) com o modelo `claude-3-7-sonnet-20250219`?",
+      "options": [
+        "O parâmetro `system` deve ficar dentro do array `messages[]` com `role: 'system'`, e `max_tokens` é opcional em qualquer modo.",
+        "O modelo `claude-3-7-sonnet-20250219` opera apenas em modo instantâneo, sendo necessário trocar para outro checkpoint exclusivo de raciocínio para usar Extended Thinking.",
+        "O parâmetro `system` ocupa o nível raiz da requisição (separado de `messages[]`), `max_tokens` é sempre obrigatório, e o `claude-3-7-sonnet-20250219` possui arquitetura híbrida capaz de alternar entre respostas instantâneas e Extended Thinking nos mesmos pesos.",
+        "A Messages API usa `instructions` e `input` no lugar de `system` e `messages`, devolvendo apenas uma string simples em `response.output_text`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na Anthropic Messages API (`client.messages.create`), `system` é passado no nível raiz da requisição (não dentro de `messages[]`), `max_tokens` é obrigatório em todas as chamadas e `claude-3-7-sonnet-20250219` unifica os modos instantâneo e Extended Thinking nos mesmos pesos. A alternativa A descreve o padrão da Chat Completions da OpenAI (`role: 'system'` e `max_tokens` opcional), incorreto na Anthropic. A B ignora que a grande inovação do Claude 3.7 Sonnet é justamente a arquitetura híbrida em um único modelo. A D descreve a assinatura da OpenAI Responses API.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-anthropic-claude-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q07",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Anthropic: Messages API, Claude 3.7 Sonnet, Extended Thinking e Cache",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao habilitar o modo Extended Thinking na Anthropic (`thinking: { type: 'enabled', budget_tokens }`), qual conjunto de invariantes contratuais é imposto pelo servidor e pelo SDK `@anthropic-ai/sdk`?",
+      "options": [
+        "O teto total deve obedecer estritamente a $N_{\\text{max}} > B_{\\text{think}} \\ge 1024$ (enviando `max_tokens <= budget_tokens` retorna HTTP `400 Bad Request`), e `temperature` permanece fixada em `1` pelo servidor.",
+        "O campo `budget_tokens` tem valor máximo de `512` e é somado automaticamente além de `max_tokens`, permitindo enviar `max_tokens: 200` com `budget_tokens: 400`.",
+        "O Extended Thinking exige `temperature: 0.0` explícito no payload para garantir determinismo matemático do bloco `thinking`.",
+        "O `budget_tokens` pode ser definido como `0` para ativar raciocínio ilimitado sem impacto de latência nem faturamento."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Conforme o contrato do Extended Thinking no Claude 3.7 Sonnet, `budget_tokens` tem mínimo de `1024` tokens e é consumido dentro do limite `max_tokens`, exigindo $N_{\\text{max}} > B_{\\text{think}} \\ge 1024$ sob pena de HTTP `400 Bad Request` caso não sobre espaço para a resposta visível; além disso, `temperature` fica travada em `1` no servidor. A alternativa B erra o limite mínimo (`1024`, não máximo `512`) e erra ao dizer que `budget_tokens` é somado além de `max_tokens`. A C erra porque passar `temperature` customizada viola a regra da temperatura travada em `1`. A D contradiz o piso mínimo de `1024` e o fato de tokens de pensamento consumirem tempo e orçamento.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-anthropic-claude-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q08",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Anthropic: Messages API, Claude 3.7 Sonnet, Extended Thinking e Cache",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Uma ferramenta de code review envia um manual de arquitetura de 40.000 tokens no bloco `system` em 60 requisições espaçadas a cada 2 minutos para o `claude-3-7-sonnet-20250219` (preço base `USD 3,00` in / `USD 15,00` out por 1M), marcando o bloco com `cache_control: { type: 'ephemeral' }`. Como se comporta o KV-Cache granular da Anthropic nesse padrão de tráfego?",
+      "options": [
+        "O cache expira a cada 30 segundos, exigindo regravação a `2,0x` em todas as 60 chamadas.",
+        "Apenas um único breakpoint global por conta é permitido e as leituras em cache não oferecem desconto financeiro, apenas redução de latência.",
+        "O Cache Granular exige usar o método separado `client.caches.create` antes de chamar `messages.create`, pois `cache_control` não existe na Messages API.",
+        "Como o intervalo de 2 minutos é menor que o TTL de 5 minutos (renovado a cada hit), apenas a primeira chamada paga a gravação de `1,25x` (`USD 3,75 / 1M` em `cache_creation_input_tokens`), e as 59 leituras seguintes em `cache_read_input_tokens` recebem `90%` de desconto (`0,10x`, ou `USD 0,30 / 1M`)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. O cache granular da Anthropic suporta até 4 breakpoints explícitos (`cache_control: { type: 'ephemeral' }`) em `tools`, `system` ou mensagens iniciais, com TTL de 5 minutos renovado a cada hit. A gravação inicial custa `1,25x` o valor base de entrada (`USD 3,75 / 1M` no Claude 3.7 Sonnet), e cada leitura subsequente dentro do TTL recebe `90%` de desconto (`0,10x`, apenas `USD 0,30 / 1M`). A alternativa A erra o TTL (`5` minutos, não `30` segundos) e o multiplicador (`1,25x`). A B erra o limite de breakpoints (`4`) e ignora o desconto de `90%`. A C confunde a API da Anthropic com o método `ai.caches.create` do SDK `@google/genai`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-anthropic-claude-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q09",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Anthropic: Messages API, Claude 3.7 Sonnet, Extended Thinking e Cache",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Examine o código TypeScript abaixo usando `@anthropic-ai/sdk`. Qual problema imediato impedirá a execução bem-sucedida ou a extração correta da resposta final em `reviewDiff`?",
+      "codeSnippet": "import Anthropic from '@anthropic-ai/sdk';\nconst anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });\n\nexport async function reviewDiff(guidelines: string, diff: string) {\n  const response = await anthropic.messages.create({\n    model: 'claude-3-7-sonnet-20250219',\n    max_tokens: 4096,\n    temperature: 0.2,\n    thinking: { type: 'enabled', budget_tokens: 4096 },\n    system: [{ type: 'text', text: guidelines, cache_control: { type: 'ephemeral' } }],\n    messages: [{ role: 'user', content: diff }],\n  });\n  return response.content[0].type === 'text' ? response.content[0].text : '';\n}",
+      "options": [
+        "O campo `system` não aceita arrays de blocos com `cache_control`, devendo ser movido para `messages[0]` com `role: 'system'`.",
+        "O campo `budget_tokens` de `4096` só é aceito quando `model` é `'claude-3-5-haiku'`.",
+        "Há três violações: `max_tokens` (`4096`) não é estritamente maior que `budget_tokens` (`4096`), `temperature: 0.2` conflita com Extended Thinking (travado em `1`), e assumir `response.content[0]` como `'text'` falha porque o bloco `'thinking'` aparece antes do bloco `'text'`.",
+        "Falta importar e chamar `anthropic.models.generateContent` em vez de `anthropic.messages.create`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O código viola simultaneamente as regras contratuais da Anthropic Messages API: (1) exige `max_tokens > budget_tokens` (aqui `4096 === 4096`, disparando HTTP `400`); (2) com Extended Thinking habilitado, não se deve passar `temperature` customizada (permanece fixada em `1`); e (3) `response.content` traz primeiro `{ type: 'thinking', thinking, signature }` (ou `redacted_thinking`) e só depois `{ type: 'text', text }`, exigindo `.find((b) => b.type === 'text')` em vez de indexar `[0]`. A alternativa A erra porque `system` na raiz aceita justamente arrays de blocos para marcar `cache_control`. A B inventa restrição de modelo. A D mistura com o método do SDK `@google/genai`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-anthropic-claude-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q10",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Anthropic: Messages API, Claude 3.7 Sonnet, Extended Thinking e Cache",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Em fluxos agênticos multi-turno com `tool_use` usando Extended Thinking no Claude 3.7 Sonnet, qual cuidado de integridade deve ser tomado ao reenviar os turnos anteriores do assistente em `messages[]`?",
+      "options": [
+        "Deve-se apagar os blocos `thinking` e manter apenas os blocos `text` para reduzir custos de contexto.",
+        "Os blocos `thinking` (ou `redacted_thinking`) emitidos no turno anterior do assistente devem ser reenviados preservando intacta sua propriedade `signature` criptográfica.",
+        "Deve-se alterar manualmente o texto de `thinking` e remover `signature` para que o modelo gere um novo raciocínio compatível.",
+        "Deve-se converter os blocos `thinking` em entradas dentro do array `tools` da requisição seguinte."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A documentação e o contrato do Extended Thinking determinam que cada bloco `thinking` retorna uma `signature` criptográfica (ou bloco `redacted_thinking`) que deve ser preservada intacta ao reenviar o histórico em chamadas multi-turno com `tool_use`, permitindo ao servidor validar a autenticidade da cadeia de raciocínio entre o uso de ferramentas e a continuação do turno. As alternativas A e C quebram essa continuidade verificável ou invalidam a assinatura. A D confunde blocos de conteúdo da mensagem do assistente com declarações de ferramentas.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-anthropic-claude-api",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q11",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Google Gemini: SDK @google/genai, Janela 1M-2M, Multimodalidade e Grounding",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Sobre o SDK oficial atual do Google Gemini em TypeScript/Node.js e sua arquitetura multimodal, qual afirmação reflete corretamente as especificações da família Gemini 2.0/2.5?",
+      "options": [
+        "Deve-se utilizar o pacote `@google/genai` via `new GoogleGenAI()` (substituindo o legado `@google/generative-ai`), aproveitando uma arquitetura early-fusion que tokeniza texto, áudio, vídeo com som e PDFs visuais no mesmo espaço de representação sem exigir Whisper ou OCR externos.",
+        "O pacote oficial recomendado para projetos novos em Gemini 2.5 é `@google/generative-ai`, pois `@google/genai` funciona apenas para Vertex AI corporativo.",
+        "A multimodalidade do Gemini converte internamente vídeos e PDFs em texto puro usando um serviço externo de OCR/Whisper separado do modelo antes da inferência.",
+        "O cliente `new GoogleGenAI()` só aceita chaves da OpenAI ou Anthropic via `OPENAI_API_KEY`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Projetos novos devem usar exclusivamente `@google/genai` (`new GoogleGenAI()`), que unifica a Gemini Developer API (`GEMINI_API_KEY`) e Vertex AI, substituindo o legado `@google/generative-ai`. Além disso, a família Gemini foi projetada com fusão multimodal antecipada (early-fusion), processando texto, áudio, vídeo e PDFs visuais diretamente no mesmo espaço de representação. A alternativa B inverte o status dos SDKs. A C descreve o anti-padrão de costura externa (stitching) de Whisper/OCR, não a arquitetura early-fusion do Gemini. A D é tecnicamente incorreta quanto à autenticação.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-google-gemini-api",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q12",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Google Gemini: SDK @google/genai, Janela 1M-2M, Multimodalidade e Grounding",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Um sistema precisa analisar vídeos técnicos longos (até 1,5 GB) e repositórios inteiros com até 850.000 tokens de contexto, otimizando tanto a ingestão de mídia quanto o custo repetitivo de prefill. Qual desenho arquitetural segue as primitivas oficiais do ecossistema Google Gemini?",
+      "options": [
+        "Fatiar o vídeo em milhares de frames JPEG em Base64 dentro de `inlineData` em cada turno, pois a Files API aceita no máximo 10 MB.",
+        "Dividir o repositório em blocos de 128k tokens para caber na janela máxima do `gemini-2.5-pro`, pois modelos Gemini não excedem 128k tokens.",
+        "Substituir `gemini-2.5-pro` por `o3-mini` com `googleSearch` ativado, já que apenas a OpenAI suporta janelas acima de 200k tokens.",
+        "Subir a mídia pesada pela Files API (`ai.files.upload`, que suporta até 2 GB) associada a `createPartFromUri`, escolher `gemini-2.5-pro` (raciocínio profundo) ou `gemini-2.5-flash` (alto volume/baixa latência) aproveitando a janela nativa de $1\\text{M}$ tokens, e usar Context Caching explícito (`ai.caches.create`) ou Implicit Caching para evitar recalcular o prefill."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Tanto `gemini-2.5-pro` quanto `gemini-2.5-flash` suportam janela nativa de `1.048.576` ($1\\text{M}$) tokens (com histórico de até $2\\text{M}$ na família 1.5 Pro), aceitam mídia pesada via `ai.files.upload` (até `2 GB`) referenciada por `createPartFromUri`, e evitam recomputar o prefill de grandes arquivos repetidamente via Implicit Caching ou Context Caching explícito (`ai.caches.create`). A alternativa A erra o limite da Files API (`2 GB`, não `10 MB`) e gera sobrecarga de Base64. A B subestima a janela nativa de $1\\text{M}$–$2\\text{M}$. A C atribui erroneamente limite $>200\\text{k}$ e `googleSearch` ao `o3-mini`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-google-gemini-api",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q13",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Google Gemini: SDK @google/genai, Janela 1M-2M, Multimodalidade e Grounding",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a chamada abaixo utilizando o SDK `@google/genai` com Grounding with Google Search habilitado. Como o código deve extrair as consultas realmente executadas pelo buscador e os links das fontes retornadas?",
+      "codeSnippet": "import { GoogleGenAI } from '@google/genai';\nconst ai = new GoogleGenAI();\n\nexport async function checkCveWithSearch(query: string) {\n  const response = await ai.models.generateContent({\n    model: 'gemini-2.5-pro',\n    contents: query,\n    config: {\n      temperature: 0.2,\n      tools: [{ googleSearch: {} }],\n    },\n  });\n  // Extração dos metadados de grounding aqui\n}",
+      "options": [
+        "Lendo `response.output_text` e `response.usage.output_tokens_details.reasoning_tokens`.",
+        "Lendo `const meta = response.candidates?.[0]?.groundingMetadata;` e acessando `meta?.webSearchQueries` para as consultas e `meta?.groundingChunks` (`c.web?.title`, `c.web?.uri`) para as fontes reais.",
+        "Chamando `ai.files.upload` novamente sobre `response.text` para descobrir quais URLs o modelo consultou.",
+        "Lendo `response.content.find(b => b.type === 'thinking')`, pois as URLs do Google Search são gravadas dentro do bloco de raciocínio."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No `@google/genai`, ao passar `tools: [{ googleSearch: {} }]` dentro de `config`, o resultado devolve `response.candidates?.[0]?.groundingMetadata` contendo `webSearchQueries` (consultas feitas no Google), `groundingChunks` (títulos e URIs reais em `c.web`) e `groundingSupports` (vínculo exato entre trechos da resposta e fontes). A alternativa A referencia campos do SDK `openai` Responses API. A C inventa um uso inexistente de `ai.files.upload`. A D referencia blocos de retorno da Anthropic Messages API.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-google-gemini-api",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q14",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Google Gemini: SDK @google/genai, Janela 1M-2M, Multimodalidade e Grounding",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Observe o snippet TypeScript com `@google/genai` que analisa um relatório em PDF e também realiza triagem rápida de logs. Qual afirmação descreve corretamente o papel de `createPartFromUri` e da escolha dos modelos no código?",
+      "codeSnippet": "import { GoogleGenAI, createPartFromUri } from '@google/genai';\nconst ai = new GoogleGenAI();\n\nexport async function analyzePdf(pdfPath: string, question: string) {\n  const uploaded = await ai.files.upload({ file: pdfPath, config: { mimeType: 'application/pdf' } });\n  const res = await ai.models.generateContent({\n    model: 'gemini-2.5-pro',\n    contents: [createPartFromUri(uploaded.uri!, uploaded.mimeType!), question],\n  });\n  return res.text ?? '';\n}\n\nexport async function classifyLog(logLine: string) {\n  const res = await ai.models.generateContent({\n    model: 'gemini-2.5-flash',\n    contents: `Classifique a severidade (LOW, HIGH, CRITICAL): ${logLine}`,\n  });\n  return res.text ?? '';\n}",
+      "options": [
+        "`createPartFromUri` converte o PDF em CSV antes do envio, enquanto `gemini-2.5-flash` possui janela de apenas 8k tokens.",
+        "`ai.files.upload` envia o arquivo diretamente para o Google Search público, tornando o PDF indexável por qualquer usuário na web.",
+        "`createPartFromUri` referencia o ponteiro do PDF enviado via Files API (`uploaded.uri` e `mimeType`) diretamente em `contents` para inferência multimodal nativa com `gemini-2.5-pro`, enquanto `classifyLog` usa `gemini-2.5-flash` (`USD 0,15 / 1M` in e `USD 0,60 / 1M` out) otimizado para alto volume e baixa latência.",
+        "O parâmetro `contents` em `ai.models.generateContent` não aceita strings puras como em `classifyLog`, exigindo sempre `createPartFromUri` mesmo para texto."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. `ai.files.upload` carrega o PDF na Files API e `createPartFromUri(uploaded.uri!, uploaded.mimeType!)` cria a parte multimodal referenciada em `contents` sem embutir bytes gigantes em Base64, aproveitando a compreensão nativa do `gemini-2.5-pro`. Já `classifyLog` emprega `gemini-2.5-flash` por ser otimizado para triagem rápida e econômica (`USD 0,15` in / `USD 0,60` out por 1M tokens). A alternativa A inventa conversão para CSV e subestima a janela do Flash (que também é de $1\\text{M}$ tokens). A B confunde Files API privada com indexação pública de busca. A D erra porque `contents` aceita strings diretamente.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-google-gemini-api",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q15",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Google Gemini: SDK @google/genai, Janela 1M-2M, Multimodalidade e Grounding",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na estrutura `groundingMetadata` retornada pelo Google Gemini quando `googleSearch` é acionado, qual é a função específica do campo `groundingSupports` em relação a `groundingChunks` e `webSearchQueries`?",
+      "options": [
+        "`groundingSupports` estabelece o vínculo exato entre trechos específicos do texto gerado na resposta e os índices das fontes em `groundingChunks`, permitindo auditoria fina e citações precisas sem inventar links.",
+        "`groundingSupports` lista apenas os erros HTTP ocorridos durante o scraping manual do backend do desenvolvedor.",
+        "`groundingSupports` armazena os tokens de raciocínio oculto equivalentes ao `reasoning_tokens` da OpenAI.",
+        "`groundingSupports` contém a lista de parâmetros inválidos que foram removidos automaticamente do `config`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Dentro de `groundingMetadata`, `webSearchQueries` informa quais queries foram disparadas no Google Search, `groundingChunks` lista os documentos recuperados (título e URI) e `groundingSupports` mapeia exatamente quais trechos da resposta gerada são sustentados por quais fontes. Isso garante auditabilidade factual sem manter scrapers próprios. As alternativas B, C e D atribuem funções fictícias a `groundingSupports`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-google-gemini-api",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q16",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Hugging Face: InferenceClient, Inference Providers e Dedicated Endpoints",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No ecossistema JavaScript/TypeScript do Hugging Face (`@huggingface/inference` v3+), qual classe substituiu a classe depreciada `HfInference` e que tipo de modelos esse SDK unifica?",
+      "options": [
+        "A classe `GoogleGenAI`, voltada exclusivamente para modelos proprietários fechados da família Gemini.",
+        "A classe `Anthropic`, que expõe apenas `messages.create` para modelos Claude.",
+        "A classe `HfLegacyRunner`, limitada apenas a modelos de classificação binária de sentimento.",
+        "A classe `InferenceClient` (instanciada com `new InferenceClient(process.env.HF_TOKEN)`), que unifica tanto LLMs open-weights (`Llama`, `Qwen`, `DeepSeek`, `Mistral`) quanto modelos especializados de embeddings, OCR/VLM, Whisper (ASR) e Text-to-Speech (TTS)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A partir da versão `3.x` de `@huggingface/inference`, a antiga classe `HfInference` foi depreciada em favor de `InferenceClient`, que atua como cliente unificado para modelos open-weights e modelos especializados (embeddings via `featureExtraction`, legenda/OCR via `imageToText`, ASR/Whisper e síntese de voz via `textToSpeech`). As alternativas A e B citam classes de outros provedores. A C inventa um nome de classe inexistente.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-hugging-face-inference",
+      "officialDocUrl": "https://huggingface.co/docs/huggingface.js/inference/README",
+      "officialDocLabel": "Hugging Face JS Inference SDK"
+    },
+    {
+      "id": "m02-s02-q17",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Hugging Face: InferenceClient, Inference Providers e Dedicated Endpoints",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Como funciona o roteamento de **Inference Providers** na arquitetura v3+ do `InferenceClient` do Hugging Face?",
+      "options": [
+        "Cada provedor exige instalar um pacote npm diferente e reescrever todos os payloads de chat.",
+        "O `InferenceClient` executa os pesos de 70 bilhões de parâmetros localmente dentro do navegador do usuário usando WebAssembly.",
+        "O `InferenceClient` atua como gateway unificado permitindo direcionar chamadas por meio do parâmetro `provider` para parceiros de hardware especializado (`together`, `groq`, `fireworks-ai`, `sambanova`, `cerebras`, `novita`, `hf-inference`) ou `'auto'` para seleção dinâmica com melhor disponibilidade.",
+        "O parâmetro `provider` aceita exclusivamente `'openai'` e `'anthropic'`, redirecionando modelos abertos para APIs proprietárias."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na arquitetura v3+, o `InferenceClient` funciona como um gateway unificado sobre **Inference Providers** parceiros de alta velocidade (como `together`, `groq`, `fireworks-ai`, `sambanova`, `cerebras`, `novita` e `hf-inference`), além de suportar `provider: 'auto'` para escolher dinamicamente o provedor disponível sem mudar a assinatura do código. A alternativa A nega a própria proposta de unificação do SDK. A B é absurda tecnicamente para modelos de 70B no browser. A D lista provedores proprietários que não pertencem aos parceiros de inferência do Hugging Face.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-hugging-face-inference",
+      "officialDocUrl": "https://huggingface.co/docs/inference-providers/index",
+      "officialDocLabel": "Hugging Face Inference Providers"
+    },
+    {
+      "id": "m02-s02-q18",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Hugging Face: InferenceClient, Inference Providers e Dedicated Endpoints",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Em qual conjunto de condições uma equipe em produção deve migrar dos **Serverless Inference Providers** do Hugging Face para **Dedicated Inference Endpoints** (`hf.endpoint(...)` com motores vLLM ou TGI em GPUs L4/A10G/A100/H100)?",
+      "options": [
+        "Apenas durante um hackathon de 2 horas com tráfego de 10 requisições no total, pois Serverless não funciona para protótipos.",
+        "Quando o volume contínuo torna a hora fixa da GPU mais barata que o modelo pay-per-token, o SLA exige latência determinística sem cold starts nem filas multi-tenant, ou há exigência de rede privada (VPC/PrivateLink) e pesos privados/adaptadores LoRA.",
+        "Sempre que a aplicação quiser acionar Grounding with Google Search nativo ou WebRTC de áudio da OpenAI.",
+        "Quando a equipe deseja pagar por token em lotes assíncronos de 24h na capacidade ociosa da OpenAI."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Serverless Inference Providers brilham em prototipação e tráfego esparso (pay-per-token/request), enquanto Dedicated Inference Endpoints (instâncias exclusivas com vLLM ou TGI na AWS, Azure ou GCP) são indicados quando: (1) o volume sustentado torna a hora fixa da GPU mais econômica; (2) o SLA não tolera cold starts ou contenção em fila multi-tenant; e (3) requisitos de segurança/domínio exigem VPC/PrivateLink ou modelos privados/LoRA próprios. A alternativa A inverte totalmente o papel do serverless. As alternativas C e D descrevem recursos de outros provedores (Google e OpenAI).",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-hugging-face-inference",
+      "officialDocUrl": "https://huggingface.co/docs/inference-providers/index",
+      "officialDocLabel": "Hugging Face Inference Providers"
+    },
+    {
+      "id": "m02-s02-q19",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Hugging Face: InferenceClient, Inference Providers e Dedicated Endpoints",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a implementação TypeScript abaixo utilizando `@huggingface/inference`. Quais capacidades do `InferenceClient` estão sendo corretamente demonstradas nesse módulo?",
+      "codeSnippet": "import { InferenceClient } from '@huggingface/inference';\n\nconst hf = new InferenceClient(process.env.HF_TOKEN);\n\nexport async function runPipeline(text: string, imageBlob: Blob) {\n  const chat = await hf.chatCompletion({\n    model: 'meta-llama/Llama-3.3-70B-Instruct',\n    provider: 'groq',\n    messages: [{ role: 'user', content: text }],\n    max_tokens: 1024,\n  });\n  const embedding = await hf.featureExtraction({ model: 'BAAI/bge-large-en-v1.5', inputs: text });\n  const caption = await hf.imageToText({ model: 'Salesforce/blip-image-captioning-large', data: imageBlob });\n  const speechBlob = await hf.textToSpeech({ model: 'espnet/kan-bayashi_ljspeech_vits', inputs: text });\n  return { reply: chat.choices[0]?.message?.content ?? '', embedding, caption: caption.generated_text, speechBlob };\n}",
+      "options": [
+        "Chat completion open-weights roteado explicitamente para o provider `'groq'` somado a chamadas especializadas tipadas para embeddings (`featureExtraction`), legenda de imagem (`imageToText`) e síntese de voz (`textToSpeech`) a partir do mesmo `InferenceClient`.",
+        "Uso obrigatório da classe legada `HfInference` dentro de `chatCompletion` para compatibilidade com OpenAI Batch API.",
+        "Compilação automática do modelo `Llama-3.3-70B-Instruct` para rodar em `vLLM` local sem necessidade de `HF_TOKEN`.",
+        "Ativação de Extended Thinking com `budget_tokens` no modelo `BAAI/bge-large-en-v1.5` para gerar vetores de áudio."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O snippet demonstra com fidelidade a API v3+ de `InferenceClient`: executa `chatCompletion` no modelo aberto `meta-llama/Llama-3.3-70B-Instruct` com roteamento explícito para `'groq'`, além de orquestrar tarefas especializadas (`featureExtraction` para embeddings, `imageToText` retornando `generated_text` e `textToSpeech` retornando `Blob` de áudio) sob uma única instância autenticada via `HF_TOKEN`. A alternativa B cita a classe depreciada `HfInference` e a Batch API da OpenAI. A C inventa compilação local sem token. A D mistura Extended Thinking da Anthropic com um modelo de embeddings de texto.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-hugging-face-inference",
+      "officialDocUrl": "https://huggingface.co/docs/huggingface.js/inference/README",
+      "officialDocLabel": "Hugging Face JS Inference SDK"
+    },
+    {
+      "id": "m02-s02-q20",
+      "sessionId": "2.2",
+      "subtopicTag": "Ecossistema Hugging Face: InferenceClient, Inference Providers e Dedicated Endpoints",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual vantagem estratégica o uso de um **Dedicated Inference Endpoint** (`hf.endpoint('https://seu-id.endpoints.huggingface.cloud')`) com adaptadores LoRA privados oferece que os endpoints serverless multi-tenant não atendem?",
+      "options": [
+        "Permite usar modelos de fronteira fechados como `gpt-4o` e `claude-3-7-sonnet` gratuitamente sem custos de GPU.",
+        "Converte automaticamente qualquer modelo open-weights em uma janela de 2 milhões de tokens sem alterar os pesos ou a VRAM.",
+        "Remove a necessidade de autenticação HTTP em redes públicas da internet.",
+        "Permite hospedar pesos proprietários ou adaptadores LoRA treinados no domínio da empresa em hardware exclusivo (AWS/Azure/GCP) isolado em rede privada (VPC/PrivateLink) e livre de disputa de fila multi-tenant."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Endpoints dedicados no Hugging Face instanciam motores vLLM ou TGI em GPUs reservadas na nuvem escolhida (AWS, Azure, GCP), permitindo isolar o tráfego em VPC/PrivateLink, eliminar disputa de fila multi-tenant e servir checkpoints privados ou adaptadores LoRA customizados. A alternativa A confunde modelos open-weights dedicados com modelos proprietários fechados. A B é falsa quanto à expansão mágica de janela para 2M sem VRAM. A C contraria os princípios de segurança em VPC.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#ecossistema-hugging-face-inference",
+      "officialDocUrl": "https://huggingface.co/docs/inference-providers/index",
+      "officialDocLabel": "Hugging Face Inference Providers"
+    },
+    {
+      "id": "m02-s02-q21",
+      "sessionId": "2.2",
+      "subtopicTag": "Matriz de Seleção de Provedores: Latência, Contexto, Raciocínio e Orçamento",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na modelagem matemática de latência interativa ($T_{\\text{total}} = \\text{TTFT} + \\frac{N_{\\text{out}}}{\\text{TPS}}$), por que modelos System 2 com *test-time compute* (`o1`, `o3-mini`, Extended Thinking) apresentam $\\text{TTFT}$ drasticamente maior que modelos System 1 (`gpt-4o-mini`, `gemini-2.5-flash`)?",
+      "options": [
+        "Porque modelos System 2 transmitem as respostas exclusivamente por arquivos JSONL de 24h.",
+        "Porque o $\\text{TTFT}$ (Time to First Visible Token) absorve não apenas a latência de rede e o prefill da entrada não cacheada ($N_{\\text{in,new}}$), mas também toda a geração sequencial dos $N_{\\text{think}}$ tokens internos de raciocínio ($\\frac{N_{\\text{think}}}{\\text{TPS}}$) antes de emitir o primeiro token visível.",
+        "Porque modelos System 2 sempre ignoram qualquer tipo de KV-Cache e recarregam os pesos do disco a cada palavra gerada.",
+        "Porque a taxa de geração $\\text{TPS}$ fica no numerador da fórmula, multiplicando o tamanho da saída pelo número de camadas."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A fórmula de latência inicial indica $\\text{TTFT} \\approx T_{\\text{rede}} + \\frac{N_{\\text{in,new}}}{\\text{Rate}_{\\text{prefill}}} + \\frac{N_{\\text{think}}}{\\text{TPS}}$. Como os tokens de raciocínio oculto precisam ser gerados autoregressivamente antes do primeiro token visível da resposta final, eles somam diretamente ao $\\text{TTFT}$. A alternativa A confunde System 2 síncrono com Batch API. A C é falsa, pois modelos System 2 também aproveitam cache de prefixo (como o cache automático da OpenAI ou granular da Anthropic). A D inverte a posição de $\\text{TPS}$ na fração.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#matriz-de-selecao-de-provedores",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q22",
+      "sessionId": "2.2",
+      "subtopicTag": "Matriz de Seleção de Provedores: Latência, Contexto, Raciocínio e Orçamento",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Um engenheiro avalia ativar `budget_tokens = 4000` em uma arquitetura síncrona cuja velocidade média de geração é $\\text{TPS} = 80\\text{ tokens/s}$, com $T_{\\text{rede}} = 0{,}2\\text{s}$ e tempo de prefill desprezível de $0{,}8\\text{s}$. Qual será o $\\text{TTFT}$ aproximado percebido pelo usuário final e qual é a implicação arquitetural?",
+      "options": [
+        "$\\text{TTFT} \\approx 1{,}0\\text{s}$, pois tokens internos de raciocínio não afetam o tempo até o primeiro token visível.",
+        "$\\text{TTFT} \\approx 11{,}0\\text{s}$, viável para autocompletar em tempo real no editor de código.",
+        "$\\text{TTFT} \\approx 51{,}0\\text{s}$ (pois $4000 / 80 = 50\\text{s}$ somados a $0{,}2\\text{s} + 0{,}8\\text{s}$), inviável para chats interativos simples de baixa latência, porém justificável em revisões assíncronas ou pipelines de arquitetura.",
+        "$\\text{TTFT} \\approx 320.000\\text{s}$, pois deve-se multiplicar $N_{\\text{think}}$ por $\\text{TPS}$."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Aplicando $\\text{TTFT} \\approx T_{\\text{rede}} + \\frac{N_{\\text{in,new}}}{\\text{Rate}_{\\text{prefill}}} + \\frac{N_{\\text{think}}}{\\text{TPS}}$, temos $0{,}2 + 0{,}8 + \\frac{4000}{80} = 51{,}0\\text{s}$. Esse atraso inicial de cerca de 50 segundos é proibitivo para UX de chat instantâneo (< 1,5s), sendo adequado apenas a tarefas complexas/assíncronas. A alternativa A ignora o termo $\\frac{N_{\\text{think}}}{\\text{TPS}}$. A B erra a divisão ($4000/80 = 50$, não $10$). A D multiplica em vez de dividir pela taxa $\\text{TPS}$.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#matriz-de-selecao-de-provedores",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q23",
+      "sessionId": "2.2",
+      "subtopicTag": "Matriz de Seleção de Provedores: Latência, Contexto, Raciocínio e Orçamento",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Considere a equação de FinOps para o custo por requisição $C_{\\text{req}} = \\frac{N_{\\text{in,new}} \\cdot P_{\\text{in}} + N_{\\text{in,cache}} \\cdot P_{\\text{cache}} + (N_{\\text{think}} + N_{\\text{out}}) \\cdot P_{\\text{out}}}{10^6} \\cdot (1 - d_{\\text{batch}})$. Em uma chamada síncrona ($d_{\\text{batch}} = 0$) ao `claude-3-7-sonnet-20250219` ($P_{\\text{in}} = \\text{USD } 3{,}00$, $P_{\\text{cache}} = \\text{USD } 0{,}30$, $P_{\\text{out}} = \\text{USD } 15{,}00$ por $1\\text{M}$), com $N_{\\text{in,new}} = 10.000$, $N_{\\text{in,cache}} = 100.000$, $N_{\\text{think}} = 2.000$ e $N_{\\text{out}} = 2.000$, qual é o custo exato da requisição?",
+      "options": [
+        "`USD 0,12` por requisição (`USD 0,03` de entrada nova + `USD 0,03` de cache read + `USD 0,06` de raciocínio e saída).",
+        "`USD 0,36` por requisição, porque os 100.000 tokens cacheados são cobrados integralmente a `USD 3,00 / 1M`.",
+        "`USD 0,09` por requisição, porque os 2.000 tokens de `thinking` são isentos de cobrança.",
+        "`USD 0,06` por requisição, pois o fator $(1 - d_{\\text{batch}})$ aplica `50%` de desconto mesmo em chamadas síncronas."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Substituindo na equação: entrada nova de $\\frac{10.000 \\times 3{,}00}{10^6} = \\text{USD } 0{,}03$; leitura em cache de $\\frac{100.000 \\times 0{,}30}{10^6} = \\text{USD } 0{,}03$; e raciocínio + saída de $\\frac{(2.000 + 2.000) \\times 15{,}00}{10^6} = \\text{USD } 0{,}06$. Somando com $d_{\\text{batch}} = 0$, obtemos exatamente `USD 0,12`. A alternativa B ignora o desconto de `90%` do `cache_read_input_tokens`. A C exclui indevidamente $N_{\\text{think}}$ da tarifa $P_{\\text{out}}$. A D aplica desconto de batch em uma execução síncrona.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#matriz-de-selecao-de-provedores",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q24",
+      "sessionId": "2.2",
+      "subtopicTag": "Matriz de Seleção de Provedores: Latência, Contexto, Raciocínio e Orçamento",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Segundo a heurística de seleção da Matriz de Provedores e o critério de ponto de equilíbrio econômico ($Q_{\\text{req/hora}} \\cdot C_{\\text{req,serverless}} > C_{\\text{GPU/hora}}$), qual combinação de cenários e provedores está corretamente mapeada?",
+      "options": [
+        "Usar `o1` (`USD 15,00 / 60,00`) para classificar logs em menos de `1,5s` e usar `gpt-4o-mini` para janelas de `1M` de tokens com áudio nativo.",
+        "Usar Hugging Face Dedicated Endpoints para 20 requisições esporádicas por dia quando a GPU dedicada custa `USD 2,40 / hora` e cada requisição serverless custa `USD 0,002`.",
+        "Usar `gemini-2.5-pro` exclusivamente via Batch API da OpenAI para obter `50%` de desconto em `cache_control: { type: 'ephemeral' }`.",
+        "Usar `gpt-4o-mini`, `gemini-2.5-flash` ou Llama-3 via `groq` para triagem `< 1,5s`; `gemini-2.5-pro`/`flash` para contexto `> 200k`, vídeo nativo ou `googleSearch`; `claude-3-7-sonnet` com `cache_control` para código complexo com prefixo longo; `o3-mini`/`o1` para raciocínio `<= 200k`; e migrar para GPU dedicada no Hugging Face apenas quando $Q_{\\text{req/hora}} \\cdot C_{\\text{req,serverless}}$ superar $C_{\\text{GPU/hora}}$ (ou por exigência de SLA/VPC)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Ela aplica fielmente todas as heurísticas da Matriz de Seleção: baixa latência (`< 1,5s`) vai para modelos rápidos (`gpt-4o-mini`, `gemini-2.5-flash`, `groq`); contextos acima de `200k`, mídia nativa ou busca web ao vivo vão para Gemini; engenharia de código com prefixo longo repetido aproveita `cache_control` e `thinking` do Claude 3.7 Sonnet; raciocínio lógico até `200k` usa `o3-mini`/`o1`; e a migração para Dedicated Endpoints ocorre quando o volume horário multiplicado pelo custo serverless ultrapassa o custo horário da GPU dedicada (ou por SLA/VPC). A alternativa A troca completamente os perfis de latência e janela (`gpt-4o-mini` tem `128k`). A B falha no break-even (menos de 1 req/h: $0{,}002 < 2{,}40$). A C mistura primitivas incompatíveis entre Google, OpenAI e Anthropic.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#matriz-de-selecao-de-provedores",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q25",
+      "sessionId": "2.2",
+      "subtopicTag": "Matriz de Seleção de Provedores: Latência, Contexto, Raciocínio e Orçamento",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Observe a função TypeScript abaixo que implementa o estimador FinOps de custo por requisição ($C_{\\text{req}}$) em `USD` e decide se vale migrar uma carga contínua do Hugging Face Serverless para um Dedicated Endpoint. Qual erro lógico na função invalida o cálculo financeiro?",
+      "codeSnippet": "export interface FinOpsInput {\n  newInputTokens: number;\n  cachedInputTokens: number;\n  thinkingTokens: number;\n  outputTokens: number;\n  priceInPerMillionUsd: number;\n  priceCachePerMillionUsd: number;\n  priceOutPerMillionUsd: number;\n  isBatch24h: boolean;\n}\n\nexport function estimateRequestCostUsd(x: FinOpsInput): number {\n  const batchFactor = x.isBatch24h ? 0.5 : 1.0;\n  const inputUsd = (x.newInputTokens * x.priceInPerMillionUsd) / 1_000_000;\n  const cacheUsd = (x.cachedInputTokens * x.priceCachePerMillionUsd) / 1_000_000;\n  const outputUsd = (x.outputTokens * x.priceOutPerMillionUsd) / 1_000_000;\n  return (inputUsd + cacheUsd + outputUsd) * batchFactor;\n}\n\nexport function shouldUseDedicatedGpu(reqPerHour: number, costPerReqUsd: number, gpuHourlyUsd: number): boolean {\n  return reqPerHour * costPerReqUsd > gpuHourlyUsd;\n}",
+      "options": [
+        "O campo `batchFactor` deveria ser `2.0` quando `isBatch24h` for verdadeiro, pois a Batch API custa o dobro.",
+        "A função `estimateRequestCostUsd` omite `x.thinkingTokens` do cálculo de `outputUsd`, subestimando o custo real porque tokens de raciocínio são faturados pela tarifa de saída (`priceOutPerMillionUsd`).",
+        "A função `shouldUseDedicatedGpu` deveria inverter o sinal para `<`, migrando para GPU dedicada apenas quando o volume for próximo de zero.",
+        "O divisor deveria ser `1_000` em vez de `1_000_000`, já que os preços referenciais são por mil tokens."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Na fórmula $C_{\\text{req}} = \\frac{N_{\\text{in,new}} \\cdot P_{\\text{in}} + N_{\\text{in,cache}} \\cdot P_{\\text{cache}} + (N_{\\text{think}} + N_{\\text{out}}) \\cdot P_{\\text{out}}}{10^6} \\cdot (1 - d_{\\text{batch}})$, os `thinkingTokens` somam-se aos `outputTokens` e são multiplicados por `priceOutPerMillionUsd`. Omitir `x.thinkingTokens` subestima severamente o custo de modelos System 2 (`o1`, `o3-mini`, Extended Thinking). A alternativa A erra porque Batch oferece `50%` de desconto (`batchFactor = 0.5`). A C inverte a condição econômica de break-even. A D erra a unidade padrão da tabela (`1M` de tokens).",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#matriz-de-selecao-de-provedores",
+      "officialDocUrl": "https://huggingface.co/docs/inference-providers/index",
+      "officialDocLabel": "Hugging Face Inference Providers"
+    },
+    {
+      "id": "m02-s02-q26",
+      "sessionId": "2.2",
+      "subtopicTag": "Laboratório Prático: Cliente Multi-Provedor Unificado em TypeScript",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No laboratório prático (`src/ai/unified-gateway.ts`), qual é o objetivo arquitetural de combinar os padrões **Adapter** (`AIProviderAdapter`) e **Policy Router** (`UnifiedAIRouter`) em cima dos quatro SDKs oficiais?",
+      "options": [
+        "Remover a necessidade de configurar chaves de API (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `HF_TOKEN`) em produção.",
+        "Forçar todos os quatro SDKs a utilizarem o mesmo modelo `gpt-4o` internamente dentro dos servidores do Hugging Face.",
+        "Desacoplar as regras de negócio de fornecedores específicos (mitigando *vendor lock-in*), permitindo que os endpoints declarem restrições técnicas (`TaskRequirements`) enquanto cada adaptador traduz contratos, cache, grounding e telemetria de uso para `UnifiedResponse`.",
+        "Substituir o compilador TypeScript por chamadas dinâmicas `eval()` em tempo de execução."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O padrão Adapter + Policy Router isola as diferenças de assinatura entre `openai`, `@anthropic-ai/sdk`, `@google/genai` e `@huggingface/inference` atrás de uma interface uniforme `AIProviderAdapter`, enquanto o `UnifiedAIRouter` seleciona o provedor/modelo adequado às restrições declaradas em `TaskRequirements` e normaliza resposta, latência e uso de tokens em `UnifiedResponse`. As alternativas A, B e D distorcem o propósito do gateway unificado.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#laboratorio-cliente-multi-provedor",
+      "officialDocUrl": "https://platform.openai.com/docs/models",
+      "officialDocLabel": "OpenAI Models Overview"
+    },
+    {
+      "id": "m02-s02-q27",
+      "sessionId": "2.2",
+      "subtopicTag": "Laboratório Prático: Cliente Multi-Provedor Unificado em TypeScript",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Considerando a ordem de precedência da política de roteamento implementada em `UnifiedAIRouter.selectTarget(req)`, qual provedor e modelo serão selecionados para uma requisição com `{ estimatedInputTokens: 250_000, requiresDeepReasoning: true, requiresWebGrounding: false, budgetTier: 'frontier' }`?",
+      "options": [
+        "Provedor `'gemini'` com `'gemini-2.5-pro'`, porque `estimatedInputTokens > 200_000` é avaliado antes de `requiresDeepReasoning` e `budgetTier` não é `'economy'`.",
+        "Provedor `'anthropic'` com `'claude-3-7-sonnet-20250219'`, porque `budgetTier === 'frontier'` sempre tem precedência sobre o tamanho do contexto.",
+        "Provedor `'openai'` com `'o3-mini'`, porque `requiresDeepReasoning` ignora o limite de `200_000` tokens.",
+        "Provedor `'huggingface'` com `'meta-llama/Llama-3.3-70B-Instruct'`, porque contextos grandes sempre caem no `InferenceClient`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em `UnifiedAIRouter.selectTarget`: (1) verifica `requiresOpenWeights` (falso); (2) verifica `req.estimatedInputTokens > 200_000 || req.requiresWebGrounding` — como `250_000 > 200_000`, entra imediatamente nessa regra e escolhe `'gemini-2.5-pro'` (já que `budgetTier` é `'frontier'`, diferente de `'economy'`). Isso é essencial arquiteturalmente porque `claude-3-7-sonnet` e `o3-mini` possuem janela máxima de `200k` tokens e falhariam com `250_000` tokens. As alternativas B, C e D ignoram a ordem de precedência e o limite físico de contexto de `200k`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#laboratorio-cliente-multi-provedor",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q28",
+      "sessionId": "2.2",
+      "subtopicTag": "Laboratório Prático: Cliente Multi-Provedor Unificado em TypeScript",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine o método `execute` de `AnthropicAdapter` abaixo. Supondo que o chamador envie `thinkingBudgetTokens: 6000`, `maxOutputTokens: 2048`, `cacheSystemPrompt: true` e `requiresDeepReasoning: true`, quais valores exatos serão enviados na chamada `this.client.messages.create(...)`?",
+      "codeSnippet": "const enableThinking = Boolean(req.requirements.requiresDeepReasoning);\nconst budget = Math.max(1024, req.thinkingBudgetTokens ?? 2048);\nconst maxTokens = enableThinking\n  ? Math.max(req.maxOutputTokens ?? 4096, budget + 1024)\n  : (req.maxOutputTokens ?? 2048);\n\nconst res = await this.client.messages.create({\n  model,\n  max_tokens: maxTokens,\n  ...(enableThinking ? { thinking: { type: 'enabled' as const, budget_tokens: budget } } : { temperature: 0.2 }),\n  system: [{\n    type: 'text',\n    text: req.systemPrompt,\n    ...(req.cacheSystemPrompt ? { cache_control: { type: 'ephemeral' as const } } : {}),\n  }],\n  messages: [{ role: 'user', content: req.userPrompt }],\n});",
+      "options": [
+        "`max_tokens: 2048`, `budget_tokens: 6000` e `temperature: 0.2`, disparando erro HTTP 400 imediato.",
+        "`max_tokens: 6000`, `budget_tokens: 6000` e sem `cache_control` no bloco `system`.",
+        "`max_tokens: 4096`, `budget_tokens: 2048` e `temperature: 0.2`.",
+        "`max_tokens: 7024`, `thinking: { type: 'enabled', budget_tokens: 6000 }`, sem enviar `temperature` customizada, e bloco `system` com `cache_control: { type: 'ephemeral' }`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Acompanhe o fluxo linha a linha: `budget = Math.max(1024, 6000) = 6000`; como `enableThinking` é `true`, `maxTokens = Math.max(2048, 6000 + 1024) = 7024` (garantindo automaticamente o invariante obrigatório `max_tokens > budget_tokens`); o ternário injeta `thinking` e omite `temperature` (respeitando a temperatura travada em `1`); e `cacheSystemPrompt: true` injeta `cache_control: { type: 'ephemeral' }` no objeto de `system`. As alternativas A, B e C calculam erroneamente `maxTokens`, `budget` ou a inclusão de `temperature`.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#laboratorio-cliente-multi-provedor",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/about-claude/models/all-models",
+      "officialDocLabel": "Anthropic Models Overview"
+    },
+    {
+      "id": "m02-s02-q29",
+      "sessionId": "2.2",
+      "subtopicTag": "Laboratório Prático: Cliente Multi-Provedor Unificado em TypeScript",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Compare os fragmentos de `OpenAIAdapter` e `GeminiAdapter` do laboratório unificado abaixo. Qual mapeamento normaliza corretamente os tokens de entrada lidos em cache para o campo `cachedInputTokens` de `UnifiedResponse`?",
+      "codeSnippet": "// OpenAIAdapter (Responses API)\nconst resOpenAI = await this.client.responses.create({ model, instructions: req.systemPrompt, input: req.userPrompt });\n\n// GeminiAdapter (@google/genai)\nconst resGemini = await this.ai.models.generateContent({\n  model,\n  contents: req.userPrompt,\n  config: { systemInstruction: req.systemPrompt, tools: [{ googleSearch: {} }] },\n});",
+      "options": [
+        "Ambos os SDKs retornam o mesmo campo `res.usage.cache_read_input_tokens` idêntico ao da Anthropic.",
+        "No `OpenAIAdapter`, lê-se `resOpenAI.usage?.input_tokens_details?.cached_tokens ?? 0`; no `GeminiAdapter`, lê-se `resGemini.usageMetadata?.cachedContentTokenCount ?? 0`.",
+        "No `OpenAIAdapter`, lê-se `resOpenAI.usageMetadata.cachedContentTokenCount`; no `GeminiAdapter`, lê-se `resGemini.usage.prompt_tokens`.",
+        "Nenhum dos dois SDKs reporta contagem de tokens cacheados na resposta da API."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No laboratório, `OpenAIAdapter` (via Responses API) extrai os tokens em cache de `res.usage?.input_tokens_details?.cached_tokens ?? 0`, enquanto `GeminiAdapter` (`@google/genai`) extrai de `res.usageMetadata?.cachedContentTokenCount ?? 0` (além de `promptTokenCount` e `candidatesTokenCount`). A alternativa A cita a propriedade específica do `@anthropic-ai/sdk` (`cache_read_input_tokens`). A C troca as propriedades entre os SDKs e inclui o campo do Hugging Face (`prompt_tokens`). A D é falsa.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#laboratorio-cliente-multi-provedor",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/models",
+      "officialDocLabel": "Google Gemini Models"
+    },
+    {
+      "id": "m02-s02-q30",
+      "sessionId": "2.2",
+      "subtopicTag": "Laboratório Prático: Cliente Multi-Provedor Unificado em TypeScript",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a implementação de `HuggingFaceAdapter` do laboratório abaixo. Dado um requisito `{ requiresOpenWeights: true, maxLatencyMs: 900, estimatedInputTokens: 1200 }`, qual provider de inferência será acionado pelo `InferenceClient` e por qual razão arquitetural?",
+      "codeSnippet": "export class HuggingFaceAdapter implements AIProviderAdapter {\n  readonly name = 'huggingface' as const;\n  private client = new InferenceClient(process.env.HF_TOKEN);\n\n  async execute(req: UnifiedRequest, model: string): Promise<UnifiedResponse> {\n    const t0 = performance.now();\n    const provider = (req.requirements.maxLatencyMs ?? Infinity) <= 1500 ? 'groq' : 'together';\n    const res = await this.client.chatCompletion({\n      model,\n      provider,\n      messages: [\n        { role: 'system', content: req.systemPrompt },\n        { role: 'user', content: req.userPrompt },\n      ],\n      max_tokens: req.maxOutputTokens ?? 1024,\n      temperature: 0.2,\n    });\n    return {\n      provider: this.name,\n      model,\n      text: res.choices[0]?.message?.content ?? '',\n      latencyMs: Math.round(performance.now() - t0),\n      usage: {\n        inputTokens: res.usage?.prompt_tokens ?? 0,\n        cachedInputTokens: 0,\n        outputTokens: res.usage?.completion_tokens ?? 0,\n      },\n    };\n  }\n}",
+      "options": [
+        "Será selecionado `'together'`, pois `900 > 1500` na avaliação booleana.",
+        "O adaptador falhará com erro de compilação porque `InferenceClient.chatCompletion` não aceita mensagens com `role: 'system'`.",
+        "O `UnifiedAIRouter` roteará para `'huggingface'` (`'meta-llama/Llama-3.3-70B-Instruct'`) e `HuggingFaceAdapter` escolherá `provider: 'groq'` porque `maxLatencyMs` (`900`) é `<= 1500`, priorizando hardware de baixíssima latência dentro da mesma assinatura unificada.",
+        "O adaptador redirecionará automaticamente para um Dedicated Endpoint privado sem passar por `chatCompletion`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Como `requiresOpenWeights: true` tem prioridade máxima em `UnifiedAIRouter.selectTarget`, o roteador seleciona `provider: 'huggingface'` e `model: 'meta-llama/Llama-3.3-70B-Instruct'`. Dentro de `HuggingFaceAdapter.execute`, a expressão `(900 ?? Infinity) <= 1500` resulta em `true`, selecionando o Inference Provider `'groq'`, otimizado para responder abaixo do limiar de `1,5s`. A alternativa A erra a comparação aritmética (`900 <= 1500`). A B é falsa, pois `chatCompletion` aceita `role: 'system'` normalmente. A D descreve `hf.endpoint(...)`, que não está sendo chamado nesse snippet.",
+      "chapterAnchor": "cap-02-provedores-modelos-e-apis#laboratorio-cliente-multi-provedor",
+      "officialDocUrl": "https://huggingface.co/docs/huggingface.js/inference/README",
+      "officialDocLabel": "Hugging Face JS Inference SDK"
+    }
+  ]
+}

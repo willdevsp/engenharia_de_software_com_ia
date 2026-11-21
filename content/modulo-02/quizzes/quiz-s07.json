@@ -1,0 +1,491 @@
+{
+  "sessionId": "2.7",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.7 — Modelos Multimodais (Texto, Imagem, Áudio e Vídeo)",
+  "questions": [
+    {
+      "id": "m02-s07-q01",
+      "sessionId": "2.7",
+      "subtopicTag": "Early-Fusion Multimodal Nativo vs. Pipelines Compostos (Stitching)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Em pipelines compostos (*Stitching* / *Cascaded Pipelines*), como o encadeamento `STT -> LLM -> TTS` ou `OCR -> LLM`, qual é a consequência direta do fenômeno conhecido como *Modality Gap* (perda irreversível de sinal)?",
+      "options": [
+        "O modelo final recebe os pixels brutos e o espectrograma completo em alta resolução, aumentando o consumo de VRAM sem perda semântica.",
+        "A etapa intermediária de transcrição ou OCR compacta automaticamente os dados em vetores densos de 4096 dimensões, preservando entonação vocal e hierarquia visual.",
+        "Ao converter sinais brutos em texto plano UTF-8 como barramento intermediário, o pipeline descarta prosódia, hesitações, ruídos de fundo, cores de alerta e geometria espacial que o LLM final nunca consegue recuperar.",
+        "O protocolo HTTP/2 bloqueia o envio de metadados de confiança entre os modelos especialistas, obrigando a retransmissão em Base64."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Em arquiteturas de *stitching*, a compressão do sinal multimodal para texto plano cria o *Modality Gap*: um sistema STT descarta sarcasmo, tom de urgência e ruídos ambientais, enquanto um OCR tradicional perde layout, cores de alerta e inclinação de gráficos. A alternativa A descreve justamente o comportamento de modelos *early-fusion* ou passagem de mídia bruta, não de *stitching* via texto; a B é falsa porque STT/OCR em cascata emitem strings UTF-8, não vetores latentes ricos preservando prosódia; a D confunde transporte HTTP/2 com limitação representacional da interface textual.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#early-fusion-vs-stitching-multimodal",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q02",
+      "sessionId": "2.7",
+      "subtopicTag": "Early-Fusion Multimodal Nativo vs. Pipelines Compostos (Stitching)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Um agente de voz interativo foi implementado em cascata (`STT -> LLM -> TTS`) com latências individuais de $800\\text{ ms}$ (transcrição), $900\\text{ ms}$ (TTFT do LLM) e $400\\text{ ms}$ (síntese TTS), e acurácia isolada de $95\\%$ em cada um dos três estágios. Qual diagnóstico quantitativo explica por que essa arquitetura compromete tanto a fluidez quanto a confiabilidade em produção?",
+      "options": [
+        "A latência serial soma $2{,}1\\text{ s}$ (muito acima do teto conversacional de $< 500\\text{ ms}$) e a confiabilidade composta cai por erro em cascata para $0{,}95^3 \\approx 85{,}7\\%$, pois estágios posteriores não acessam o sinal bruto para corrigir falhas anteriores.",
+        "A latência total equivale apenas ao estágio mais lento ($900\\text{ ms}$) e a confiabilidade permanece fixa em $95\\%$, pois o LLM corrige automaticamente qualquer erro fonético do STT sem ouvir o áudio.",
+        "A latência cai para $400\\text{ ms}$ via paralelismo especulativo e a acurácia sobe para $99{,}8\\%$ pela média ponderada dos três modelos.",
+        "O único impacto ocorre no custo de rede, pois somar estágios em série não afeta nem o tempo de resposta percebido pelo usuário nem a taxa de erro final."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Em pipelines seriais, o tempo ponta a ponta soma todas as etapas ($L_{\\text{total}} = L_{\\text{STT}} + L_{\\text{LLM}} + L_{\\text{TTS}} = 2{,}1\\text{ s}$), violando o limite de fluidez conversacional ($< 500\\text{ ms}$), e erros propagam multiplicativamente ($A_{\\text{total}} = 0{,}95^3 \\approx 85{,}7\\%$) porque o LLM não enxerga a onda sonora original. A alternativa B erra ao tomar apenas o máximo das latências e assumir autocorreção sem acesso ao sinal acústico; a C inventa paralelismo impossível quando cada etapa depende da saída textual da anterior; a D ignora tanto o somatório serial quanto a multiplicação de falhas.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#early-fusion-vs-stitching-multimodal",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q03",
+      "sessionId": "2.7",
+      "subtopicTag": "Early-Fusion Multimodal Nativo vs. Pipelines Compostos (Stitching)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Como um modelo multimodal *Early-Fusion* nativo (como Gemini 2.5 Pro/Flash ou GPT-4o) processa simultaneamente texto, imagem, áudio e vídeo no interior da arquitetura Transformer?",
+      "options": [
+        "Executa internamente um servidor Tesseract OCR para imagens e um binário Whisper oculto para áudio, concatenando tudo em um prompt textual antes da primeira camada de atenção.",
+        "Treina quatro redes neurais totalmente independentes que apenas votam na camada final de Softmax após gerar respostas separadas.",
+        "Converte todas as mídias em strings Base64 e aplica tokenização BPE textual diretamente sobre os bytes ASCII do Base64.",
+        "Codificadores dedicados projetam patches visuais, frames de vídeo e tokens/espectrogramas acústicos para o mesmo espaço vetorial latente de dimensão $d_{\\text{model}}$ dos tokens textuais, compartilhando os mesmos pesos de Self-Attention desde a primeira camada."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. No *Early-Fusion* (*Any-to-Any*), todas as modalidades são projetadas como vetores no mesmo espaço $d_{\\text{model}}$, formando uma única sequência heterogênea submetida às mesmas matrizes de *Self-Attention* desde a camada inicial. A alternativa A descreve *stitching* oculto, não *early-fusion*; a B descreve um *ensemble* tardio (*late fusion*) sem atenção cruzada precoce; a C é tecnicamente inviável, pois tokenizar bytes ASCII de Base64 destruiria localidade espacial e espectral e explodiria o tamanho da sequência.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#early-fusion-vs-stitching-multimodal",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q04",
+      "sessionId": "2.7",
+      "subtopicTag": "Early-Fusion Multimodal Nativo vs. Pipelines Compostos (Stitching)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Um sistema corporativo precisa processar em lote assíncrono 10.000 horas mensais de gravações jurídicas para indexação em banco SQL, busca textual exata e legendagem auditável com menor custo previsível. Por outro lado, um módulo paralelo atenderá chamadas de suporte técnico em tempo real exigindo leitura simultânea de compartilhamento de tela e detecção de frustração na voz. Qual decisão arquitetural híbrida segue as melhores práticas do capítulo?",
+      "options": [
+        "Usar *Early-Fusion* contínuo para o lote jurídico e *Stitching* síncrono para o suporte em tempo real, pois *stitching* tem menor latência em voz.",
+        "Adotar *Stitching* com `whisper-1` (USD 0,006 / min) para o pipeline assíncrono jurídico auditável e indexável em SQL, e reservar *Early-Fusion* nativo (GPT-4o / Gemini 2.5) para o suporte interativo em tempo real que exige baixa latência e correlação áudio+tela.",
+        "Usar apenas OCR + `tts-1` em ambos os cenários para evitar qualquer dependência de modelos de linguagem.",
+        "Converter todo o acervo jurídico de áudio em quadros de vídeo MP4 a 5 FPS e enviá-lo ao Gemini em janela de 2M tokens para baratear a busca SQL."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A regra de arquitetura híbrida recomenda *stitching* com Whisper (`USD 0,006 / min`) quando o foco é custo baixo previsível em lote, legendas palavra a palavra, auditabilidade e persistência/cache exato em SQL; já o *early-fusion* brilha onde baixa latência ($300\\text{–}800\\text{ ms}$) e compreensão intermodal de prosódia e pixels são essenciais. A alternativa A inverte exatamente os pontos fortes de cada paradigma; a C não realiza raciocínio nem transcrição de áudio; a D multiplica drasticamente o custo de tokens de vídeo sem ganho para um problema puramente acústico e de indexação SQL.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#early-fusion-vs-stitching-multimodal",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q05",
+      "sessionId": "2.7",
+      "subtopicTag": "Early-Fusion Multimodal Nativo vs. Pipelines Compostos (Stitching)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Durante a análise de uma gravação de incidente onde um operador diz 'Certo, funcionou perfeitamente...' em tom irônico exatamente quando um som de alerta toca em $t = 14\\text{ s}$ e um banner vermelho surge na tela, por que o *Early-Fusion* nativo resolve a ambiguidade enquanto um pipeline composto falha?",
+      "options": [
+        "Porque o compartilhamento de *Self-Attention* desde a primeira camada permite que tokens acústicos (entonação irônica e bipe de erro), patches visuais (banner vermelho) e tokens textuais interajam diretamente no mesmo espaço latente no instante $t = 14\\text{ s}$.",
+        "Porque o *Early-Fusion* descarta completamente a faixa de áudio e confia apenas no texto da legenda gerada pelo sistema operacional.",
+        "Porque modelos *Early-Fusion* ignoram o texto falado sempre que há qualquer imagem no contexto.",
+        "Porque o pipeline composto bloqueia a execução de expressões regulares sobre o texto transcrito."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No *Early-Fusion*, o Transformer aplica atenção cruzada direta entre unidades acústicas, patches visuais e texto na mesma sequência latente, captando sarcasmo na prosódia e correlacionando o áudio de erro ao banner vermelho em $t = 14\\text{ s}$. Já o pipeline composto reduz a fala à string literal `'Certo, funcionou perfeitamente...'`, perdendo a ironia e desconectando o áudio do evento visual. As alternativas B e C descrevem descarte de modalidades que contradiz a atenção multimodal conjunta; a D é falsa porque regex sobre texto não recupera prosódia nem eventos visuais perdidos.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#early-fusion-vs-stitching-multimodal",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q06",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Visão: URL vs Base64, Cálculo de Tokens (detail low/high) e Bounding Boxes",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Ao escolher entre URL HTTPS pré-assinada, Base64 inline (`data:image/...;base64,...`) e upload assíncrono (`Files API`) para enviar imagens em APIs de visão em produção, qual afirmação descreve corretamente as restrições de transporte?",
+      "options": [
+        "Base64 inline reduz o tamanho do payload JSON em 33% e aceita imagens de até 500 MB tanto na OpenAI quanto na Anthropic.",
+        "Base64 inline evita bloqueios de WAF/CORS ao servidor do provedor, mas infla o payload em cerca de $+33\\%$, sujeito a tetos como $20\\text{ MB}$ por imagem na OpenAI e $5\\text{ MB}$ por imagem na Anthropic; já a `Files API` evita retransmitir Base64 em diálogos multi-turno.",
+        "URLs HTTPS pré-assinadas nunca sofrem timeouts de download nem bloqueios de firewall porque trafegam por fora da internet pública.",
+        "A `Files API` do Gemini e da Anthropic serve exclusivamente para arquivos `.txt`, não aceitando mídias visuais."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A codificação Base64 adiciona um overhead de ~33% no tamanho do payload, respeitando limites de referência de $20\\text{ MB}$ por imagem na OpenAI (e payload inline no Gemini) e $5\\text{ MB}$ por imagem na Anthropic; em conversas multi-turno sobre documentos pesados, referenciar um `fileUri` / `file_id` via `Files API` evita reenvios repetidos. A alternativa A inverte o overhead (infla, não reduz) e exagera os limites; a C ignora que o provedor precisa baixar a URL dentro do timeout HTTP sem bloqueios de WAF/CORS; a D é falsa porque ambas as APIs de arquivos suportam mídias/documentos pesados.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-visao-tokens-e-bounding-boxes",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/vision",
+      "officialDocLabel": "Anthropic Claude Vision Guide — Image sizing, base64 encoding & best practices"
+    },
+    {
+      "id": "m02-s07-q07",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Visão: URL vs Base64, Cálculo de Tokens (detail low/high) e Bounding Boxes",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Considere a função TypeScript oficial de cálculo de tokens do OpenAI Vision (`gpt-4o`) abaixo. Qual será o valor retornado por `estimateOpenAIVisionTokens({ width: 4000, height: 3000 }, \"high\")`?",
+      "codeSnippet": "export interface ImageDimension { width: number; height: number; }\n\nexport function estimateOpenAIVisionTokens(dim: ImageDimension, detail: \"low\" | \"high\"): number {\n  if (detail === \"low\") return 85;\n  let { width: w, height: h } = dim;\n\n  if (w > 2048 || h > 2048) {\n    const scale = 2048 / Math.max(w, h);\n    w = Math.round(w * scale);\n    h = Math.round(h * scale);\n  }\n  const shortestSide = Math.min(w, h);\n  if (shortestSide > 768) {\n    const scale = 768 / shortestSide;\n    w = Math.round(w * scale);\n    h = Math.round(h * scale);\n  }\n\n  return 85 + 170 * Math.ceil(w / 512) * Math.ceil(h / 512);\n}",
+      "options": [
+        "85 tokens, porque toda imagem acima de 2048 px é automaticamente convertida para `detail: \"low\"`.",
+        "680 tokens, correspondendo apenas aos 4 tiles de 512x512 sem o custo base da visão geral.",
+        "2.125 tokens, pois após escalar para 2048x1536 o lado menor não é reduzido, gerando 4 x 3 = 12 tiles.",
+        "765 tokens, pois 4000x3000 reduz para 2048x1536 e depois para 1024x768 (lado menor 768), gerando 2 x 2 = 4 tiles a 170 tokens cada mais 85 tokens base."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Aplicando as duas etapas determinísticas para `4000x3000` com `detail: \"high\"`: (1) como `max(4000, 3000) > 2048`, `scale = 2048 / 4000 = 0,512`, resultando em `2048x1536`; (2) como `shortestSide = 1536 > 768`, `scale = 768 / 1536 = 0,5`, resultando em `1024x768`; (3) fatiando em blocos `512x512`, obtemos `ceil(1024/512) = 2` colunas e `ceil(768/512) = 2` linhas (`4` tiles), totalizando `85 + 170 * 4 = 765` tokens. A alternativa A confunde `\"high\"` com `\"low\"`; a B omite os 85 tokens fixos da visão geral; a C esquece o segundo `if (shortestSide > 768)` que reduz `1536` para `768`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-visao-tokens-e-bounding-boxes",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI Vision Guide — Calculating costs & managing image detail (low/high)"
+    },
+    {
+      "id": "m02-s07-q08",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Visão: URL vs Base64, Cálculo de Tokens (detail low/high) e Bounding Boxes",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Comparando as especificações de visão da Anthropic (`@anthropic-ai/sdk`) e do Google Gemini frente ao `detail: \"low\" | \"high\"` da OpenAI, qual conjunto de práticas reflete fielmente a documentação oficial?",
+      "options": [
+        "O Claude exige o parâmetro obrigatório `detail: \"ultra\"` e recomenda posicionar os blocos `text` longos antes do bloco `image` para reduzir o custo em 50%.",
+        "O Gemini cobra exatamente 85 tokens fixos para qualquer imagem até 2048x2048 px, enquanto a Anthropic cobra por tiles fixos de 512x512 px.",
+        "O Claude não possui parâmetro `detail`, redimensiona imagens cujo lado maior excede $1568\\text{ px}$ ($T_{\\text{claude}} \\approx (w_{\\text{ef}} \\cdot h_{\\text{ef}})/750$) e recomenda colocar os blocos `image` antes do `text` em `content`; já o Gemini cobra $258$ tokens até $384\\times 384\\text{ px}$ ou $258$ tokens por tile de $768\\times 768\\text{ px}$.",
+        "Tanto o Claude quanto o Gemini ignoram imagens maiores que $768\\text{ px}$, lançando erro HTTP 400 se o cliente não fizer downscale prévio."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na Anthropic, não há campo `detail`: lados acima de $1568\\text{ px}$ (ou $\\sim 1{,}15\\text{ MP}$ / $\\sim 1600$ tokens) são escalados proporcionalmente no servidor seguindo $T_{\\text{claude}} \\approx (w_{\\text{ef}} \\cdot h_{\\text{ef}})/750$, sendo boa prática oficial posicionar `image` antes de `text` no array `content`; no Gemini, imagens até $384\\times 384\\text{ px}$ custam $258$ tokens e imagens maiores são fatiadas em tiles de $768\\times 768\\text{ px}$ a $258$ tokens/tile. A alternativa A inventa `detail: \"ultra\"` e inverte a ordem recomendada; a B mistura os números da OpenAI com os do Gemini e da Anthropic; a D é falsa porque os provedores fazem redimensionamento automático quando dentro do limite de tamanho de arquivo.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-visao-tokens-e-bounding-boxes",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/vision",
+      "officialDocLabel": "Anthropic Claude Vision Guide — Image sizing, base64 encoding & best practices"
+    },
+    {
+      "id": "m02-s07-q09",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Visão: URL vs Base64, Cálculo de Tokens (detail low/high) e Bounding Boxes",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "O snippet TypeScript abaixo converte *bounding boxes* normalizados retornados pelo Gemini (`box_2d` na grade $[0, 1000]$) para retângulos em pixels de uma captura de tela `1920x1080`. Se o modelo retornar `box_2d: [250, 100, 450, 600]`, quais serão os valores de `{ x, y, width, height }` produzidos?",
+      "codeSnippet": "const dim = { width: 1920, height: 1080 };\nconst box_2d = [250, 100, 450, 600]; // formato oficial Gemini: [ymin, xmin, ymax, xmax]\nconst [ymin, xmin, ymax, xmax] = box_2d;\n\nconst rect = {\n  x: Math.round((xmin / 1000) * dim.width),\n  y: Math.round((ymin / 1000) * dim.height),\n  width: Math.round(((xmax - xmin) / 1000) * dim.width),\n  height: Math.round(((ymax - ymin) / 1000) * dim.height),\n};",
+      "options": [
+        "`{ x: 192, y: 270, width: 960, height: 216 }`",
+        "`{ x: 480, y: 108, width: 1152, height: 486 }`",
+        "`{ x: 192, y: 270, width: 1152, height: 486 }`",
+        "`{ x: 250, y: 100, width: 450, height: 600 }`"
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O Gemini retorna `box_2d` na ordem `[ymin, xmin, ymax, xmax]` normalizada no intervalo inteiro $[0, 1000]$. Assim: `x = (100/1000) * 1920 = 192`, `y = (250/1000) * 1080 = 270`, `width = ((600 - 100)/1000) * 1920 = 960` e `height = ((450 - 250)/1000) * 1080 = 216`. A alternativa B inverte a convenção oficial assumindo `[xmin, ymin, xmax, ymax]` e ainda ignora a subtração nas dimensões; a C esquece de subtrair `xmin` de `xmax` e `ymin` de `ymax`, calculando a coordenada final em vez de largura e altura; a D retorna os valores normalizados sem desnormalizar pela resolução `(W, H)`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q10",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Visão: URL vs Base64, Cálculo de Tokens (detail low/high) e Bounding Boxes",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Ao projetar um extrator de métricas de dashboards e gráficos com Structured Outputs em modelos de visão, qual estratégia de *Visual Chain-of-Thought* reduz drasticamente alucinações numéricas em escalas logarítmicas ou eixos truncados?",
+      "options": [
+        "Ocultar a imagem usando `detail: \"low\"` sempre e instruir o modelo a chutar a tendência pela cor dominante do gráfico.",
+        "Remover os nomes dos eixos e a legenda antes de enviar a imagem para economizar tokens de entrada.",
+        "Aumentar `temperature` para `1.5` para que o modelo explore interpretações alternativas das barras e linhas.",
+        "Definir no schema estruturado que o modelo extraia primeiro os rótulos do eixo $X$, a escala e unidade do eixo $Y$ e a legenda de cores antes de calcular ou reportar os valores numéricos das séries."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Ao forçar o modelo a verbalizar/estruturar os rótulos do eixo $X$, a unidade e escala (linear vs. logarítmica, origem truncada) do eixo $Y$ e a legenda antes do campo de valores numéricos, o *Visual Chain-of-Thought* ancora o raciocínio autoregressivo nos elementos visuais corretos e reduz erros de leitura. A alternativa A degrada a resolução impedindo ler rótulos de eixos; a B elimina justamente as referências necessárias para interpretar números; a C eleva a aleatoriedade em uma tarefa de extração factual.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-visao-tokens-e-bounding-boxes",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/vision",
+      "officialDocLabel": "Anthropic Claude Vision Guide — Image sizing, base64 encoding & best practices"
+    },
+    {
+      "id": "m02-s07-q11",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Áudio: Whisper STT, Timestamps por Palavra, Diarização e TTS de Baixa Latência",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual comportamento real descreve corretamente o parâmetro `prompt` (até $224$ tokens) na API `whisper-1` da OpenAI?",
+      "options": [
+        "Ele funciona como um System Prompt de LLM, executando ordens imperativas como 'Traduza tudo para francês e remova gírias coloquiais'.",
+        "Ele habilita automaticamente a separação biométrica de até 10 locutores diferentes por voz.",
+        "Ele não obedece instruções imperativas; atua exclusivamente como um prefixo de estilo e vocabulário prévio (siglas, termos técnicos e pontuação esperada) para guiar a ortografia da transcrição.",
+        "Ele aumenta o limite máximo de tamanho de arquivo da requisição de 25 MB para 2 GB."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Por ser um modelo acústico-sequencial treinado sobre janelas de espectrogramas Log-Mel de $30\\text{ s}$, o `prompt` do `whisper-1` (limitado a $224$ tokens) condiciona o decodificador como se fosse texto imediatamente anterior ao áudio, guiando ortografia de jargões (ex.: `pgvector`, `HNSW`, `Fastify`) e pontuação, sem obedecer comandos imperativos. A alternativa A atribui ao `whisper-1` um comportamento de LLM instrucional que não ocorre; a B é falsa porque `whisper-1` não realiza diarização biométrica nativa; a D é falsa porque o limite de upload continua sendo $25\\text{ MB}$.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-audio-whisper-stt-e-tts",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q12",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Áudio: Whisper STT, Timestamps por Palavra, Diarização e TTS de Baixa Latência",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a chamada TypeScript abaixo para extração de timestamps palavra a palavra com `whisper-1`. Por que a combinação `response_format: \"verbose_json\"` e `timestamp_granularities: [\"word\", \"segment\"]` é indispensável, e como tratar um arquivo `.wav` de $60\\text{ MB}$ antes dessa chamada?",
+      "codeSnippet": "const transcription = await openai.audio.transcriptions.create({\n  file: fs.createReadStream(audioPath),\n  model: \"whisper-1\",\n  language: \"pt\",\n  response_format: \"verbose_json\",\n  timestamp_granularities: [\"word\", \"segment\"],\n  prompt: \"Arquitetura com pgvector, HNSW, Zod, SSE, OpenAI Vision e Gemini Files API.\"\n});\n\nreturn {\n  fullText: transcription.text,\n  durationSec: transcription.duration,\n  words: transcription.words ?? [] // [{ word, start, end }]\n};",
+      "options": [
+        "Porque `response_format: \"json\"` já retorna `words`, mas em ordem alfabética; arquivos de 60 MB são enviados via URL S3 diretamente para o `whisper-1`.",
+        "Porque apenas `verbose_json` com `timestamp_granularities` expõe `duration` e o array `words` (`{ word, start, end }`) para sincronia temporal precisa no `whisper-1`; como o limite da API é $25\\text{ MB}$, áudios de $60\\text{ MB}$ devem ser comprimidos (ex.: mono 16 kHz) ou fatiados via `ffmpeg` com sobreposição (ex.: $2\\text{ s}$).",
+        "Porque `gpt-4o-transcribe` exige `verbose_json` para gerar áudio TTS de retorno; arquivos de 60 MB não precisam de tratamento pois o `createReadStream` ignora o limite de 25 MB.",
+        "Porque `timestamp_granularities: [\"word\"]` instrui o `whisper-1` a remover todas as pausas e retornar apenas substantivos sem pontuação."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. No `whisper-1`, o formato padrão `json` retorna apenas `{ text }`, sendo `response_format: \"verbose_json\"` combinado com `timestamp_granularities: [\"word\"]` (ou `[\"word\", \"segment\"]`) o mecanismo que preenche `transcription.words` (`[{ word, start, end }]`) e `transcription.duration`. Como o limite rígido de arquivo na OpenAI Audio API é $25\\text{ MB}$, um `.wav` de $60\\text{ MB}$ precisa ser recomprimido (mono `16 kHz`) ou segmentado com `ffmpeg` em blocos com leve sobreposição (ex.: $2\\text{ s}$). A alternativa A erra sobre `json` e inventa URL S3 direta no endpoint; a C confunde `whisper-1` com `gpt-4o-transcribe`/TTS e ignora o limite de $25\\text{ MB}$; a D descreve um filtro lexical inexistente.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-audio-whisper-stt-e-tts",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q13",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Áudio: Whisper STT, Timestamps por Palavra, Diarização e TTS de Baixa Latência",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Uma empresa precisa identificar quem falou o quê (*Speaker Diarization*) em reuniões técnicas onde frequentemente há sobreposição de vozes (*crosstalk*) e interrupções rápidas entre 4 engenheiros. Qual análise compara corretamente as estratégias de diarização em produção?",
+      "options": [
+        "Como o `whisper-1` não separa locutores por biometria vocal, usar apenas `Whisper + LLM` (diarização semântica) falha quando há vozes sobrepostas; para auditoria estrita com múltiplos falantes simultâneos, deve-se adotar modelos especializados com *voiceprint*/diarização acústica (como `gpt-4o-transcribe-diarize`, Deepgram ou `pyannote-audio`), ou áudio nativo multimodal (Gemini 2.5 via `Files API`) quando análise de timbre e emoção no espectrograma bastarem.",
+        "O `whisper-1` inclui um campo nativo `speaker_voiceprint_id` em cada objeto de `words` que distingue 100% das vozes sobrepostas sem modelo adicional.",
+        "A estratégia `Whisper + LLM` garante precisão biométrica perfeita mesmo em vozes simultâneas porque o LLM deduz a frequência fundamental em Hertz lendo apenas os caracteres UTF-8.",
+        "A única forma de fazer diarização em TypeScript é executar `tts-1` ao contrário para separar os canais estéreo."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O `whisper-1` não possui separação nativa de locutores por assinatura vocal: a diarização semântica (`Whisper + LLM`) funciona de forma econômica apenas em diálogos bem turnados (`Atendente` vs. `Cliente`), perdendo precisão em falas sobrepostas. Em cenários com interrupções simultâneas e auditoria estrita, modelos acústicos especializados (`gpt-4o-transcribe-diarize`, Deepgram, `pyannote-audio`) são os indicados, enquanto o Gemini 2.5 via `Files API` também diferencia timbres e emoções diretamente no espectrograma. As alternativas B, C e D atribuem capacidades inexistentes ao `whisper-1`, ao texto puro e ao `tts-1`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-audio-whisper-stt-e-tts",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q14",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Áudio: Whisper STT, Timestamps por Palavra, Diarização e TTS de Baixa Latência",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Observe a função TypeScript abaixo usando `openai.audio.speech.create`. Se o objetivo evoluir de salvar um arquivo em disco para reproduzir áudio em streaming em tempo real via WebRTC/VoIP ou playback bruto com menor *Time-to-First-Audio*, qual refatoração está correta?",
+      "codeSnippet": "export async function synthesizeLowLatencySpeech(text: string, outputPath: string) {\n  const speech = await openai.audio.speech.create({\n    model: \"tts-1\",\n    voice: \"nova\",\n    input: text,\n    response_format: \"mp3\"\n  });\n\n  await fs.promises.writeFile(outputPath, Buffer.from(await speech.arrayBuffer()));\n}",
+      "options": [
+        "Alterar `model` para `whisper-1` e aguardar `speech.arrayBuffer()` completo antes de enviar os primeiros bytes ao cliente.",
+        "Manter `response_format: \"mp3\"` e usar `speech.arrayBuffer()`, pois o MP3 em buffer completo tem menor *Time-to-First-Audio* do que streaming PCM.",
+        "Aumentar o texto de entrada para blocos de 30 segundos mínimos porque o `tts-1` não emite resposta para frases curtas.",
+        "Trocar `response_format` para `\"opus\"` (streaming compactado para WebRTC/VoIP) ou `\"pcm\"` (PCM 24 kHz sem cabeçalho pronto para playback imediato) e consumir o stream de `speech.body` progressivamente em vez de bloquear em `await speech.arrayBuffer()`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Aguardar `await speech.arrayBuffer()` força o servidor a baixar o áudio inteiro na memória antes de iniciar a reprodução, elevando o *Time-to-First-Audio*. Usar `response_format: \"pcm\"` (24 kHz bruto sem cabeçalho) ou `\"opus\"` (ideal para WebRTC/VoIP) e encaminhar chunks diretamente do stream `speech.body` minimiza a latência inicial. A alternativa A mistura o modelo STT `whisper-1` com TTS e mantém o buffering bloqueante; a B afirma o oposto da realidade sobre buffering de MP3; a C inventa uma restrição falsa de duração mínima para o `tts-1`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-audio-whisper-stt-e-tts",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q15",
+      "sessionId": "2.7",
+      "subtopicTag": "APIs de Áudio: Whisper STT, Timestamps por Palavra, Diarização e TTS de Baixa Latência",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Considerando o portfólio de APIs de áudio da OpenAI (`tts-1`, `tts-1-hd`, `gpt-4o-mini-tts` e `gpt-4o-audio-preview` / Realtime API), qual escolha atende corretamente à necessidade de controlar estilo/entonação da fala via instruções textuais ou operar entrada e saída de áudio nativamente com compreensão de prosódia?",
+      "options": [
+        "`tts-1` (USD 0,015 / 1.000 caracteres) é o único modelo capaz de receber entrada de áudio do usuário e responder em prosódia emocional sem STT.",
+        "`tts-1-hd` (USD 0,030 / 1.000 caracteres) substitui completamente a Realtime API em chamadas WebRTC bidirecionais com compreensão de voz.",
+        "Para controle de estilo/entonação na síntese via campo `instructions`, utiliza-se `gpt-4o-mini-tts`; já para entrada e saída nativamente em áudio com compreensão direta de prosódia e baixa latência conversacional, adota-se `gpt-4o-audio-preview` (`modalities: [\"text\", \"audio\"]`) ou a **Realtime API** via WebRTC/WebSockets.",
+        "Todos os modelos TTS possuem exatamente o mesmo preço de USD 0,006 / minuto e suportam `modalities: [\"text\", \"audio\"]`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na família de síntese, `tts-1` (USD 0,015 / 1.000 caracteres) foca em baixa latência, `tts-1-hd` (USD 0,030 / 1.000 caracteres) prioriza alta fidelidade acústica e `gpt-4o-mini-tts` adiciona suporte a `instructions` para guiar estilo e entonação; quando o sistema precisa de entrada e saída nativas em áudio (*speech-in / speech-out* com compreensão de prosódia), a escolha arquitetural é `gpt-4o-audio-preview` (`modalities: [\"text\", \"audio\"]`) ou a Realtime API via WebRTC/WebSockets. As alternativas A e B confundem sintetizadores unidirecionais (apenas texto $\\to$ áudio) com modelos nativos bidirecionais; a D confunde a tarifa por minuto do `whisper-1` com a cobrança por caractere do TTS.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#apis-de-audio-whisper-stt-e-tts",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q16",
+      "sessionId": "2.7",
+      "subtopicTag": "Compreensão Nativa de Vídeo no Gemini: Frames, Áudio Sincronizado e Timestamps",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na compreensão nativa de vídeo do Gemini 2.5 com amostragem padrão de $1\\text{ FPS}$, quantos tokens por segundo são consumidos aproximadamente em resolução padrão e em baixa resolução (`MEDIA_RESOLUTION_LOW`), e qual a capacidade temporal aproximada em uma janela de $1\\text{M}$ de tokens?",
+      "options": [
+        "Em resolução padrão são $258$ tokens/frame + $32$ tokens/s de áudio ($290$ tokens/s, $\\sim 17.400\\text{–}18.000$ tokens/min), cabendo quase $1\\text{ hora}$ na janela de $1\\text{M}$; em `MEDIA_RESOLUTION_LOW` são $66$ tokens/frame + $32$ tokens/s ($98$ tokens/s), cabendo quase $3\\text{ horas}$.",
+        "Independentemente da resolução ou presença de áudio, qualquer vídeo consome exatamente $85$ tokens fixos por minuto de gravação.",
+        "Cada segundo de vídeo consome $10.000$ tokens/frame + $5.000$ tokens/s de áudio, limitando a janela de $1\\text{M}$ a no máximo $60$ segundos.",
+        "O áudio sincronizado não consome nenhum token ($0$ tokens/s) e cada frame custa apenas $1$ token em qualquer janela do Gemini."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Pela matemática oficial do Gemini a $1\\text{ FPS}$, cada frame visual consome $258$ tokens em resolução padrão (ou $66$ tokens em `MEDIA_RESOLUTION_LOW`) somados a $32$ tokens/s da trilha de áudio sincronizada: $T_{\\text{video}}(D) \\approx D \\cdot (258 \\cdot f_{\\text{fps}} + 32)$, resultando em $290$ tokens/s (quase $1\\text{ h}$ em $1\\text{M}$ tokens e até $2\\text{ h}$ em $2\\text{M}$) ou $98$ tokens/s em baixa resolução (quase $3\\text{ h}$ em $1\\text{M}$). A alternativa B traz o valor fixo de `detail: \"low\"` de imagem da OpenAI; as alternativas C e D inventam taxas de tokenização incompatíveis com os limites reais de $1\\text{M}$–$2\\text{M}$ tokens.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#compreensao-nativa-de-video-gemini",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q17",
+      "sessionId": "2.7",
+      "subtopicTag": "Compreensão Nativa de Vídeo no Gemini: Frames, Áudio Sincronizado e Timestamps",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o código TypeScript abaixo usando o SDK oficial `@google/genai`. Por que o laço `while (uploaded.state === \"PROCESSING\")` é obrigatório antes de chamar `ai.models.generateContent`, e qual é o papel do bloco `videoMetadata`?",
+      "codeSnippet": "let uploaded = await ai.files.upload({ file: videoPath, config: { mimeType: \"video/mp4\" } });\ntry {\n  while (uploaded.state === \"PROCESSING\") {\n    await new Promise((r) => setTimeout(r, 3000));\n    uploaded = await ai.files.get({ name: uploaded.name! });\n  }\n  if (uploaded.state === \"FAILED\") throw new Error(\"Falha ao indexar vídeo na Files API.\");\n\n  const response = await ai.models.generateContent({\n    model: \"gemini-2.5-flash\",\n    contents: createUserContent([\n      {\n        ...createPartFromUri(uploaded.uri!, uploaded.mimeType!),\n        videoMetadata: { startOffset: \"0s\", endOffset: \"180s\", fps: 1 }\n      },\n      `${question} Cite os timestamps exatos no formato [MM:SS].`\n    ])\n  });\n  return response.text ?? \"\";\n} finally {\n  await ai.files.delete({ name: uploaded.name! }).catch(() => {});\n}",
+      "options": [
+        "O laço apenas atualiza uma barra de progresso cosmética na UI; `videoMetadata` comprime o MP4 no disco local do servidor Node.js.",
+        "O upload via `ai.files.upload` é assíncrono e o Gemini precisa extrair/indexar frames e trilha sonora até `state` atingir `\"ACTIVE\"` antes que `generateContent` possa ler `uploaded.uri`; já `videoMetadata` recorta o intervalo temporal (`0s` a `180s`) e define a taxa de amostragem (`fps`) na inferência.",
+        "O laço `while` realiza a transcrição linha a linha usando o Whisper localmente; `videoMetadata` define as coordenadas de bounding box `[ymin, xmin, ymax, xmax]`.",
+        "Sem o laço `while`, o `ai.files.delete` é executado antes do `try`; `videoMetadata` serve apenas para adicionar marca d'água no vídeo."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. A `Files API` ingere o arquivo de vídeo de forma assíncrona (`state === \"PROCESSING\"`): invocar `generateContent` antes de o arquivo transicionar para `\"ACTIVE\"` (ou falhar em `\"FAILED\"`) gera erro na API. O campo `videoMetadata` permite restringir o trecho analisado (`startOffset`/`endOffset`) e ajustar `fps` para otimizar orçamento de tokens. A alternativa A subestima o polling obrigatório; a C confunde polling da Files API com Whisper local e `videoMetadata` com `box_2d`; a D inventa semântica falsa de `try/finally` e marca d'água.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#compreensao-nativa-de-video-gemini",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q18",
+      "sessionId": "2.7",
+      "subtopicTag": "Compreensão Nativa de Vídeo no Gemini: Frames, Áudio Sincronizado e Timestamps",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Dada a função TypeScript `estimateGeminiVideoBudget` utilizada no orquestrador para validar um screencast de exatamente 1 hora (`3600` segundos) a `fps = 1`, qual é o resultado retornado respectivamente para `resolution = \"standard\"` e para `resolution = \"low\"`?",
+      "codeSnippet": "export function estimateGeminiVideoBudget(\n  durationSeconds: number,\n  fps = 1,\n  resolution: \"standard\" | \"low\" = \"standard\"\n) {\n  const tokensPerFrame = resolution === \"standard\" ? 258 : 66;\n  const totalTokens = Math.ceil(durationSeconds * (tokensPerFrame * fps + 32));\n  return { totalTokens, fits1MWindow: totalTokens < 950_000 };\n}",
+      "options": [
+        "Em `standard`: `totalTokens: 928_800, fits1MWindow: true`; em `low`: `totalTokens: 237_600, fits1MWindow: true`.",
+        "Em `standard`: `totalTokens: 1_044_000, fits1MWindow: true`; em `low`: `totalTokens: 115_200, fits1MWindow: true`.",
+        "Em `standard`: `totalTokens: 1_044_000, fits1MWindow: false`; em `low`: `totalTokens: 352_800, fits1MWindow: true`.",
+        "Em `standard`: `totalTokens: 290_000, fits1MWindow: true`; em `low`: `totalTokens: 98_000, fits1MWindow: true`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Para `durationSeconds = 3600` e `fps = 1`: em `standard`, `3600 * (258 * 1 + 32) = 3600 * 290 = 1_044_000` tokens, logo `1_044_000 < 950_000` é `false` (exige trocar para `low` ou usar janela de 2M); em `low`, `3600 * (66 * 1 + 32) = 3600 * 98 = 352_800` tokens, logo `352_800 < 950_000` é `true`. A alternativa A esquece os `32` tokens/s da trilha de áudio (`3600 * 258 = 928_800` e `3600 * 66 = 237_600`); a B erra a comparação booleana `< 950_000` e o cálculo de `low`; a D erra a ordem de grandeza multiplicando por `1000` em vez de `3600`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#compreensao-nativa-de-video-gemini",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q19",
+      "sessionId": "2.7",
+      "subtopicTag": "Compreensão Nativa de Vídeo no Gemini: Frames, Áudio Sincronizado e Timestamps",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao arquitetar a ingestão de vídeos com a **Files API** do Gemini em produção, quais limites de armazenamento/ciclo de vida e ajustes de `fps` no `videoMetadata` devem nortear o sistema?",
+      "options": [
+        "Vídeos de até 500 MB vão em Base64 inline e arquivos na `Files API` são mantidos permanentemente por 10 anos sem limite de projeto.",
+        "A `Files API` aceita apenas arquivos menores que 20 MB, expira em 5 minutos e fixa `fps` obrigatoriamente em `60` para qualquer conteúdo.",
+        "Não há necessidade de deletar arquivos ou ajustar `fps`, pois gravações de palestras estáticas e bugs rápidos de animação consomem o mesmo orçamento com `fps: 1`.",
+        "Vídeos acima de $20\\text{ MB}$ devem usar a `Files API` (limite de $2\\text{ GB}$ por arquivo, $20\\text{ GB}$ por projeto e expiração automática em $48\\text{ h}$), ajustando `fps` conforme a dinâmica temporal (ex.: `0.2` para palestras estáticas vs. `5` para bugs rápidos de animação UI)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A `Files API` do Gemini suporta arquivos até $2\\text{ GB}$ (com teto de $20\\text{ GB}$ por projeto e expiração automática após $48\\text{ h}$), sendo necessária sempre que o payload inline ultrapassa $20\\text{ MB}$; além disso, parametrizar `fps` em `videoMetadata` evita desperdício em palestras/slides estáticos (`0.2` FPS) e captura transições fugazes em animações UI (`5` FPS). As alternativas A e B invertem ou inventam limites de inline/Files API e retenção; a C ignora tanto a gestão de cota de $20\\text{ GB}$ quanto o impacto linear de `fps` no custo de tokens.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#compreensao-nativa-de-video-gemini",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q20",
+      "sessionId": "2.7",
+      "subtopicTag": "Compreensão Nativa de Vídeo no Gemini: Frames, Áudio Sincronizado e Timestamps",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual vantagem arquitetural a compreensão nativa de vídeo do Gemini oferece em comparação à abordagem tradicional de extrair frames JPEG com `ffmpeg`, enviar dezenas de chamadas Vision avulsas, transcrever o áudio no Whisper e alinhar os resultados manualmente no código?",
+      "options": [
+        "A abordagem tradicional com `ffmpeg` + Whisper executa em uma única chamada HTTP sem precisar gerenciar sincronia de relógio entre áudio e vídeo.",
+        "O Gemini ingere quadros visuais e áudio sincronizados em uma única sequência temporal no Transformer, eliminando desalinhamentos manuais e permitindo localizar eventos cruzados (o que aparece na tela e o que é falado) por timestamps `[MM:SS]`.",
+        "O Gemini converte o arquivo MP4 em áudio MP3 descartando todas as imagens, por isso elimina a necessidade do `ffmpeg`.",
+        "A abordagem nativa exige obrigatoriamente treinar um modelo YOLO separado para cada cliente antes de responder sobre timestamps `[MM:SS]`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Na abordagem nativa, o Gemini alinha automaticamente frames visuais e faixa acústica na linha do tempo interna do Transformer, correlacionando diretamente eventos visuais com a fala e respondendo com precisão temporal `[MM:SS]` sem colagem manual de JSONs de `ffmpeg` + Vision + Whisper. A alternativa A descreve o inverso do pipeline manual em múltiplos serviços; a C é falsa porque os quadros visuais são processados a $1\\text{ FPS}$ (ou conforme `fps`); a D inventa um pré-requisito inexistente de treino YOLO.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#compreensao-nativa-de-video-gemini",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q21",
+      "sessionId": "2.7",
+      "subtopicTag": "Laboratório Prático: Orquestrador Multimodal (Visão + Whisper + Gemini Vídeo)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a função `analyzeVisualEvidence` do orquestrador abaixo. Se chamarmos `analyzeVisualEvidence(\"screen.png\", { width: 4000, height: 3000 }, 700)` passando `maxImageTokens = 700`, qual será o comportamento da execução?",
+      "codeSnippet": "export async function analyzeVisualEvidence(\n  imagePath: string,\n  dim: ImageDimension,\n  maxImageTokens = 1200\n) {\n  const highTokens = estimateOpenAIVisionTokens(dim, \"high\");\n  const selectedDetail: \"low\" | \"high\" = highTokens <= maxImageTokens ? \"high\" : \"low\";\n  const base64 = await fs.promises.readFile(imagePath, { encoding: \"base64\" });\n\n  const [openaiRes, geminiBboxRes] = await Promise.all([\n    openai.chat.completions.create({\n      model: \"gpt-4o\",\n      temperature: 0.1,\n      messages: [{\n        role: \"user\",\n        content: [\n          { type: \"text\", text: \"Descreva erros de UI, mensagens de exceção e status HTTP visíveis.\" },\n          { type: \"image_url\", image_url: { url: `data:image/png;base64,${base64}`, detail: selectedDetail } }\n        ]\n      }]\n    }),\n    gemini.models.generateContent({ model: \"gemini-2.5-flash\", contents: [/* inlineData + prompt */], config: {/* JSON schema box_2d */} })\n  ]);\n\n  return {\n    selectedDetail,\n    estimatedImageTokens: selectedDetail === \"high\" ? highTokens : 85,\n    /* ... */\n  };\n}",
+      "options": [
+        "Como `highTokens` para `4000x3000` é `765` (> `700`), `selectedDetail` cai para `\"low\"` (`estimatedImageTokens: 85`) na OpenAI, enquanto a chamada OpenAI e a extração estruturada de `box_2d` no Gemini executam em paralelo via `Promise.all`.",
+        "Como `highTokens` é `85`, `selectedDetail` permanece `\"high\"` e as chamadas OpenAI e Gemini executam sequencialmente uma após a outra.",
+        "A função lança uma exceção imediata antes de ler o arquivo porque `4000x3000` excede o teto de `700` tokens.",
+        "O parâmetro `detail: \"low\"` também força o Gemini a retornar coordenadas `[0, 100]` em vez de `[0, 1000]`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Para `4000x3000`, `estimateOpenAIVisionTokens(dim, \"high\")` retorna `765`. Como `765 <= 700` é falso, o roteador seleciona `selectedDetail = \"low\"` (custo fixo de `85` tokens na OpenAI) para respeitar o orçamento `maxImageTokens`, e dispara `openai.chat.completions.create` junto com `gemini.models.generateContent` em paralelo via `Promise.all`. A alternativa B erra o valor de `highTokens` e ignora o `Promise.all`; a C inventa um `throw` que não existe em `analyzeVisualEvidence`; a D confunde `detail` (exclusivo da OpenAI) com a escala normalizada `[0, 1000]` do Gemini.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI Vision Guide — Calculating costs & managing image detail (low/high)"
+    },
+    {
+      "id": "m02-s07-q22",
+      "sessionId": "2.7",
+      "subtopicTag": "Laboratório Prático: Orquestrador Multimodal (Visão + Whisper + Gemini Vídeo)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "No módulo `transcribeAndIndexKeywords` do laboratório abaixo, qual é a função de normalizar cada `w.word` com `.replace(/[.,!?]/g, \"\")` e por que a estimativa financeira multiplica `(duration / 60)` por `0.006`?",
+      "codeSnippet": "export async function transcribeAndIndexKeywords(audioPath: string, keywords: string[]) {\n  const result = await openai.audio.transcriptions.create({\n    file: fs.createReadStream(audioPath),\n    model: \"whisper-1\",\n    language: \"pt\",\n    response_format: \"verbose_json\",\n    timestamp_granularities: [\"word\"],\n    prompt: `Vocabulário técnico esperado: ${keywords.join(\", \")}.`\n  });\n\n  const targets = new Set(keywords.map((k) => k.toLowerCase()));\n  const keywordHits = (result.words ?? [])\n    .filter((w) => targets.has(w.word.toLowerCase().replace(/[.,!?]/g, \"\")))\n    .map((w) => ({ word: w.word, startSec: Number(w.start.toFixed(2)), endSec: Number(w.end.toFixed(2)) }));\n\n  const estimatedCostUsd = Number((((result.duration ?? 0) / 60) * 0.006).toFixed(4));\n  return { text: result.text, durationSec: result.duration, keywordHits, estimatedCostUsd };\n}",
+      "options": [
+        "Remove acentos gráficos da língua portuguesa porque o `Set` em JavaScript rejeita UTF-8; `0.006` é o preço por caractere do `tts-1`.",
+        "O `whisper-1` frequentemente anexa pontuação adjacente nos tokens retornados em `result.words` (ex.: `\"webhook.\"` ou `\"timeout,\"`), então remover `[.,!?]` evita falsos negativos na busca exata no `Set`; já `(duration / 60) * 0.006` calcula o faturamento oficial do `whisper-1` em USD 0,006 por minuto de áudio.",
+        "Serve para apagar as palavras-chave encontradas da transcrição final; `0.006` é o custo por palavra indexada na OpenAI.",
+        "Converte timestamps de milissegundos para horas; o `whisper-1` é cobrado em USD 0,006 por segundo de áudio."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Nos timestamps por palavra do `whisper-1`, uma palavra ao final de frase ou cláusula vem acompanhada de pontuação (ex.: `\"pgvector,\"`, `\"timeout.\"`), o que falharia na correspondência com `targets.has(...)` sem sanitização de pontuação; além disso, a precificação do `whisper-1` é de `USD 0,006 / minuto`, justificando `((result.duration ?? 0) / 60) * 0.006`. A alternativa A confunde remoção de pontuação com acentos e mistura preço de TTS; a C inverte a lógica do `.filter()` e erra a unidade de cobrança; a D confunde segundos com horas e erra a tarifa de minuto para segundo.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/speech-to-text",
+      "officialDocLabel": "OpenAI Audio & Speech-to-Text Guide — Timestamps, prompting Whisper & Text-to-Speech"
+    },
+    {
+      "id": "m02-s07-q23",
+      "sessionId": "2.7",
+      "subtopicTag": "Laboratório Prático: Orquestrador Multimodal (Visão + Whisper + Gemini Vídeo)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise a função `auditVideoWithGemini` do orquestrador abaixo. Qual conjunto de garantias arquiteturais é entregue pelo uso combinado de `responseMimeType` / `responseSchema` e do bloco `finally`?",
+      "codeSnippet": "export async function auditVideoWithGemini(videoPath: string): Promise<VideoChapter[]> {\n  let file = await gemini.files.upload({ file: videoPath, config: { mimeType: \"video/mp4\" } });\n  try {\n    while (file.state === \"PROCESSING\") {\n      await new Promise((r) => setTimeout(r, 3000));\n      file = await gemini.files.get({ name: file.name! });\n    }\n    if (file.state === \"FAILED\") throw new Error(\"Falha no processamento de vídeo pela Files API.\");\n\n    const res = await gemini.models.generateContent({\n      model: \"gemini-2.5-flash\",\n      contents: createUserContent([createPartFromUri(file.uri!, file.mimeType!), \"Cruze tela e fala em [MM:SS].\"]),\n      config: {\n        temperature: 0.1,\n        responseMimeType: \"application/json\",\n        responseSchema: {\n          type: Type.ARRAY,\n          items: {\n            type: Type.OBJECT,\n            properties: {\n              timestamp: { type: Type.STRING },\n              visualEvidence: { type: Type.STRING },\n              spokenContext: { type: Type.STRING }\n            },\n            required: [\"timestamp\", \"visualEvidence\", \"spokenContext\"]\n          }\n        }\n      }\n    });\n    return JSON.parse(res.text ?? \"[]\") as VideoChapter[];\n  } finally {\n    await gemini.files.delete({ name: file.name! }).catch(() => {});\n  }\n}",
+      "options": [
+        "O `responseSchema` força o modelo a retornar o vídeo re-encodado em JSON, enquanto o `finally` mantém o arquivo armazenado indefinidamente para cache gratuito.",
+        "O `responseSchema` apenas valida os parâmetros de upload antes do envio; o `finally` executa apenas quando ocorre `file.state === \"FAILED\"`.",
+        "O `responseMimeType: \"application/json\"` com `responseSchema` restringe a saída ao contrato tipado `VideoChapter[]` (`timestamp`, `visualEvidence`, `spokenContext`) sem markdown envolvente, enquanto o `finally` garante a exclusão do vídeo na `Files API` mesmo se `generateContent` ou `JSON.parse` falharem, preservando a cota de $20\\text{ GB}$ do projeto.",
+        "O `finally` apaga o arquivo local `videoPath` do disco rígido do servidor Node.js, enquanto `responseSchema` desativa a trilha de áudio do Gemini."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Combinar `responseMimeType: \"application/json\"` com `responseSchema` garante conformidade estrutural determinística ao contrato `VideoChapter[]` (dispensando parsers frágeis de cercas Markdown), e colocar `gemini.files.delete` dentro do bloco `finally` assegura limpeza do armazenamento remoto na `Files API` tanto no sucesso quanto em exceções, evitando esgotar os $20\\text{ GB}$ por projeto antes da expiração de $48\\text{ h}$. As alternativas A e B descrevem exatamente o oposto de `responseSchema` e `finally`; a D confunde `gemini.files.delete` (API remota) com `fs.unlink` (arquivo local).",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    },
+    {
+      "id": "m02-s07-q24",
+      "sessionId": "2.7",
+      "subtopicTag": "Laboratório Prático: Orquestrador Multimodal (Visão + Whisper + Gemini Vídeo)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Seguindo o *Checklist de Produção para Pipelines Multimodais* do capítulo, qual tríade de práticas evita estouro de memória (OOM), desperdício de banda de rede e timeouts HTTP em um backend Node.js de alto tráfego?",
+      "options": [
+        "Carregar vídeos MP4 inteiros em strings Base64 na RAM, manter fotos 4000x3000 sem redimensionar até o servidor da IA e executar transcrições de 1 hora sincronamente dentro do controller REST.",
+        "Desabilitar `finally` para reter todos os vídeos por 48 horas, converter áudio MP3 para WAV descomprimido antes do Whisper e aumentar a temperatura do LLM para `1.0`.",
+        "Substituir `fs.createReadStream` por `fs.readFileSync` em todos os vídeos e enviar os mesmos arquivos Base64 a cada turno de conversa em vez de usar a `Files API`.",
+        "Redimensionar fotos no cliente/edge (ex.: com `sharp` para $1568\\text{ px}$ na Anthropic ou $1365\\times 768\\text{ px}$ na OpenAI) preservando tokens efetivos, usar streams (`ai.files.upload` / `fs.createReadStream`) com limpeza no `finally` para evitar OOM, e mover transcrições/vídeos longos para filas assíncronas (BullMQ/SQS)."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. O checklist de produção estabelece três pilares: (1) redimensionar imagens gigantes localmente com `sharp` para o teto efetivo do provedor economiza banda sem perda de tokens; (2) usar streams e `Files API` com limpeza no `finally` evita carregar vídeos pesados em Base64 na RAM do Node.js (prevenindo OOM); (3) desacoplar transcrições e auditorias de vídeo para filas assíncronas (BullMQ/SQS) evita timeouts de requisições HTTP síncronas. As alternativas A, B e C violam frontalmente essas três recomendações.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/vision",
+      "officialDocLabel": "Anthropic Claude Vision Guide — Image sizing, base64 encoding & best practices"
+    },
+    {
+      "id": "m02-s07-q25",
+      "sessionId": "2.7",
+      "subtopicTag": "Laboratório Prático: Orquestrador Multimodal (Visão + Whisper + Gemini Vídeo)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Na função `runMultimodalAuditPipeline`, por que o cálculo preventivo `estimateGeminiVideoBudget` e a verificação `if (!videoBudget.fits1MWindow) throw ...` são executados **antes** do `Promise.all([analyzeVisualEvidence, transcribeAndIndexKeywords, auditVideoWithGemini])`?",
+      "options": [
+        "Porque o `Promise.all` do JavaScript não aceita funções `async` sem que antes uma função síncrona seja executada.",
+        "Para aplicar *Fail-Fast* de orçamento e janela de contexto: se o vídeo exceder a janela de $1\\text{M}$ em resolução padrão, abortar localmente em microssegundos evita disparar chamadas pagas à OpenAI Vision e ao Whisper além de evitar upload desperdiçado na `Files API`.",
+        "Porque o método `estimateGeminiVideoBudget` realiza o upload do arquivo para o servidor da OpenAI antes do Gemini.",
+        "Para converter automaticamente o áudio da chamada telefônica em código TypeScript antes de chamar o `tts-1`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Validar o orçamento determinístico localmente (*preflight check* / *fail-fast*) antes de disparar o leque paralelo `Promise.all` garante que falhas previsíveis de estouramento de janela (`>= 950_000` tokens em resolução padrão) não desperdicem chamadas já faturadas no `gpt-4o`, no `whisper-1` nem banda/cota de upload na `Files API`. A alternativa A inventa uma limitação inexistente no `Promise.all`; as alternativas C e D atribuem comportamento de rede e transpilação que não existem na função pura `estimateGeminiVideoBudget`.",
+      "chapterAnchor": "cap-07-modelos-multimodais-apis#laboratorio-orquestrador-multimodal",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini Video Understanding Guide — Uploading videos via Files API & referencing timestamps"
+    }
+  ]
+}

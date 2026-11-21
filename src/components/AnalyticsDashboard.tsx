@@ -15,15 +15,18 @@ import {
   ExternalLink,
   FileQuestion,
   Layers,
+  Lock,
   Play,
   RefreshCw,
   Settings,
+  ShieldCheck,
   Sparkles,
   Upload
 } from 'lucide-react';
 import type {
   ChapterData,
   CloudSyncStatus,
+  CourseModuleInfo,
   SessionQuizBank,
   UserStudyState
 } from '../types/course';
@@ -32,8 +35,14 @@ import {
   computeSubtopicDiagnostics
 } from '../utils/storage';
 import { exportJsonFile, exportKindleEpub } from '../utils/nativeExport';
+import {
+  getEffectiveModuleMastery,
+  getPendingChaptersForModuleExam,
+  MASTERY_PASS_PERCENTAGE
+} from '../utils/masteryGate';
 
 interface AnalyticsDashboardProps {
+  moduleInfo?: CourseModuleInfo;
   chapters: ChapterData[];
   quizzes: Record<string, SessionQuizBank>;
   studyState: UserStudyState;
@@ -41,7 +50,8 @@ interface AnalyticsDashboardProps {
   onStartQuiz: (
     sessionId: string,
     mode?: 'full' | 'quick' | 'error-notebook',
-    subtopicFilter?: string | null
+    subtopicFilter?: string | null,
+    scope?: 'session' | 'module-exam'
   ) => void;
   onImportState: (imported: UserStudyState) => void;
   onLoadDemoAttempt?: () => void;
@@ -53,6 +63,7 @@ interface AnalyticsDashboardProps {
 }
 
 export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
+  moduleInfo,
   chapters,
   quizzes,
   studyState,
@@ -68,6 +79,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isExportingEpub, setIsExportingEpub] = useState(false);
+
+  const moduleId = moduleInfo?.id ?? chapters[0]?.module ?? 1;
+  const moduleCode = moduleInfo?.code || String(moduleId).padStart(2, '0');
+  const moduleLabel = `Módulo ${moduleCode}`;
+  const moduleTitle = moduleInfo?.title || '';
 
   const diagnostics = useMemo(
     () => computeSubtopicDiagnostics(studyState, chapters, quizzes),
@@ -89,20 +105,34 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     [diagnostics]
   );
 
+  const moduleMastery = useMemo(
+    () => getEffectiveModuleMastery(moduleId, studyState, chapters),
+    [moduleId, studyState, chapters]
+  );
+
+  const eligibility = useMemo(
+    () => getPendingChaptersForModuleExam(moduleId, chapters, studyState),
+    [moduleId, chapters, studyState]
+  );
+
   const sessionStats = useMemo(() => {
     return chapters.map((ch) => {
-      const attempts = studyState.quizAttempts.filter((a) => a.sessionId === ch.session);
+      const attempts = studyState.quizAttempts.filter(
+        (a) => a.sessionId === ch.session && a.mode !== 'module-exam'
+      );
       const latest = attempts[0] || null;
       const bestScore =
         attempts.length > 0 ? Math.max(...attempts.map((a) => a.scorePercentage)) : null;
       const bankSize = quizzes[ch.session]?.questions.length || 0;
       const isRead = studyState.completedChapters.includes(ch.id);
+      const readingPct = isRead ? 100 : studyState.readingProgress[ch.id] || 0;
 
       return {
         session: ch.session,
         chapterId: ch.id,
         title: ch.title,
         isRead,
+        readingPct,
         bankSize,
         attemptsCount: attempts.length,
         latestScore: latest ? latest.scorePercentage : null,
@@ -112,6 +142,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }, [chapters, quizzes, studyState]);
 
   const moduleSummary = useMemo(() => {
+    const moduleChapterIds = new Set(chapters.map((c) => c.id));
+    const moduleSessionIds = new Set(chapters.map((c) => c.session));
     const evaluatedSessions = sessionStats.filter((s) => s.bestScore !== null);
     const avgScore =
       evaluatedSessions.length > 0
@@ -124,22 +156,37 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       (acc, q) => acc + q.questions.length,
       0
     );
+    const completedReads = studyState.completedChapters.filter((id) =>
+      moduleChapterIds.has(id)
+    ).length;
+    const totalAttempts = studyState.quizAttempts.filter(
+      (a) =>
+        (a.mode === 'module-exam' && a.moduleId === moduleId) ||
+        (a.mode !== 'module-exam' && moduleSessionIds.has(a.sessionId))
+    ).length;
 
     return {
       avgScore,
       evaluatedCount: evaluatedSessions.length,
       totalSessions: chapters.length,
-      completedReads: studyState.completedChapters.length,
-      totalAttempts: studyState.quizAttempts.length,
+      completedReads,
+      totalAttempts,
       totalQuestionsInModule
     };
-  }, [sessionStats, chapters.length, studyState, quizzes]);
+  }, [sessionStats, chapters, studyState, quizzes, moduleId]);
 
   const handleDownloadEpub = async () => {
     if (isExportingEpub) return;
     setIsExportingEpub(true);
     try {
-      await exportKindleEpub();
+      await exportKindleEpub(
+        moduleInfo || {
+          id: moduleId,
+          code: moduleCode,
+          title: moduleTitle,
+          epubFileName: `modulo-${moduleCode}-kindle-colorsoft.epub`
+        }
+      );
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Não foi possível preparar o arquivo EPUB.');
     } finally {
@@ -150,7 +197,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   const handleExportJson = async () => {
     try {
       await exportJsonFile(
-        `progresso-engenharia-ia-mod01-${new Date().toISOString().slice(0, 10)}.json`,
+        `progresso-engenharia-ia-mod${moduleCode}-${new Date().toISOString().slice(0, 10)}.json`,
         studyState
       );
     } catch (err) {
@@ -180,13 +227,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-              Analytics & Qualidade do Conhecimento • Módulo 01
+              Analytics & Qualidade do Conhecimento • {moduleLabel}
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold mt-1">
               Dashboard de Desempenho & Diagnóstico Técnico
             </h1>
             <p className="text-sm text-indigo-200 mt-1 max-w-2xl">
-              Acompanhe sua maestria nas 11 sessões do Módulo 01, identifique pontos cegos por subtópico e nível cognitivo e sincronize seu progresso entre Desktop e Android.
+              Acompanhe sua maestria nas {moduleSummary.totalSessions}{' '}
+              {moduleSummary.totalSessions === 1 ? 'sessão' : 'sessões'} do {moduleLabel}
+              {moduleTitle ? ` (${moduleTitle})` : ''}, identifique pontos cegos por subtópico e sincronize seu progresso entre Desktop e Android.
             </p>
           </div>
 
@@ -236,9 +285,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 disabled:opacity-60 text-slate-950 font-bold text-xs shadow-sm transition-all cursor-pointer"
             >
               <Download className="w-4 h-4" />
-              {isExportingEpub ? 'Preparando EPUB...' : 'Baixar .EPUB (Kindle Colorsoft)'}
+              {isExportingEpub ? 'Gerando EPUB...' : 'Baixar .EPUB (Kindle Colorsoft)'}
             </button>
             <button
+              type="button"
               onClick={handleExportJson}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 cursor-pointer"
             >
@@ -246,6 +296,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               Exportar Progresso (.json)
             </button>
             <button
+              type="button"
               onClick={() => fileInputRef.current?.click()}
               className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs border border-white/15 cursor-pointer"
             >
@@ -280,18 +331,78 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         )}
       </div>
 
+      {/* Mastery Gate Status Banner for Active Module */}
+      <div
+        className={`rounded-2xl border-2 p-5 shadow-xs flex flex-wrap items-center justify-between gap-4 ${
+          moduleMastery.status === 'approved'
+            ? 'bg-emerald-50 border-emerald-400 text-emerald-950'
+            : moduleMastery.status === 're-study-required'
+            ? 'bg-rose-50 border-rose-300 text-rose-950'
+            : eligibility.isEligible
+            ? 'bg-amber-50 border-amber-300 text-slate-900'
+            : 'bg-white border-slate-200 text-slate-900'
+        }`}
+      >
+        <div className="flex items-start gap-3 max-w-3xl">
+          {moduleMastery.status === 'approved' ? (
+            <ShieldCheck className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+          ) : moduleMastery.status === 're-study-required' ? (
+            <AlertTriangle className="w-6 h-6 text-rose-600 shrink-0 mt-0.5" />
+          ) : eligibility.isEligible ? (
+            <Award className="w-6 h-6 text-amber-600 shrink-0 mt-0.5" />
+          ) : (
+            <Lock className="w-6 h-6 text-slate-500 shrink-0 mt-0.5" />
+          )}
+          <div>
+            <div className="text-xs font-extrabold uppercase tracking-wider">
+              Mastery Gate • Meta ≥ {MASTERY_PASS_PERCENTAGE}%
+            </div>
+            <h2 className="text-base sm:text-lg font-extrabold mt-0.5">
+              {moduleMastery.status === 'approved'
+                ? `${moduleLabel} Aprovado (${moduleMastery.approvedScore ?? 70}% consolidado) — Próximo módulo desbloqueado!`
+                : moduleMastery.status === 're-study-required'
+                ? `Reestudo Cirúrgico Obrigatório: percorra ${eligibility.pendingRestudyIds.length} capítulo(s) (< 70%) para novo ciclo de 3 chances.`
+                : eligibility.isEligible
+                ? moduleMastery.activeCycle && moduleMastery.activeCycle.attemptCount > 0
+                  ? `Recuperação Disponível: consolidado atual em ${moduleMastery.activeCycle.consolidatedScore}% (Chance ${moduleMastery.activeCycle.attemptCount + 1}/3)`
+                  : `Prova Completa do ${moduleLabel} Liberada (Máx. 40 questões)`
+                : `Faltam ${eligibility.unreadChapterIds.length} capítulo(s) com percurso completo para liberar a Prova Oficial do Módulo`}
+            </h2>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onStartQuiz(chapters[0]?.session || '', 'full', null, 'module-exam')}
+          className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer shrink-0 ${
+            moduleMastery.status === 're-study-required'
+              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+              : eligibility.isEligible
+              ? 'bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-xs'
+              : 'bg-slate-900 hover:bg-slate-800 text-white'
+          }`}
+        >
+          <Award className="w-4 h-4" />
+          {moduleMastery.status === 'approved'
+            ? 'Ver Prova Oficial'
+            : eligibility.isEligible
+            ? 'Abrir Prova Oficial do Módulo'
+            : 'Ver Capítulos Pendentes'}
+        </button>
+      </div>
+
       {/* 4 KPI Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
           <div className="flex items-center justify-between text-xs font-bold uppercase text-slate-400">
-            <span>Maestria Média (Módulo 01)</span>
+            <span>Maestria Média ({moduleLabel})</span>
             <Award className="w-5 h-5 text-indigo-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mt-2">
             {moduleSummary.avgScore}%
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            Meta de maestria recomendada: ≥ 75%
+            Meta de aprovação de módulo: ≥ 70%
           </div>
         </div>
 
@@ -310,14 +421,14 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
           <div className="flex items-center justify-between text-xs font-bold uppercase text-slate-400">
-            <span>Leitura dos Capítulos</span>
+            <span>Leitura Verificada</span>
             <BookOpen className="w-5 h-5 text-emerald-600" />
           </div>
           <div className="text-3xl font-extrabold text-slate-900 mt-2">
             {moduleSummary.completedReads} / {moduleSummary.totalSessions}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            Capítulos completos marcados como lidos
+            Capítulos com 100% das seções percorridas
           </div>
         </div>
 
@@ -337,7 +448,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Cognitive Depth Breakdown */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-indigo-600" />
             <h2 className="text-base font-extrabold text-slate-900">
@@ -409,7 +520,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         </div>
       </div>
 
-      {/* ACTIONABLE DIAGNOSTICS: "O QUE VOCÊ PODE MELHORAR" */}
+      {/* ACTIONABLE DIAGNOSTICS */}
       <div className="bg-white rounded-2xl border-2 border-amber-300 p-6 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2.5">
@@ -426,8 +537,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             </div>
           </div>
 
-          {studyState.quizAttempts.length === 0 && onLoadDemoAttempt && (
+          {moduleSummary.totalAttempts === 0 && onLoadDemoAttempt && (
             <button
+              type="button"
               onClick={onLoadDemoAttempt}
               className="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs transition-colors cursor-pointer"
             >
@@ -482,6 +594,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
                   <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-slate-200/80">
                     <button
+                      type="button"
                       onClick={() => onSelectChapter(gap.sessionId, gap.chapterAnchor)}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
                     >
@@ -490,7 +603,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     </button>
 
                     <button
-                      onClick={() => onStartQuiz(gap.sessionId, 'full', gap.subtopicTag)}
+                      type="button"
+                      onClick={() => onStartQuiz(gap.sessionId, 'full', gap.subtopicTag, 'session')}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold cursor-pointer"
                     >
                       <Play className="w-3.5 h-3.5" />
@@ -511,10 +625,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               );
             })}
           </div>
-        ) : studyState.quizAttempts.length === 0 ? (
+        ) : moduleSummary.totalAttempts === 0 ? (
           <div className="p-6 rounded-xl bg-slate-50 border border-slate-200 text-center">
             <p className="text-sm font-semibold text-slate-700">
-              Você ainda não realizou nenhuma prova das sessões do Módulo 01.
+              Você ainda não realizou nenhuma prova das sessões do {moduleLabel}.
             </p>
             <p className="text-xs text-slate-500 mt-1">
               Escolha qualquer sessão abaixo e clique em &ldquo;Fazer Prova&rdquo; para que o sistema mapeie seus pontos fortes e o que você pode melhorar.
@@ -524,19 +638,20 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-950">
             <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
             <div className="text-sm">
-              <strong>Parabéns!</strong> Todos os subtópicos avaliados até agora estão com taxa de acerto igual ou superior a 75%. Continue avançando para as próximas sessões do módulo!
+              <strong>Parabéns!</strong> Todos os subtópicos avaliados até agora estão com taxa de acerto igual ou superior a 75%. Continue avançando!
             </div>
           </div>
         )}
       </div>
 
-      {/* Session-by-Session Performance Table (Sessions 1.1 to 1.11) */}
+      {/* Session-by-Session Performance Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-600" />
             <h2 className="text-base font-extrabold text-slate-900">
-              Desempenho por Sessão — Módulo 01 (11 Etapas)
+              Desempenho por Sessão — {moduleLabel} ({moduleSummary.totalSessions}{' '}
+              {moduleSummary.totalSessions === 1 ? 'Etapa' : 'Etapas'})
             </h2>
           </div>
           <span className="text-xs text-slate-500">
@@ -584,11 +699,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     <span className="text-xs font-extrabold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
                       Sessão {s.session}
                     </span>
-                    {s.isRead && (
+                    {s.isRead ? (
                       <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Lido
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Percorrido (100%)
                       </span>
-                    )}
+                    ) : s.readingPct > 0 ? (
+                      <span className="text-xs font-semibold text-indigo-600">
+                        {s.readingPct}% percorrido
+                      </span>
+                    ) : null}
                     {badge}
                     <span className="text-xs text-slate-400">
                       • {s.bankSize} questões • {s.attemptsCount} tentativa(s)
@@ -613,22 +732,25 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <button
+                    type="button"
                     onClick={() => onSelectChapter(s.session)}
                     className="px-3.5 py-2 rounded-xl border border-slate-300 hover:bg-white text-xs font-semibold text-slate-700 cursor-pointer"
                   >
                     Ler Capítulo
                   </button>
                   <button
-                    onClick={() => onStartQuiz(s.session, 'full', null)}
+                    type="button"
+                    onClick={() => onStartQuiz(s.session, 'full', null, 'session')}
                     className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold cursor-pointer"
                   >
                     Fazer Prova ({s.bankSize})
                   </button>
                   {s.attemptsCount > 0 && (
                     <button
-                      onClick={() => onStartQuiz(s.session, 'error-notebook', null)}
+                      type="button"
+                      onClick={() => onStartQuiz(s.session, 'error-notebook', null, 'session')}
                       className="px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-semibold cursor-pointer"
                       title="Refazer apenas questões que você errou nesta sessão"
                     >

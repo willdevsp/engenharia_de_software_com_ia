@@ -28,11 +28,14 @@ official_docs:
     section: "MCP Client Tool & Server Trigger in n8n AI Agents"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=HyzlYwjoXOQ"
+  video_url: "https://www.youtube.com/watch?v=gc9MEMdOZxM"
   videos:
-    - title: "Claude's Model Context Protocol is here... Let's test it"
-      channel: "Fireship"
-      url: "https://www.youtube.com/watch?v=HyzlYwjoXOQ"
+    - title: "Model Context Protocol: Guia que todo Dev precisa saber"
+      channel: "Full Cycle"
+      url: "https://www.youtube.com/watch?v=gc9MEMdOZxM"
+    - title: "Model Context Protocol (MCP) explicado: o \"USB-C\" da IA para integrar LLMs a dados e ferramentas"
+      channel: "Vini Lana"
+      url: "https://www.youtube.com/watch?v=hsO63OTyeTc"
 ---
 
 # Sessão 1.8: MCPs e Automação para Devs

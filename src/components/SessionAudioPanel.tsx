@@ -37,6 +37,7 @@ import {
 import { getCloudConfig, isArchiveConfigured, isFirebaseConfigured } from '../utils/cloudConfig';
 
 interface SessionAudioPanelProps {
+  moduleId?: number;
   sessionId: string;
   sessionTitle: string;
   onTracksCountChange?: (count: number) => void;
@@ -59,6 +60,7 @@ function formatSeconds(sec: number): string {
 }
 
 export const SessionAudioPanel: React.FC<SessionAudioPanelProps> = ({
+  moduleId,
   sessionId,
   sessionTitle,
   onTracksCountChange,
@@ -124,7 +126,7 @@ export const SessionAudioPanel: React.FC<SessionAudioPanelProps> = ({
     setIsSyncingList(true);
     setSyncNotice(null);
     try {
-      const res = await syncSessionAudios(sessionId);
+      const res = await syncSessionAudios(sessionId, moduleId);
       setTracks(res.tracks);
       onTracksCountChange?.(res.tracks.length);
 
@@ -167,7 +169,7 @@ export const SessionAudioPanel: React.FC<SessionAudioPanelProps> = ({
     onTracksCountChange?.(initialLocal.length);
 
     setIsSyncingList(true);
-    syncSessionAudios(sessionId)
+    syncSessionAudios(sessionId, moduleId)
       .then((res) => {
         if (cancelled) return;
         setTracks(res.tracks);
@@ -186,7 +188,7 @@ export const SessionAudioPanel: React.FC<SessionAudioPanelProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, moduleId]);
 
   const activeTrack = useMemo(
     () => tracks.find((t) => t.id === selectedTrackId) || null,
@@ -306,7 +308,8 @@ export const SessionAudioPanel: React.FC<SessionAudioPanelProps> = ({
         sessionId,
         selectedFile,
         customTitle,
-        (stage) => setUploadStage(stage)
+        (stage) => setUploadStage(stage),
+        moduleId
       );
       setCustomTitle('');
       setSelectedFile(null);

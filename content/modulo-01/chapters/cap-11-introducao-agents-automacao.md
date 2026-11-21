@@ -24,11 +24,14 @@ official_docs:
     section: "The function calling lifecycle & JSON Schema definitions"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=hvnPWgfmvyI"
+  video_url: "https://www.youtube.com/watch?v=bfTlsp3F0L8"
   videos:
-    - title: "Why AI Agents Need RAG + Observability"
-      channel: "IBM Technology"
-      url: "https://www.youtube.com/watch?v=hvnPWgfmvyI"
+    - title: "O Segredo dos agentes de IA: Function Calling na Prática"
+      channel: "Rocketseat"
+      url: "https://www.youtube.com/watch?v=bfTlsp3F0L8"
+    - title: "Agente de IA do zero em Python, sem framework: tool calling na prática"
+      channel: "BalsaTech"
+      url: "https://www.youtube.com/watch?v=L-_jD-u-dFI"
 ---
 
 # Sessão 1.11: Introdução a Agents e Automação Avançada

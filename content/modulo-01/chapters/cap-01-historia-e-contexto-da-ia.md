@@ -25,11 +25,14 @@ official_docs:
     section: "Core Concepts & Layers API"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=zjkBMFhNj_g"
+  video_url: "https://www.youtube.com/watch?v=uVTM_ZqkUqg"
   videos:
-    - title: "[1hr Talk] Intro to Large Language Models"
-      channel: "Andrej Karpathy"
-      url: "https://www.youtube.com/watch?v=zjkBMFhNj_g"
+    - title: "A História da Inteligência Artificial: de Alan Turing ao ChatGPT"
+      channel: "Canal Prompt"
+      url: "https://www.youtube.com/watch?v=uVTM_ZqkUqg"
+    - title: "A curiosa linha do tempo da evolução da Inteligência Artificial"
+      channel: "BBC News Brasil"
+      url: "https://www.youtube.com/watch?v=SkX6MKU9gAQ"
 ---
 
 # 1.1 História e Contexto da Inteligência Artificial

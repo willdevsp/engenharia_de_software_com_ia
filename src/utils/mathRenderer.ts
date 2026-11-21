@@ -18,6 +18,14 @@ export function slugifyHeading(text: string): string {
     .replace(/\s+/g, '-');
 }
 
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function isLikelyCurrencySpan(expr: string): boolean {
   if (/^\d+([.,]\d+)?\s+[a-zA-ZÀ-ÿ]{2,}/.test(expr)) {
     const hasMathTokens = /[\\_^=<>+\-*/()[\]{}|]/.test(expr);
@@ -30,6 +38,7 @@ function isLikelyCurrencySpan(expr: string): boolean {
  * Renders Markdown + LaTeX ($$...$$ display and $...$ inline) to HTML using Marked + KaTeX.
  * Protects code blocks and inline code first so marked never mangles underscores in LaTeX
  * and KaTeX never touches $1 or ${var} inside code blocks.
+ * Wraps tables in horizontally scrollable containers and fenced code blocks with language + Copy UI.
  */
 export function renderChapterMarkdownWithMath(markdown: string): {
   htmlContent: string;
@@ -106,8 +115,9 @@ export function renderChapterMarkdownWithMath(markdown: string): {
       return mathPlaceholders[Number(idxStr)]?.raw ?? '';
     });
 
-  // 5. Parse Markdown with custom heading renderer that preserves exact anchor slugs
+  // 5. Parse Markdown with custom heading, table, and code renderers
   const tocHeadings: TocHeadingItem[] = [];
+  const baseRenderer = new marked.Renderer();
   const renderer = new marked.Renderer();
 
   renderer.heading = function ({ tokens, depth }) {
@@ -124,8 +134,23 @@ export function renderChapterMarkdownWithMath(markdown: string): {
         html: finalHeadingHtml,
         depth
       });
+      return `<h${depth} id="${id}" data-section-checkpoint="${id}">${finalHeadingHtml}</h${depth}>`;
     }
     return `<h${depth} id="${id}">${finalHeadingHtml}</h${depth}>`;
+  };
+
+  renderer.table = function (token) {
+    const baseTableHtml = baseRenderer.table.call(this, token);
+    return `<div class="table-scroll-wrapper" role="region" aria-label="Tabela comparativa rolável horizontalmente">${baseTableHtml}</div>`;
+  };
+
+  renderer.code = function (token) {
+    const basePreHtml = baseRenderer.code.call(this, token);
+    const rawLang = String(token.lang || '').trim().split(/\s+/)[0];
+    const langLabel = rawLang ? rawLang.toUpperCase() : 'CÓDIGO';
+    return `<div class="code-block-shell"><div class="code-block-header"><span class="code-lang-badge">${escapeHtml(
+      langLabel
+    )}</span><button type="button" class="code-copy-btn" data-copy-code="true">Copiar</button></div>${basePreHtml}</div>`;
   };
 
   const rawHtml = marked.parse(protectedText, { renderer }) as string;
@@ -145,13 +170,6 @@ export function renderInlineTextWithMath(text: string): string {
 
   const codePlaceholders: string[] = [];
   const mathPlaceholders: string[] = [];
-
-  const escapeHtml = (str: string) =>
-    str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
 
   // 1. Protect inline code `...`
   let processed = text.replace(/`([^`\n]+)`/g, (_m, codeContent) => {

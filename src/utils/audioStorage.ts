@@ -28,6 +28,14 @@ export type AudioValidationResult =
   | { valid: true; format: 'mp3' | 'm4a'; mimeType: string }
   | { valid: false; error: string };
 
+export function resolveModuleId(sessionId: string, explicitModuleId?: number): number {
+  if (typeof explicitModuleId === 'number' && Number.isInteger(explicitModuleId) && explicitModuleId > 0) {
+    return explicitModuleId;
+  }
+  const prefix = Number.parseInt(String(sessionId || '').split('.')[0], 10);
+  return Number.isInteger(prefix) && prefix > 0 ? prefix : 1;
+}
+
 export function isNativeAudioStorage(): boolean {
   return Capacitor.isNativePlatform();
 }
@@ -285,7 +293,7 @@ function mapCloudMetaToTrack(
   const native = isNativeAudioStorage();
   return {
     id: meta.id,
-    moduleId: meta.moduleId || 1,
+    moduleId: resolveModuleId(meta.sessionId, meta.moduleId),
     sessionId: meta.sessionId,
     title: meta.title,
     fileName: meta.fileName,
@@ -315,7 +323,8 @@ export interface SyncSessionAudiosResult {
 }
 
 export async function syncSessionAudios(
-  sessionId: string
+  sessionId: string,
+  moduleId?: number
 ): Promise<SyncSessionAudiosResult> {
   const allLocal = listAllAudios();
   const existingInSession = allLocal.filter((t) => t.sessionId === sessionId);
@@ -349,6 +358,7 @@ export async function syncSessionAudios(
       const native = isNativeAudioStorage();
       return {
         ...track,
+        moduleId: resolveModuleId(track.sessionId, track.moduleId ?? moduleId),
         isCachedOffline: cached,
         storageBackend: cached
           ? ((native ? 'capacitor-fs' : 'indexeddb') as SessionAudioTrack['storageBackend'])
@@ -378,7 +388,8 @@ export async function uploadAndSaveSessionAudio(
   sessionId: string,
   file: File,
   customTitle?: string,
-  onStageChange?: (stage: string) => void
+  onStageChange?: (stage: string) => void,
+  moduleId?: number
 ): Promise<SessionAudioTrack> {
   const validation = validateAudioFile(file);
   if (!validation.valid) {
@@ -396,6 +407,7 @@ export async function uploadAndSaveSessionAudio(
     );
   }
 
+  const resolvedModuleId = resolveModuleId(sessionId, moduleId);
   const trackId = `aud-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const title = (customTitle || '').trim() || deriveDefaultTitle(file.name);
   const createdAt = new Date().toISOString();
@@ -410,7 +422,7 @@ export async function uploadAndSaveSessionAudio(
 
   const draftTrack: SessionAudioTrack = {
     id: trackId,
-    moduleId: 1,
+    moduleId: resolvedModuleId,
     sessionId,
     title,
     fileName: file.name || `${trackId}.${validation.format}`,
@@ -438,7 +450,7 @@ export async function uploadAndSaveSessionAudio(
     onStageChange?.('Registrando metadados no Firebase Firestore...');
     const cloudMeta: CloudAudioMetadata = {
       id: trackId,
-      moduleId: 1,
+      moduleId: resolvedModuleId,
       sessionId,
       title,
       fileName: draftTrack.fileName,
@@ -472,9 +484,10 @@ export async function uploadAndSaveSessionAudio(
 export async function saveSessionAudio(
   sessionId: string,
   file: File,
-  customTitle?: string
+  customTitle?: string,
+  moduleId?: number
 ): Promise<SessionAudioTrack> {
-  return uploadAndSaveSessionAudio(sessionId, file, customTitle);
+  return uploadAndSaveSessionAudio(sessionId, file, customTitle, undefined, moduleId);
 }
 
 export async function resolveAudioPlaybackUrl(

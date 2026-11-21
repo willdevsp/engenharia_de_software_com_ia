@@ -25,8 +25,9 @@ Use esta skill sempre que um capítulo (`content/modulo-XX/chapters/cap-YY.md`) 
    - Reprove capítulos que pareçam apenas resumos de slides ou listas de tópicos rasos.
 2. **Estrutura e Âncoras de Diagnóstico:**
    - Verifique se as seções do capítulo possuem títulos claros cujas âncoras (`#slug-da-secao`) correspondem exatamente aos campos `chapterAnchor` referenciados pelas questões da prova (`quiz-sYY.json`), permitindo que o botão *"Revisar no Capítulo"* do Dashboard leve o aluno ao parágrafo exato.
-3. **Extensibilidade Multi-Fase:**
-   - Verifique se o frontmatter preserva os campos `media.audio_notebooklm` e `media.video_url` para compatibilidade futura com o Gemini Notebook e vídeos.
+3. **Extensibilidade Multi-Fase e Vídeos do YouTube em Português:**
+   - Verifique se o frontmatter preserva os campos `media.audio_notebooklm`, `media.video_url` e `media.videos`.
+   - **Política de Idioma dos Vídeos:** Todos os vídeos em `media.videos` devem ser em **português (`pt-BR`)**, utilizando vídeos em inglês **exclusivamente** quando não existir conteúdo técnico equivalente em português (caso em que `language: "en"` deve estar explícito). Valide com `node .agents/skills/course-module-builder/scripts/verify-youtube-videos.mjs`.
 
 ### Dimensão 3: Qualidade Visual & Compatibilidade Kindle Colorsoft (Kaleido 3 E-Ink)
 1. **Imagens Rasterizadas Reais (Zero Dependência de JS para Diagramas no EPUB):**

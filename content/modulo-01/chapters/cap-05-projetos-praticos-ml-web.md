@@ -25,7 +25,11 @@ official_docs:
     section: "Body Segmentation, Pose Detection and Object Detection (COCO-SSD)"
 media:
   audio_notebooklm: null
-  video_url: null
+  video_url: "https://www.youtube.com/watch?v=MeS6dX2a2zQ"
+  videos:
+    - title: "Reconhecendo gestos em tempo real direto do navegador - Machine Learning para Web Developers"
+      channel: "Erick Wendel"
+      url: "https://www.youtube.com/watch?v=MeS6dX2a2zQ"
 ---
 
 # Sessão 1.5: Projetos Práticos com ML na Web (Vídeo e Jogos)

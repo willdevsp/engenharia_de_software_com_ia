@@ -1,0 +1,587 @@
+{
+  "sessionId": "2.8",
+  "moduleId": 2,
+  "title": "Prova da Sessão 2.8 — Aplicações Práticas Multimodais (OCR Inteligente, Análise de Mídia e Bots)",
+  "questions": [
+    {
+      "id": "m02-s08-q01",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Por que pipelines tradicionais baseados em OCR clássico (como Tesseract) acoplados a expressões regulares e heurísticas de coordenadas $(x, y)$ falham com frequência diante de notas fiscais e recibos reais em produção?",
+      "options": [
+        "Porque o Tesseract só consegue processar arquivos PNG em modo colorido RGB e rejeita documentos PDF.",
+        "Porque o OCR clássico converte pixels em texto linear sem compreensão semântica ou espacial; qualquer variação de layout (layout drift), quebra de descrição em múltiplas linhas, tabela sem bordas ou foto inclinada embaralha colunas e quebra o parser Regex.",
+        "Porque expressões regulares em JavaScript não aceitam dígitos numéricos nem separadores decimais com vírgula.",
+        "Porque APIs REST modernas proíbem o envio de strings extraídas por OCR clássico dentro de payloads JSON."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O OCR clássico desconecta a leitura de caracteres da interpretação estrutural do documento: basta um fornecedor alterar o layout da DANFE, inserir uma coluna de desconto ou quebrar a descrição de um item em duas linhas para que coordenadas fixas e Regex falhem silenciosamente (layout drift). A alternativa A é falsa porque o Tesseract processa imagens binarizadas/escala de cinza e PDFs rasterizados; a C está errada pois Regex suporta dígitos e vírgulas sem restrição; e a D é incorreta porque APIs REST aceitam strings JSON livremente.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q02",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Na arquitetura de defesa em profundidade para OCR financeiro com VLMs nativos, quais são as três barreiras aplicadas em série para transformar uma extração probabilística em um contrato confiável?",
+      "options": [
+        "Compressão ZIP na entrada, execução com temperature 1.0 e armazenamento direto em CSV sem tipagem.",
+        "Conversão prévia de PDF para HTML, minificação com Babel e comparação por distância de Levenshtein.",
+        "Constrained Decoding na API (responseSchema ou zodTextFormat), validação estrutural em runtime com Zod (.parse) e verificação determinística de invariante aritmética com tolerância $\\varepsilon = 0{,}02$.",
+        "Duplicação de prompts em dois idiomas, remoção de todos os campos decimais e aprovação automática quando o JSON tiver mais de 10 chaves."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Como a geração por modelos multimodais é probabilística, a segurança financeira exige três barreiras em série: (1) Constrained Decoding na API para restringir chaves e tipos emitidos; (2) validação estrutural via Zod (.parse) para assegurar formatos ISO, enums e regex de CNPJ; e (3) auditoria determinística de conservação contábil dentro de $\\varepsilon = 0{,}02$. A alternativa A usa temperature 1.0 e dispensa tipagem, agravando erros; a B inventa ferramentas de front-end sem validação contábil; e a D descreve heurísticas arbitrárias sem valor de auditoria.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q03",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Ao implementar um assistente jurídico com `@anthropic-ai/sdk` que executa múltiplas consultas sequenciais sobre o mesmo contrato PDF (multas, SLA, foro e garantias), qual posicionamento do bloco `type: 'document'` maximiza a eficiência do Prompt Caching?",
+      "options": [
+        "Posicionar o bloco `type: 'document'` (`media_type: 'application/pdf'`) com `cache_control: { type: 'ephemeral' }` no início do array `content` da mensagem, antes do bloco `type: 'text'` variável com a pergunta.",
+        "Posicionar a pergunta variável antes do PDF e adicionar `cache_control: { type: 'ephemeral' }` apenas na última string de texto.",
+        "Converter o PDF em múltiplas chamadas separadas sem `cache_control`, pois o Anthropic Claude não suporta cache para documentos PDF.",
+        "Enviar o PDF dentro de `temperature` e repetir a pergunta em `max_tokens` para fixar o prefixo em memória."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. O Prompt Caching da Anthropic reutiliza o prefixo idêntico das mensagens até o marcador `cache_control: { type: 'ephemeral' }`. Colocar o bloco `type: 'document'` estático no início de `content` permite que perguntas jurídicas diferentes enviadas logo depois aproveitem o processamento em cache do contrato inteiro. A alternativa B invalida o prefixo cacheado a cada nova pergunta; a C é falsa pois o Claude suporta caching com `type: 'document'`; e a D cita parâmetros numéricos inválidos para payloads.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/pdf-support",
+      "officialDocLabel": "Anthropic Claude – PDF Support"
+    },
+    {
+      "id": "m02-s08-q04",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Em um pipeline de extração fiscal com `temperature: 0.0`, o modelo retorna um JSON estruturalmente válido pelo Zod, mas a invariante aritmética acusa divergência de `0.45` acima de $\\varepsilon = 0{,}02$ ou `camposIlegiveis` não está vazio. Qual deve ser a decisão arquitetural correta?",
+      "options": [
+        "Sobrescrever `valorTotalNota` no banco de dados com `totalCalculado` silenciosamente para que o sistema contábil nunca lance erro.",
+        "Aumentar `temperature` para `1.5` e aceitar a primeira resposta que somar aproximadamente o valor esperado.",
+        "Remover o campo `camposIlegiveis` do schema para impedir que o modelo sinalize incerteza visual.",
+        "Rejeitar a aprovação automática e rotear o documento para reprocessamento em maior resolução visual ou fila de revisão humana (human-in-the-loop), pois a divergência evidencia dígito borrado ou confusão entre subtotal e total."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Divergências acima de $\\varepsilon = 0{,}02$ ou a presença de itens em `camposIlegiveis` indicam falha de leitura em região ruidosa ou inversão semântica entre subtotal, desconto e total — nunca devendo ser mascaradas automaticamente em produção financeira. A alternativa A introduz risco fiscal grave ao inventar um total divergente do documento emitido; a B injeta aleatoriedade em dados contábeis; e a C estimula o modelo a alucinar dígitos borrados em vez de reportar ilegibibilidade.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q05",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "foundation",
+      "question": "Analise o trecho TypeScript do Lab 1 de OCR Inteligente. Qual papel específico a combinação entre `responseSchema` na chamada do Gemini e `NotaFiscalSchema.parse(...)` desempenha nesse fluxo?",
+      "codeSnippet": "const NotaFiscalSchema = z.object({\n  dataEmissaoISO: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/),\n  emitente: z.object({\n    razaoSocial: z.string().min(2),\n    cnpjApenasDigitos: z.string().regex(/^\\d{14}$/),\n  }),\n  valorTotalNota: z.number().nonnegative(),\n  camposIlegiveis: z.array(z.string()),\n});\n\nconst response = await ai.models.generateContent({\n  model: 'gemini-2.5-flash',\n  contents: createUserContent([createPartFromUri(uploaded.uri!, uploaded.mimeType!), 'Extraia os dados.']),\n  config: { temperature: 0.0, responseMimeType: 'application/json', responseSchema: geminiNotaFiscalSchema },\n});\nconst parsed = NotaFiscalSchema.parse(JSON.parse(response.text ?? '{}'));",
+      "options": [
+        "`responseSchema` executa o código TypeScript dentro da GPU do servidor e torna `NotaFiscalSchema.parse` redundante e impossível de falhar.",
+        "`responseSchema` restringe a decodificação de tokens na API ao formato JSON estruturado, enquanto `NotaFiscalSchema.parse` aplica validação determinística em runtime no servidor (regex de data ISO e CNPJ de 14 dígitos, números não negativos) garantindo segurança de tipos.",
+        "`NotaFiscalSchema.parse` envia a nota fiscal novamente à OpenAI para dupla conferência de texto.",
+        "`responseMimeType: 'application/json'` comprime o arquivo PDF original para metade do tamanho em disco antes do upload."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O `responseSchema` atua na API do Gemini restringindo as chaves e tipos JSON gerados durante o decoding, mas formatos estritos como regex de CNPJ (`/^\\d{14}$/`) ou data ISO (`/^\\d{4}-\\d{2}-\\d{2}$/`) e restrições `.nonnegative()` precisam ser validados determinísticamente no servidor via `NotaFiscalSchema.parse(...)`. A alternativa A erra porque `responseSchema` não garante regex complexas nem dispensa verificação no servidor; a C é falsa pois Zod roda localmente sem chamadas externas; e a D confunde formato da resposta do modelo com compressão do arquivo de entrada.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q06",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 1: OCR Inteligente de Documentos (PDFs, Notas Fiscais, Tabelas) para JSON Validado com Zod",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Considere a função de auditoria `validarInvarianteFiscal` do Lab 1. Se a extração retornar dois itens (`quantidade: 2, valorUnitario: 35.00` e `quantidade: 1, valorUnitario: 30.00`), `descontoTotal: 10.00`, `frete: 15.00`, `valorTotalNota: 105.05` e `camposIlegiveis: []`, qual será exatamente o retorno da função?",
+      "codeSnippet": "export function validarInvarianteFiscal(nf: NotaFiscal): { valido: boolean; divergencia: number } {\n  const somaItens = nf.itens.reduce((acc, item) => acc + item.quantidade * item.valorUnitario, 0);\n  const totalCalculado = Number((somaItens - nf.descontoTotal + nf.frete).toFixed(2));\n  const divergencia = Number(Math.abs(totalCalculado - nf.valorTotalNota).toFixed(2));\n  return { valido: divergencia <= 0.02 && nf.camposIlegiveis.length === 0, divergencia };\n}",
+      "options": [
+        "`{ valido: true, divergencia: 0.05 }`, porque `camposIlegiveis` está vazio e tem prioridade sobre a diferença.",
+        "`{ valido: true, divergencia: 0.01 }`, porque o desconto é somado duas vezes.",
+        "`{ valido: false, divergencia: 0.05 }`, pois `totalCalculado` é `105.00` (`70 + 30 - 10 + 15`) e a divergência de `0.05` supera a tolerância de `0.02`.",
+        "`{ valido: false, divergencia: 10.00 }`, porque `frete` não entra no cálculo do `totalCalculado`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Calculando passo a passo: `somaItens = 2 * 35.00 + 1 * 30.00 = 100.00`; `totalCalculado = 100.00 - 10.00 + 15.00 = 105.00`; `divergencia = |105.00 - 105.05| = 0.05`. Como `0.05 <= 0.02` avalia como `false`, o retorno é `{ valido: false, divergencia: 0.05 }`. A alternativa A erra na operação `&&` que exige ambas as condições verdadeiras; a B inventa aritmética incorreta; e a D ignora que o código soma `+ nf.frete`.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-1-ocr-inteligente-documentos-zod",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q07",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual é o impacto direto da codificação Base64 no payload HTTP e na memória RAM ao enviar arquivos multimodais inline (`inlineData`), e qual é o limiar oficial do Google Gemini para alternar para a `Files API`?",
+      "options": [
+        "Base64 adiciona overhead exato de $\\frac{4}{3} \\approx +33{,}3\\%$ sobre o tamanho binário original; no Google Gemini, envios inline são limitados a $20\\text{ MB}$ totais por requisição, exigindo a `Files API` acima desse limite ou em reuso.",
+        "Base64 reduz o arquivo em $50\\%$ por compressão Huffman; no Gemini, `inlineData` aceita até $2\\text{ GB}$ sem uso da `Files API`.",
+        "Base64 mantém exatamente $100\\%$ do tamanho binário original sem overhead, e a `Files API` só existe para arquivos de áudio MP3.",
+        "Base64 multiplica o tamanho por $10\\times$, e o Gemini aceita no máximo $1\\text{ MB}$ via `Files API`."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Como cada 3 bytes binários (24 bits) são mapeados para 4 caracteres ASCII de 6 bits em Base64, há um acréscimo determinístico de $\\frac{4}{3} \\approx +33{,}3\\%$ no tráfego e na RAM do processo Node.js; no Gemini, requisições `inlineData` têm teto de $20\\text{ MB}$ totais, enquanto a `Files API` suporta até $2\\text{ GB}$ por arquivo. A alternativa B confunde Base64 com compressão e inverte os limites; a C nega o overhead inerente ao Base64 e restringe falsamente a `Files API`; e a D traz números totalmente incorretos.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q08",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Por que fotos de CNH ou recibos tiradas em smartphones frequentemente chegam ao modelo de visão de lado ou de ponta-cabeça mesmo parecendo corretas na galeria do celular, e qual risco adicional os cabeçalhos EXIF impõem?",
+      "options": [
+        "Porque o formato JPEG não suporta imagens verticais e o navegador sempre inverte a largura pela altura.",
+        "Porque câmeras móveis aplicam criptografia AES nos pixels e apenas o app da galeria possui a chave privada.",
+        "Porque a OpenAI Vision API rotaciona automaticamente toda imagem em $90^\\circ$ no sentido horário para economizar patches visuais.",
+        "Porque smartphones gravam os pixels rotacionados na memória e registram apenas a tag `Orientation` no cabeçalho EXIF; se o back-end redimensionar sem girar os pixels fisicamente, o modelo lê o texto virado e metadados EXIF sensíveis (como coordenadas GPS) podem ser expostos."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Dispositivos móveis evitam reescrever a matriz de pixels ao capturar em retrato/paisagem, armazenando a rotação lógica apenas na tag EXIF `Orientation` junto a metadados como GPS e modelo do aparelho. Redimensionar sem aplicar rotação física gera imagens tombadas para o VLM e preserva dados pessoais de geolocalização. A alternativa A é falsa pois JPEG suporta quaisquer dimensões; a B inventa criptografia inexistente; e a C atribui um comportamento falso à API da OpenAI.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q09",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Comparando o suporte oficial de PDFs entre Google Gemini (`@google/genai`) e Anthropic Claude (`@anthropic-ai/sdk`), qual relação entre teto de páginas e consumo médio de tokens por página está correta?",
+      "options": [
+        "O Gemini limita PDFs a $10$ páginas e consome $5.000$ tokens por página, enquanto o Claude aceita $10.000$ páginas a $100$ tokens por página.",
+        "Ambos consomem exatamente $258$ tokens por página e não possuem qualquer limite de páginas por requisição.",
+        "O Gemini aceita até $1.000$ páginas ($50\\text{ MB}$) por PDF consumindo $258$ tokens por página na resolução padrão, enquanto o Claude aceita $100$ páginas em janela padrão (até $600$ na janela de $1\\text{M}$, referência padrão de $32\\text{ MB}$) consumindo $1.500\\text{ a }3.000$ tokens por página.",
+        "O Claude extrai apenas texto puro sem renderizar páginas visualmente, por isso consome $0$ tokens de imagem em PDFs."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Conforme as documentações oficiais comparadas no capítulo, o Gemini suporta PDFs de até $50\\text{ MB}$ e $1.000$ páginas com custo fixo de $258$ tokens/página na resolução padrão, enquanto o Claude suporta até $100$ páginas por requisição padrão (ou $600$ páginas na janela de $1\\text{M}$, referência de $32\\text{ MB}$ inline) consumindo de $1.500$ a $3.000$ tokens/página por combinar texto extraído e imagem renderizada. A alternativa A inverte e distorce os números; a B ignora a diferença de custo por página e os tetos; e a D contradiz o pipeline visual+textual do Claude.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/pdf-support",
+      "officialDocLabel": "Anthropic Claude – PDF Support"
+    },
+    {
+      "id": "m02-s08-q10",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Um sistema processa relatórios contábeis de $P = 240$ páginas com tabelas contínuas entre páginas via Claude (limite padrão de $100$ páginas). Para combinar economia contra alucinações em fotos ruins e integridade de tabelas divididas entre chunks, qual arquitetura deve ser adotada?",
+      "options": [
+        "Enviar todas as 240 páginas em uma única chamada Base64 sem fatiamento e descartar tabelas que cruzarem a página 100.",
+        "Aplicar um Quality Gate barato na entrada (`detail: 'low'` ou modelo Flash classificando `legibilidade: 'ok' | 'desfocado' | 'cortado' | 'reflexo'`) para rejeitar capturas ruins e fatiar PDFs extensos em janelas de $W$ páginas com sobreposição $O \\geq 1$ ($N_{\\text{janelas}} = \\max(1, \\operatorname{ceil}(\\frac{P - O}{W - O}))$), exigindo `paginaOrigem` para deduplicar fronteiras.",
+        "Fatiar o PDF em chunks sem sobreposição ($O = 0$) de 100 páginas e somar todos os valores extraídos sem deduplicação.",
+        "Reduzir todas as imagens de documentos para $128 \\times 128$ pixels antes do OCR principal para reduzir custos."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O Quality Gate de baixo custo barra documentos borrados ou cortados antes da extração pesada, pedindo nova foto ao usuário sem desperdiçar tokens com alucinações; já o fatiamento por janelas com sobreposição $O \\geq 1$ garante que linhas de tabela quebradas na fronteira apareçam com contexto na janela seguinte, sendo facilmente deduplicadas via `paginaOrigem`. A alternativa A excede o limite padrão de 100 páginas; a C ($O = 0$) quebra tabelas na fronteira entre páginas 100 e 101; e a D destrói a legibilidade dos caracteres antes do OCR.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q11",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise a função `normalizarFotoDocumento` escrita com a biblioteca `sharp`. O que acontece tecnicamente se o desenvolvedor remover `.rotate()` ou encadear `.withMetadata()` nessa cadeia de transformação?",
+      "codeSnippet": "export async function normalizarFotoDocumento(bufferEntrada: Buffer) {\n  const buffer = await sharp(bufferEntrada)\n    .rotate()\n    .resize({ width: 2048, height: 2048, fit: 'inside', withoutEnlargement: true })\n    .jpeg({ quality: 88, mozjpeg: true })\n    .toBuffer();\n\n  const meta = await sharp(buffer).metadata();\n  return { buffer, width: meta.width ?? 0, height: meta.height ?? 0, mimeType: 'image/jpeg' as const };\n}",
+      "options": [
+        "Sem `.rotate()`, o `sharp` não gira fisicamente os pixels segundo a tag EXIF `Orientation`, enviando documentos tombados ao VLM; já adicionar `.withMetadata()` reintroduz cabeçalhos EXIF/GPS sensíveis no JPEG enviado à API externa.",
+        "Sem `.rotate()`, a imagem é convertida automaticamente para PNG transparente; com `.withMetadata()`, a resolução cai para 512px.",
+        "Remover `.rotate()` melhora a acurácia do OCR pois preserva o texto original inclinado para o modelo corrigir.",
+        "`withoutEnlargement: true` faz o `sharp` girar a imagem em $180^\\circ$ sempre que ela tiver menos de 2048 pixels."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. No `sharp`, `.rotate()` sem argumentos lê a orientação EXIF, aplica a rotação física na matriz de pixels e, por padrão (sem `.withMetadata()`), remove todos os metadados EXIF/GPS, protegendo privacidade (LGPD) e garantindo leitura ereta pelo modelo. A alternativa B inventa conversão para PNG e redução de resolução; a C erra pois texto tombado prejudica o OCR e vaza EXIF; e a D confunde `withoutEnlargement` (que evita upscaling de imagens menores que 2048px) com rotação.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q12",
+      "sessionId": "2.8",
+      "subtopicTag": "Tratamento de Documentos Multi-Página, Rotacionados e Fotografados em Produção",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a implementação `fatiarPdfComSobreposicao` com `pdf-lib`. Para um PDF de `total = 29` páginas chamado com `tamanhoJanela = 15` e `overlap = 1`, quantas janelas são geradas e quais intervalos (`paginaInicial`..`paginaFinal`) elas cobrem?",
+      "codeSnippet": "export async function fatiarPdfComSobreposicao(pdfBytes: Buffer, tamanhoJanela = 15, overlap = 1): Promise<JanelaPdf[]> {\n  const origem = await PDFDocument.load(pdfBytes);\n  const total = origem.getPageCount();\n  const passo = Math.max(1, tamanhoJanela - overlap);\n  const janelas: JanelaPdf[] = [];\n  for (let inicio = 0, idx = 0; inicio < total; inicio += passo, idx++) {\n    const fim = Math.min(total, inicio + tamanhoJanela);\n    const subDoc = await PDFDocument.create();\n    const paginas = await subDoc.copyPages(origem, Array.from({ length: fim - inicio }, (_, k) => inicio + k));\n    paginas.forEach((p) => subDoc.addPage(p));\n    janelas.push({ indiceJanela: idx, paginaInicial: inicio + 1, paginaFinal: fim, bytes: await subDoc.save() });\n    if (fim === total) break;\n  }\n  return janelas;\n}",
+      "options": [
+        "3 janelas: `1..15`, `16..29` e `29..29`, porque não há verificação de parada ao atingir `total`.",
+        "2 janelas sem sobreposição: `1..14` e `15..29`, porque `passo` define o tamanho de cada bloco copiado.",
+        "1 janela única `1..29`, porque `PDFDocument.create()` concatena todas as páginas no mesmo objeto.",
+        "2 janelas com sobreposição na página 15: janela 0 cobre `1..15` (`inicio = 0, fim = 15`) e janela 1 cobre `15..29` (`inicio = 14, fim = 29`), encerrando no `if (fim === total) break`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Como `passo = 15 - 1 = 14`, a primeira iteração parte de `inicio = 0` até `fim = Math.min(29, 15) = 15`, gerando `paginaInicial: 1, paginaFinal: 15`. Na segunda iteração, `inicio = 14` e `fim = Math.min(29, 29) = 29`, gerando `paginaInicial: 15, paginaFinal: 29` (sobrepondo a página 15 como contexto de fronteira) e interrompendo em `if (fim === total) break` — conferindo com $\\operatorname{ceil}((29-1)/(15-1)) = 2$. A alternativa A ignora o `break`; a B confunde `passo` com `tamanhoJanela`; e a C ignora que `subDoc` é recriado por iteração.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#tratamento-documentos-multipagina-e-fotos",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/pdf-support",
+      "officialDocLabel": "Anthropic Claude – PDF Support"
+    },
+    {
+      "id": "m02-s08-q13",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "No Lab 2 (Parte A), por que configuramos `detail: 'high'` no bloco `input_image` da chamada `openai.responses.parse` para catalogação e moderação de fotos de marketplace?",
+      "options": [
+        "Para ativar a geração de uma nova imagem sintética via DALL-E junto com o texto JSON.",
+        "Porque `detail: 'low'` bloqueia o uso do helper `zodTextFormat` no SDK da OpenAI.",
+        "Para permitir que o modelo inspecione tiles em alta resolução e leia etiquetas pequenas, números de série, marcas d'água externas (`marca_dagua_externa`) e eventual PII exposta (placas, documentos ou endereços em embalagens).",
+        "Porque `detail: 'high'` faz a API ignorar o prompt do sistema e analisar apenas os metadados EXIF da imagem."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Enquanto `detail: 'low'` reduz a imagem a uma visão global barata (suficiente apenas para Quality Gate ou classificação macro), `detail: 'high'` divide a imagem em grade detalhada, indispensável para ler rótulos, seriais, marcas d'água de concorrentes e dados pessoais expostos no fundo da foto. A alternativa A confunde visão analítica com geração de imagem; a B é falsa pois `detail` não restringe `zodTextFormat`; e a D inverte totalmente o papel de `system` e da resolução visual.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q14",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Como o **Gemini 2.5** amostra e contabiliza tokens no modo padrão de *Video Understanding* para processar vídeo e áudio sincronizados nativamente?",
+      "options": [
+        "Amostra 60 FPS fixos consumindo 1.000 tokens por segundo independentemente da resolução.",
+        "Amostra $1\\text{ FPS}$ — consumindo $258$ tokens por frame na resolução padrão (ou cerca de $66$ tokens em resolução baixa) mais $32\\text{ tokens/s}$ de áudio e metadados (totalizando cerca de $300\\text{ tokens/s}$ no modo padrão ou cerca de $100\\text{ tokens/s}$ em baixa resolução).",
+        "Extrai apenas a faixa de áudio via Whisper antes de rodar o modelo e descarta todos os frames visuais do MP4.",
+        "Converte todo o vídeo para texto Base64 e cobra apenas 10 tokens por minuto de vídeo, sem dependência de duração."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Na documentação oficial de Video Understanding do Gemini, o modo padrão amostra 1 quadro por segundo ($1\\text{ FPS}$): cada quadro consome $258$ tokens em resolução padrão (ou $\\sim 66$ em resolução baixa), somado a $32\\text{ tokens/s}$ para a trilha de áudio sincronizada e metadados ($\\approx 300\\text{ tokens/s}$ no padrão e $\\approx 100\\text{ tokens/s}$ em baixa resolução). A alternativa A superestima FPS e tokens; a C descreve stitching de áudio ignorando os frames visuais nativos; e a D traz modelo de cobrança fictício.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q15",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Em um pipeline de marketplace que recebe milhares de fotos de vendedores, por que o Lab 2 unifica a moderação visual tipada e a extração da ficha técnica em um único contrato estruturado (`CatalogoModeracaoSchema`) com instrução de preencher apenas especificações visíveis?",
+      "options": [
+        "Porque evita pagar duas vezes pelos mesmos tokens de imagem de entrada em alta resolução, entrega decisão de moderação auditável (`aprovadoPublicacao`, `categoriasRisco`, `justificativaModeracao`) junto ao catálogo e coíbe alucinação de especificações técnicas ausentes na foto.",
+        "Porque o SDK da OpenAI proíbe fazer duas requisições consecutivas para a mesma URL de imagem no mesmo dia.",
+        "Porque incluir o objeto `moderacao` no schema Zod impede fisicamente que o usuário faça upload de imagens maiores que 100 KB.",
+        "Porque `CatalogoModeracaoSchema` converte automaticamente qualquer imagem reprovada em uma imagem aprovada usando filtros CSS."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Enviar uma imagem `detail: 'high'` duas vezes (uma chamada para moderar e outra para catalogar) dobra o custo de tokens visuais e a latência; consolidar ambos os blocos num único JSON Schema com regra de aterramento estrito (*grounding* apenas no visível) otimiza custo/latência e evita inventar ficha técnica. A alternativa B inventa uma restrição inexistente na API; a C confunde schema de resposta com validação de upload; e a D é absurda.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q16",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Por que um pipeline de geração de capítulos de vídeo no `@google/genai` falha intermitentemente em produção quando chama `ai.models.generateContent` imediatamente na linha seguinte a `await ai.files.upload`?",
+      "options": [
+        "Porque `ai.files.upload` retorna apenas um booleano e não o URI do vídeo.",
+        "Porque arquivos MP4 só podem ser processados pelo modelo `gemini-2.5-pro` e nunca pelo `gemini-2.5-flash`.",
+        "Porque a `Files API` apaga o vídeo automaticamente 100 milissegundos após o término do upload.",
+        "Porque vídeos permanecem temporariamente no estado `'PROCESSING'` durante a decodificação assíncrona nos servidores do Google; é obrigatório executar polling com `ai.files.get` até que `state === 'ACTIVE'` antes de chamar `generateContent`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Ao enviar vídeos para a `Files API` do Gemini, o upload conclui antes que o back-end finalize a decodificação e indexação dos frames/áudio, deixando o recurso no estado `'PROCESSING'`. Chamar `generateContent` antes da transição para `'ACTIVE'` resulta em erro de estado inválido; daí a necessidade do loop de polling com timeout e tratamento para estados de falha. A alternativa A erra pois `upload` retorna metadados incluindo `uri`, `name` e `state`; a B é falsa pois `gemini-2.5-flash` suporta vídeo nativamente; e a C é falsa pois a retenção padrão na `Files API` é de 48 horas.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q17",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Observe o trecho TypeScript do Lab 2 (Parte A). Qual comportamento garante que `catalogarEModerarImagem` devolva um objeto tipado de acordo com `CatalogoModeracaoSchema` e trate corretamente eventuais recusas ou respostas vazias?",
+      "codeSnippet": "const response = await openai.responses.parse({\n  model: 'gpt-4o',\n  temperature: 0.1,\n  input: [\n    { role: 'system', content: 'Verifique riscos de moderação ou dados pessoais visíveis. Não invente dados técnicos.' },\n    { role: 'user', content: [\n      { type: 'input_text', text: 'Execute a moderação visual e extraia a ficha técnica.' },\n      { type: 'input_image', image_url: imageUrlOuDataUri, detail: 'high' },\n    ]},\n  ],\n  text: { format: zodTextFormat(CatalogoModeracaoSchema, 'catalogo_moderacao_produto') },\n});\nif (!response.output_parsed) throw new Error('Resposta estruturada ausente na Responses API.');\nreturn response.output_parsed;",
+      "options": [
+        "O uso de `temperature: 0.1` desabilita toda checagem de moderação para acelerar o parser JSON.",
+        "`zodTextFormat` converte a imagem `input_image` em SVG antes do envio para `gpt-4o`.",
+        "`zodTextFormat` vincula o schema Zod ao contrato de saída estruturada da Responses API (`text.format`), fazendo `openai.responses.parse` validar e popular `response.output_parsed` com tipagem inferida `CatalogoModeracaoResult`, enquanto a guarda `if (!response.output_parsed)` evita retorno `null/undefined` em caso de recusa ou truncamento.",
+        "O método `openai.responses.parse` salva o catálogo diretamente no PostgreSQL antes de retornar `response.output_parsed`."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Na Responses API da OpenAI, `zodTextFormat(CatalogoModeracaoSchema, ...)` registra o JSON Schema estrito derivado do Zod em `text.format`, e `openai.responses.parse` parseia e tipa automaticamente o resultado em `response.output_parsed`; porém, se houver recusa de segurança ou saída incompleta, `output_parsed` pode vir nulo, justificando o `throw` explícito. A alternativa A erra sobre `temperature: 0.1`; a B inventa vetorização SVG; e a D inventa persistência em banco.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q18",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 2: Pipeline de Análise de Mídia (Catalogação, Moderação Visual e Capítulos de Vídeo)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Analise o código TypeScript abaixo para geração de capítulos `[MM:SS]` de vídeo. O que ocorrerá se o servidor da API falhar ao transcodificar o MP4 enviando `state: 'FAILED'`, ou se `generateContent` lançar uma exceção de rede após o vídeo ficar `'ACTIVE'`?",
+      "codeSnippet": "async function aguardarVideoAtivo(fileName: string, timeoutMs = 120_000) {\n  const deadline = Date.now() + timeoutMs;\n  let arquivo = await ai.files.get({ name: fileName });\n  while (arquivo.state === 'PROCESSING') {\n    if (Date.now() > deadline) throw new Error(`Timeout aguardando vídeo ${fileName}.`);\n    await new Promise((r) => setTimeout(r, 4000));\n    arquivo = await ai.files.get({ name: fileName });\n  }\n  if (arquivo.state !== 'ACTIVE') throw new Error(`Falha no processamento (${arquivo.state}).`);\n  return arquivo;\n}\n\nconst uploaded = await ai.files.upload({ file: caminhoMp4, config: { mimeType: 'video/mp4' } });\ntry {\n  const pronto = await aguardarVideoAtivo(uploaded.name!);\n  const response = await ai.models.generateContent({ /* ... */ });\n  return VideoInsightsSchema.parse(JSON.parse(response.text ?? '{}'));\n} finally {\n  if (uploaded.name) await ai.files.delete({ name: uploaded.name });\n}",
+      "options": [
+        "Em caso de `state: 'FAILED'`, o loop `while` entra em loop infinito por 48 horas e o arquivo nunca é removido.",
+        "Em ambos os cenários (`state: 'FAILED'` ou exceção em `generateContent`), um erro explícito é lançado no bloco `try` e o bloco `finally` ainda garante a chamada a `ai.files.delete({ name: uploaded.name })`, impedindo vazamento de cota na `Files API`.",
+        "Se `generateContent` lançar exceção, o bloco `finally` é ignorado pelo Node.js quando há `await` dentro dele.",
+        "Quando `state === 'FAILED'`, a função retorna `VideoInsights` vazio sem disparar exceção."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Como `'FAILED' !== 'PROCESSING'`, o laço `while` encerra imediatamente, `if (arquivo.state !== 'ACTIVE')` dispara `Error('Falha no processamento (FAILED).')`, e tanto nessa falha quanto em uma exceção de `generateContent` o bloco `finally` é obrigatoriamente executado pelo runtime para limpar o recurso remoto via `ai.files.delete`. A alternativa A é falsa pois o `while` verifica `=== 'PROCESSING'`; a C contradiz a semântica de `try/finally` em funções `async`; e a D ignora o `throw` explícito.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-2-pipeline-analise-de-midia",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q19",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Qual falha arquitetural ocorre em bots de WhatsApp Business ou Telegram quando mensagens de texto, notas de voz `.ogg`, fotos e PDFs são encaminhados para pipelines separados em vez de seguirem o padrão *Normalized Multimodal Turn*?",
+      "options": [
+        "O servidor de WhatsApp bloqueia o recebimento de arquivos `.ogg` se houver fotos no mesmo dia.",
+        "O modelo `whisper-1` recusa transcrever português brasileiro se a sessão tiver histórico de texto.",
+        "O Node.js não permite manter objetos `Map` quando há arquivos binários em memória.",
+        "O bot perde a memória cruzada entre turnos de modalidades diferentes — por exemplo, não consegue correlacionar uma reclamação enviada por áudio no turno 1 com a foto da caixa avariada no turno 2 e o PDF da nota no turno 3."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Usuários reais alternam naturalmente entre texto, áudio, foto e PDF dentro do mesmo atendimento esperando compreensão contínua; pipelines desconectados fragmentam o contexto e impedem o raciocínio correlacionado entre turnos. A alternativa A é falsa sobre o WhatsApp Business; a B inventa uma restrição inexistente do `whisper-1`; e a C é falsa sobre `Map` em JavaScript/Node.js.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q20",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "advanced",
+      "question": "Quando a evolução para áudio nativo (*Early-Fusion*, enviando `.ogg`/`.mp3` diretamente ao **Gemini 2.5 Flash** via `inlineData` ou `Files API`) torna-se tecnicamente superior ao pipeline baseado em transcrição `whisper-1` antes do modelo de texto?",
+      "options": [
+        "Quando o domínio precisa capturar sinais acústicos não verbais que se perdem na transcrição para texto — como entonação emocional na voz do cliente ou ruídos mecânicos anômalos em suporte técnico.",
+        "Sempre que o usuário enviar apenas mensagens de texto simples sem anexos.",
+        "Quando o objetivo for impedir que o usuário receba qualquer resposta em áudio TTS.",
+        "Porque o `whisper-1` não suporta o idioma português nem arquivos de áudio menores que 10 minutos."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Transcrever áudio para string via STT (`whisper-1`) descarta prosódia, hesitação, raiva/urgência emocional e sons ambientais ou defeitos mecânicos gravados pelo usuário. Modelos *early-fusion* como Gemini 2.5 Flash processam diretamente os embeddings acústicos preservando esses sinais mantendo a mesma interface do orquestrador. A alternativa B não usa áudio; a C confunde entrada nativa com saída TTS; e a D é falsa pois o `whisper-1` suporta português e áudios curtos.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q21",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Quais são os três pilares estruturais do padrão *Normalized Multimodal Turn* implementado no `MultimodalBotOrchestrator` do Lab 3?",
+      "options": [
+        "Treinamento fine-tuning em tempo real, remoção do histórico anterior e conversão de PDFs em MP3.",
+        "Normalização na borda (transcrição STT, auto-orientação `sharp` e indexação textual/estruturada de PDF), histórico unificado numa timeline única com marcadores de origem (`TurnoUnificado[]`) e espelhamento de modalidade (síntese TTS quando a entrada for voz).",
+        "Armazenamento eterno de todas as imagens em variáveis globais sem TTL e resposta obrigatória em áudio para todos os turnos de texto.",
+        "Envio de arquivos `.ogg` sem transcrição ao modelo `whisper-1` como saída final para o usuário."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. O padrão *Normalized Multimodal Turn* normaliza cada entrada na borda para uma representação canônica (`TurnoUnificado`), grava todos os turnos numa linha do tempo única preservando tags de origem (`[VOZ ...]`, `[FOTO ANEXADA]`, `[PDF ...]`) — persistida em Redis ou PostgreSQL com TTL em produção — e espelha a modalidade de voz via `openai.audio.speech.create` apenas quando o usuário enviou áudio. A alternativa A é inviável; a C gera vazamento de memória e má UX ao responder texto com áudio sem necessidade; e a D inverte entrada STT com saída TTS.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q22",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "architecture",
+      "difficulty": "intermediate",
+      "question": "Na arquitetura do bot multimodal em produção, como o histórico conversacional deve ser gerenciado para suportar sessões longas de WhatsApp/Telegram sem explodir a janela de contexto nem perder estado entre reinicializações de contêineres?",
+      "options": [
+        "Manter um `Map` infinito apenas na RAM do processo Node.js e reenviar os bytes completos de todos os PDFs anteriores a cada nova mensagem.",
+        "Apagar todo o histórico após cada turno para que a API nunca receba mais de uma mensagem no array `input`.",
+        "Persistir `TurnoUnificado[]` em Redis ou PostgreSQL com TTL por tenant/usuário, indexar PDFs pelo conteúdo/resumo extraído no turno e fatiar a janela enviada à inferência (ex.: `historico.slice(-12)`).",
+        "Salvar os áudios MP3 gerados pelo TTS dentro do prompt do sistema para o modelo ouvi-los novamente."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. O `Map` em memória no Lab 3 é didático; em produção multi-instância, sessões precisam de store externo (Redis/PostgreSQL) com TTL por tenant/usuário, janela deslizante (`historico.slice(-12)`) para limitar custo/latência e texto extraído dos PDFs para evitar retransmitir payloads binários pesados a cada turno. A alternativa A perde sessões em deploys e satura RAM/tokens; a B destrói a memória conversacional; e a D é incorreta pois respostas do assistente já estão em `textoCanonico`.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q23",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o método `normalizarEntrada` do `MultimodalBotOrchestrator`. Como a união discriminada `CanalEntrada` garante normalização consistente na borda e controla o espelhamento de voz?",
+      "codeSnippet": "private async normalizarEntrada(entrada: CanalEntrada): Promise<{ turno: TurnoUnificado; responderEmVoz: boolean }> {\n  const agora = new Date().toISOString();\n  switch (entrada.tipo) {\n    case 'texto':\n      return { responderEmVoz: false, turno: { role: 'user', timestampISO: agora, textoCanonico: entrada.conteudo.trim() } };\n    case 'audio': {\n      const stt = await openai.audio.transcriptions.create({\n        file: fs.createReadStream(entrada.caminhoArquivo), model: 'whisper-1', language: 'pt',\n      });\n      return { responderEmVoz: true, turno: { role: 'user', timestampISO: agora, textoCanonico: `[VOZ (${entrada.duracaoSegundos}s)]: ${stt.text}` } };\n    }\n    case 'imagem': {\n      const norm = await normalizarFotoDocumento(entrada.buffer);\n      const dataUri = `data:${norm.mimeType};base64,${norm.buffer.toString('base64')}`;\n      const legenda = entrada.legenda ? ` Legenda: \"${entrada.legenda}\".` : '';\n      return { responderEmVoz: false, turno: { role: 'user', timestampISO: agora, textoCanonico: `[FOTO ANEXADA].${legenda}`, imagemDataUri: dataUri } };\n    }\n    case 'pdf':\n      return { responderEmVoz: false, turno: { role: 'user', timestampISO: agora, textoCanonico: `[PDF ${entrada.nomeArquivo}]\\n${entrada.conteudoExtraido}` } };\n  }\n}",
+      "options": [
+        "O `switch` exaustivo sobre `entrada.tipo` aplica o pré-processamento específico de cada canal (STT `whisper-1` em `'audio'`, correção EXIF/JPEG via `normalizarFotoDocumento` em `'imagem'` e tag de origem em `'pdf'`), definindo `responderEmVoz: true` apenas quando a entrada original for `'audio'`.",
+        "O caso `'imagem'` envia o buffer bruto sem remover EXIF e ativa `responderEmVoz: true` para fotos com legenda.",
+        "O caso `'audio'` gera um Data URI Base64 do MP3 e pula a transcrição com `whisper-1`.",
+        "O caso `'pdf'` envia o binário completo via `imagemDataUri` porque a Responses API não aceita texto extraído."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Cada ramo do `switch` sobre a união discriminada `CanalEntrada` converte o payload heterogêneo para o contrato comum `TurnoUnificado` com marcador explícito de origem (`[VOZ ...]`, `[FOTO ANEXADA]`, `[PDF ...]`), higieniza imagens via `sharp` (`normalizarFotoDocumento`) e ativa a flag booleana `responderEmVoz` exclusivamente no caso `'audio'`. A alternativa B erra pois `'imagem'` usa `normalizarFotoDocumento` (que remove EXIF) e define `responderEmVoz: false`; a C ignora a chamada visível a `openai.audio.transcriptions.create`; e a D erra pois `'pdf'` popula `textoCanonico` sem `imagemDataUri`.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q24",
+      "sessionId": "2.8",
+      "subtopicTag": "Lab 3: Bot Multimodal Completo (Texto, Áudio, Foto e PDF com Contexto Unificado)",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Observe `processarMensagem` no `MultimodalBotOrchestrator`. Se o usuário enviar uma foto da caixa no turno 1 (`entrada.tipo === 'imagem'`) e, no turno 2 na mesma `sessionId`, enviar uma nota de voz perguntando *'Essa avaria dá direito à troca?'* (`entrada.tipo === 'audio'`), o que será enviado à API na inferência do turno 2 e o que será devolvido ao usuário?",
+      "codeSnippet": "const { turno, responderEmVoz } = await this.normalizarEntrada(entrada);\nhistorico.push(turno);\nconst inputItems: OpenAI.Responses.ResponseInputItem[] = [\n  { role: 'system', content: 'Assistente multimodal. Correlacione áudios transcritos, fotos e PDFs da mesma sessão e responda com objetividade.' },\n  ...historico.slice(-12).map((t): OpenAI.Responses.ResponseInputItem => {\n    if (t.role === 'assistant') return { role: 'assistant', content: t.textoCanonico };\n    const partes: OpenAI.Responses.ResponseInputContent[] = [{ type: 'input_text', text: t.textoCanonico }];\n    if (t.imagemDataUri) partes.push({ type: 'input_image', image_url: t.imagemDataUri, detail: 'high' });\n    return { role: 'user', content: partes };\n  }),\n];\nconst resposta = await openai.responses.create({ model: 'gpt-4o', temperature: 0.2, max_output_tokens: 500, input: inputItems });\nconst textoResposta = resposta.output_text.trim();\nhistorico.push({ role: 'assistant', timestampISO: new Date().toISOString(), textoCanonico: textoResposta });\nif (!responderEmVoz) return { texto: textoResposta };\nconst tts = await openai.audio.speech.create({ model: 'gpt-4o-mini-tts', voice: 'coral', input: textoResposta, instructions: 'Fale em português brasileiro claro, natural e cordial.' });\nreturn { texto: textoResposta, audioMp3Buffer: Buffer.from(await tts.arrayBuffer()) };",
+      "options": [
+        "O turno 2 envia apenas a transcrição da voz sem a foto do turno 1 e retorna somente `{ texto }`.",
+        "O turno 2 reenvia a foto do turno 1 em `detail: 'low'`, remove a resposta do assistente do turno 1 e retorna áudio apenas se `textoResposta` tiver mais de 100 caracteres.",
+        "O código lança erro de tipo porque `input_image` não pode coexistir com `input_text` no mesmo array `partes`.",
+        "O turno 2 envia ao `gpt-4o` os últimos turnos (incluindo o bloco `input_image` com `detail: 'high'` da foto do turno 1 e o texto `[VOZ ...]` transcrito do turno 2) e, como `responderEmVoz` é `true`, sintetiza e retorna `{ texto, audioMp3Buffer }` via `gpt-4o-mini-tts`."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. Ao mapear `historico.slice(-12)`, o turno 1 preserva `t.imagemDataUri` e injeta `{ type: 'input_image', image_url: t.imagemDataUri, detail: 'high' }`, enquanto o turno 2 entra com `[VOZ ...]` transcrito; assim, o `gpt-4o` correlaciona a foto anterior com a pergunta de áudio atual e, como `entrada.tipo === 'audio'` ligou `responderEmVoz = true`, o método gera e devolve `audioMp3Buffer` via `gpt-4o-mini-tts`. A alternativa A ignora o histórico com `imagemDataUri` e a síntese TTS; a B inventa `detail: 'low'` e limiar de caracteres inexistente; e a C é falsa pois `input_text` e `input_image` compõem `ResponseInputContent[]` juntos.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#lab-3-bot-multimodal-completo",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q25",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "foundation",
+      "question": "Na `Files API` do Google Gemini, qual é o período padrão de retenção automática e a cota total por projeto, e o que acontece se um pipeline que processa $500$ vídeos de $50\\text{ MB}$ por dia depender apenas dessa expiração automática?",
+      "options": [
+        "Os arquivos expiram em 1 hora e a cota por projeto é ilimitada, sem risco de falha.",
+        "Os arquivos ficam armazenados por $48\\text{ horas}$ até o teto de $2\\text{ GB}$ por arquivo e $20\\text{ GB}$ totais por projeto; esperar a expiração automática acumula $50\\text{ GB}$ em $48\\text{ horas}$, estourando a cota de $20\\text{ GB}$ e derrubando novos uploads.",
+        "Os arquivos ficam armazenados por 30 dias com cota de $500\\text{ GB}$ por projeto, exigindo exclusão apenas uma vez por mês.",
+        "A `Files API` cobra `USD 10,00` por minuto armazenado mas nunca recusa novos uploads."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Cada vídeo de $50\\text{ MB}$ multiplicado por $500$ execuções diárias gera $25\\text{ GB/dia}$, totalizando $50\\text{ GB}$ na janela de retenção automática de $48\\text{ horas}$ — mais que o dobro do limite de $20\\text{ GB}$ por projeto da `Files API` do Gemini, além de manter dados sensíveis expostos sem necessidade. Por isso é mandatório excluir o arquivo via `ai.files.delete` no bloco `finally`. As alternativas A, C e D citam prazos, cotas e tarifas incorretas.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q26",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "conceptual",
+      "difficulty": "intermediate",
+      "question": "Qual conjunto de práticas implementa corretamente a conformidade com a **LGPD** em sistemas multimodais que processam CNH, RG, holerites e fotos enviadas por usuários?",
+      "options": [
+        "Salvar o buffer Base64 completo de cada documento nos logs do Datadog/LangSmith para facilitar o debug de produção.",
+        "Usar chaves gratuitas de API de consumidor final pois elas oferecem Zero Data Retention automático.",
+        "Remover metadados EXIF/GPS na entrada com `sharp().rotate()`, minimizar/mascarar ou aplicar hash SHA-256 com salt em identificadores pessoais antes da persistência analítica, enviar apenas metadados técnicos aos logs/tracing (`documentHash`, `pageCount`, `tokenUsage`, `latencyMs`) e operar em tiers pagos com garantia contratual de Zero Data Retention (ZDR).",
+        "Criptografar apenas o campo `latencyMs` nos logs mantendo CPF e imagens Base64 em texto claro."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Os quatro pilares de governança LGPD apresentados no capítulo são: strip de EXIF/GPS na entrada via `sharp().rotate()` (sem `.withMetadata()`), minimização e hash SHA-256 com *salt* para PII, observabilidade sanitizada sem buffers Base64 ou transcrições pessoais em plataformas de tracing, e contratos pagos com ZDR (não treinamento sobre payloads). A alternativa A vaza dados pessoais em ferramentas de observabilidade; a B inverte a regra pois tiers gratuitos frequentemente não oferecem ZDR; e a D protege o campo técnico e vaza a PII real.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://platform.openai.com/docs/guides/vision",
+      "officialDocLabel": "OpenAI – Vision Guide"
+    },
+    {
+      "id": "m02-s08-q27",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "architecture",
+      "difficulty": "foundation",
+      "question": "Quando o **Context Caching** multimodal (`ai.caches.create` no Gemini ou `cache_control: { type: 'ephemeral' }` no Claude) deve ser evitado em arquitetura de produção?",
+      "options": [
+        "Em extrações únicas (*one-shot*), pois caches explícitos exigem volume mínimo de tokens e cobram taxa horária de armazenamento, tornando-se mais caros que uma chamada direta sem cache.",
+        "Sempre que múltiplos usuários ou múltiplos prompts consultarem o mesmo vídeo longo ou manual PDF repetidas vezes.",
+        "Sempre que o documento tiver formato PDF, porque Context Caching só aceita strings JSON curtas.",
+        "Quando a latência da segunda pergunta sobre o mesmo contrato precisar ser reduzida."
+      ],
+      "correctOptionIndex": 0,
+      "explanation": "A alternativa correta é a A. Criar um cache explícito para processar uma nota fiscal ou foto uma única vez (*one-shot*) desperdiça custo operacional porque caches possuem volume mínimo de tokens e cobram armazenamento por hora/TTL; o Context Caching só compensa quando o mesmo prefixo pesado (contrato PDF longo ou vídeo de treinamento) é consultado por múltiplas perguntas sequenciais. As alternativas B e D descrevem exatamente os cenários onde o cache É vantajoso; e a C é falsa pois tanto Gemini quanto Claude suportam caching de PDFs e mídia.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://docs.anthropic.com/en/docs/build-with-claude/pdf-support",
+      "officialDocLabel": "Anthropic Claude – PDF Support"
+    },
+    {
+      "id": "m02-s08-q28",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "architecture",
+      "difficulty": "advanced",
+      "question": "Na simulação mensal da Seção 5, uma operação processa $20.000$ PDFs de $3$ páginas no Gemini ($258$ tokens/pág entrada a `USD 0,15`/1M, $400$ tokens saída a `USD 0,60`/1M) e $5.000$ notas de voz de $0{,}5\\text{ min}$ no `whisper-1` (`USD 0,006`/min). Qual insight arquitetural emerge da decomposição matemática em USD?",
+      "options": [
+        "Os PDFs consomem `USD 95,00` contra `USD 1,50` dos áudios, exigindo reduzir o tamanho das fontes no PDF.",
+        "O custo mensal de entrada de PDFs e o de áudio são rigorosamente idênticos (`USD 7,12` cada), sendo indiferente onde otimizar.",
+        "As $60.000$ páginas de PDF custam apenas `USD 7,12` (`USD 2,32` entrada + `USD 4,80` saída), enquanto apenas $2.500$ minutos de transcrição de áudio consomem `USD 15,00` (mais que o dobro dos documentos, totalizando `USD 22,12`); logo, otimizar apenas a resolução de PDFs atacaria o gargalo errado.",
+        "Tokens de saída de PDF nunca são cobrados em APIs multimodais, apenas minutos de áudio."
+      ],
+      "correctOptionIndex": 2,
+      "explanation": "A alternativa correta é a C. Aplicando a fórmula aditiva por modalidade: nos PDFs são $20.000 \\times 3 \\times 258 = 15{,}48\\text{M}$ tokens de entrada (`USD 2,32`) mais $20.000 \\times 400 = 8{,}00\\text{M}$ tokens de saída (`USD 4,80`), somando `USD 7,12`; já os áudios somam $5.000 \\times 0{,}5 \\times \\text{USD } 0{,}006 = \\text{USD } 15{,}00$, elevando o total para `USD 22,12`. Sem essa decomposição, equipes frequentemente gastam esforço otimizando PDFs quando o peso financeiro real está no STT ou nos tokens de saída. As alternativas A, B e D trazem valores falsos.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    },
+    {
+      "id": "m02-s08-q29",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "intermediate",
+      "question": "Analise o snippet TypeScript de Context Caching multimodal com Gemini `Files API`. Qual cuidado operacional crítico distingue o ciclo de vida desse arquivo em relação a um fluxo *one-shot* sem cache?",
+      "codeSnippet": "const uploaded = await ai.files.upload({ file: caminhoVideo, config: { mimeType: 'video/mp4' } });\nconst videoPronto = await aguardarVideoAtivo(uploaded.name!);\n\nconst cacheVideo = await ai.caches.create({\n  model: 'gemini-2.5-flash',\n  config: {\n    ttl: '600s',\n    systemInstruction: 'Responda perguntas técnicas baseadas exclusivamente no vídeo anexado.',\n    contents: createUserContent([createPartFromUri(videoPronto.uri!, videoPronto.mimeType!)]),\n  },\n});\n\nconst consulta = await ai.models.generateContent({\n  model: 'gemini-2.5-flash',\n  config: { cachedContent: cacheVideo.name },\n  contents: 'Qual comando aparece no terminal entre 04:10 e 04:45?',\n});",
+      "options": [
+        "O arquivo `uploaded` deve ser deletado via `ai.files.delete` antes de criar `cacheVideo`, caso contrário `ai.caches.create` falha.",
+        "Enquanto `cacheVideo` estiver ativo para múltiplas consultas (durante o `ttl` de `600s`), NÃO se deve chamar `ai.files.delete({ name: uploaded.name })` imediatamente após a primeira consulta; a exclusão ativa na `Files API` ocorre apenas ao encerrar ou expirar o ciclo do cache, ao contrário do *one-shot* que deleta logo no `finally`.",
+        "O campo `ttl: '600s'` apaga automaticamente o código TypeScript local do disco após 10 minutos.",
+        "`cachedContent` substitui o `aguardarVideoAtivo`, permitindo criar cache mesmo enquanto o vídeo ainda está em `'PROCESSING'`."
+      ],
+      "correctOptionIndex": 1,
+      "explanation": "A alternativa correta é a B. Conforme destacado na Seção 5 do capítulo, a regra de chamar `ai.files.delete({ name })` imediatamente após a inferência possui uma exceção explícita: quando há um Context Cache ativo (`cacheVideo`) apontando para o URI do arquivo na `Files API`, esse arquivo precisa permanecer disponível durante o TTL do cache para atender às próximas perguntas (`cachedContent: cacheVideo.name`). A alternativa A quebraria o cache; a C inventa deleção de código local; e a D ignora que o vídeo precisa estar `'ACTIVE'` antes da criação do cache.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/video-understanding",
+      "officialDocLabel": "Google Gemini – Video Understanding"
+    },
+    {
+      "id": "m02-s08-q30",
+      "sessionId": "2.8",
+      "subtopicTag": "Arquitetura de Produção: Files API, Limites de Payload, Privacidade (LGPD) e Custos Multimodais",
+      "cognitiveLevel": "code-practice",
+      "difficulty": "advanced",
+      "question": "Examine a função de observabilidade sanitizada e estimativa de custo multimodal em TypeScript. Por que o payload enviado a `telemetryClient.track` atende simultaneamente à governança **LGPD** e à visibilidade financeira da fórmula mensal?",
+      "codeSnippet": "export interface EventoExtracaoTelemetry {\n  documentHash: string;\n  pageCount: number;\n  tokenUsage: { inputTokens: number; outputTokens: number };\n  latencyMs: number;\n  auditoriaValida: boolean;\n  custoEstimadoUsd: number;\n}\n\nexport function calcularCustoDocUsd(pageCount: number, tokensPorPag: number, tokensSaida: number, cInPorMilhao: number, cOutPorMilhao: number): number {\n  const custoEntrada = ((pageCount * tokensPorPag) * cInPorMilhao) / 1_000_000;\n  const custoSaida = (tokensSaida * cOutPorMilhao) / 1_000_000;\n  return Number((custoEntrada + custoSaida).toFixed(6));\n}\n\nexport function registrarTelemetriaSegura(evt: EventoExtracaoTelemetry, telemetryClient: { track: (name: string, data: EventoExtracaoTelemetry) => void }) {\n  telemetryClient.track('ocr.document.completed', evt);\n}",
+      "options": [
+        "Porque `documentHash` expõe o CPF completo em texto claro para auditoria no Datadog, enquanto `custoEstimadoUsd` é sempre zero.",
+        "Porque `calcularCustoDocUsd` divide apenas por `1_000` em vez de `1_000_000`, inflando o orçamento para gerar margem de segurança.",
+        "Porque `registrarTelemetriaSegura` envia o Base64 do PDF comprimido dentro do campo `pageCount`.",
+        "Porque registra exclusivamente métricas técnicas não identificáveis (`documentHash`, `pageCount`, `tokenUsage`, `latencyMs`, `auditoriaValida` e custo em USD pela divisão por $10^6$), omitindo buffers Base64 de imagens/PDFs e transcrições com PII."
+      ],
+      "correctOptionIndex": 3,
+      "explanation": "A alternativa correta é a D. A função implementa exatamente o padrão de observabilidade sanitizada descrito na Seção 5: não envia buffers Base64 de documentos, fotos ou textos pessoais para ferramentas externas de tracing, gravando apenas identificadores opacos (`documentHash`), métricas volumétricas/contábeis (`pageCount`, `tokenUsage`, `latencyMs`, `auditoriaValida`) e o custo em USD segundo a fórmula $\\frac{P \\cdot T_{\\text{pág}} \\cdot C_{\\text{in}} + T_{\\text{out}} \\cdot C_{\\text{out}}}{10^6}$. A alternativa A contradiz o conceito de hash criptográfico e custo positivo; a B lê incorretamente o divisor `1_000_000`; e a C descreve um tipo inválido para `pageCount`.",
+      "chapterAnchor": "cap-08-aplicacoes-praticas-multimodais#arquitetura-producao-files-api-lgpd-custos",
+      "officialDocUrl": "https://ai.google.dev/gemini-api/docs/document-processing",
+      "officialDocLabel": "Google Gemini – Document Processing (PDF & Vision OCR)"
+    }
+  ]
+}

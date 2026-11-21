@@ -28,14 +28,14 @@ official_docs:
     section: "Generating and comparing text embeddings"
 media:
   audio_notebooklm: null
-  video_url: "https://www.youtube.com/watch?v=wjZofJX0v4M"
+  video_url: "https://www.youtube.com/watch?v=_cLTcLQN88Q"
   videos:
-    - title: "Transformers, the tech behind LLMs | Deep Learning Chapter 5"
-      channel: "3Blue1Brown"
-      url: "https://www.youtube.com/watch?v=wjZofJX0v4M"
-    - title: "Attention in transformers, step-by-step | Deep Learning Chapter 6"
-      channel: "3Blue1Brown"
-      url: "https://www.youtube.com/watch?v=eMlx5fFNoYc"
+    - title: "Como um LLM realmente funciona (pra você não esquecer)"
+      channel: "Rocketseat"
+      url: "https://www.youtube.com/watch?v=_cLTcLQN88Q"
+    - title: "EP01 - Como Funcionam os Transformers? Dos Tokens ao Texto Gerado | AI Masterclass"
+      channel: "Roan Brasil Monteiro"
+      url: "https://www.youtube.com/watch?v=y7xYa0PBLEA"
 ---
 
 # 1.2 Introdução a LLMs (Large Language Models)
